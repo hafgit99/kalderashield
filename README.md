@@ -8,14 +8,16 @@
 
 <br />
 
-<img src="docs/assets/app-screenshot.png" alt="KalderaShield — Main Application Interface" width="820" />
+<img src="docs/assets/app-screenshot.png" alt="KalderaShield vault interface showing the folder sidebar, smart folders, item list and the security dashboard with the virtual protection score and cryptography shield details." width="880" />
+
+<sub>KalderaShield v7.0.20 — the vault workspace with smart folders, the security dashboard and live cryptography status. Regenerate with <code>node scripts/capture-app-screenshot.cjs</code>.</sub>
 
 <br />
 
 ![Security Score](https://img.shields.io/badge/Security_Audit-92%2F100_(A%2B)-brightgreen?style=flat-square&logo=shield)
-![Tests](https://img.shields.io/badge/Unit_Tests-1800_Passed-success?style=flat-square&logo=vitest)
-![Fuzz Tests](https://img.shields.io/badge/Fuzz_Tests-36_Passed-success?style=flat-square&logo=vitest)
-![Coverage](https://img.shields.io/badge/Coverage-92.2%25_Lines_·_82.7%25_Branches-brightgreen?style=flat-square&logo=vitest)
+![Tests](https://img.shields.io/badge/Unit_Tests-2237_Passed-success?style=flat-square&logo=vitest)
+![Fuzz Tests](https://img.shields.io/badge/Fuzz_Tests-37_Passed-success?style=flat-square&logo=vitest)
+![Coverage](https://img.shields.io/badge/Coverage-91.1%25_Lines_·_82.2%25_Branches-brightgreen?style=flat-square&logo=vitest)
 ![Mutation Testing](https://img.shields.io/badge/Mutation_Testing-8_Stryker_Suites_·_90.8%25_Peak-blue?style=flat-square&logo=stryker)
 ![TypeScript](https://img.shields.io/badge/TypeScript-0_Errors-blue?style=flat-square&logo=typescript)
 ![License](https://img.shields.io/badge/License-Apache_2.0-orange?style=flat-square)
@@ -44,7 +46,7 @@ Unlike cloud-dependent password managers vulnerable to server breaches and key-e
 
 KalderaShield publishes its threat model, security notes, quality gates, and a scope document prepared for a future independent assessment. **As of September 23, 2026, this repository does not publish a completed independent third-party security audit report.** The scope document is preparation material, not an audit result.
 
-Earlier numerical scores and closure counts were maintainer assessments of older code snapshots. They are not independent ratings, certifications, or a current assessment of release `v7.0.7.0`; they are not presented here as evidence of external assurance. See [Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md) and the [External Audit Scope](docs/EXTERNAL_AUDIT_SCOPE_EN.md).
+Earlier numerical scores and closure counts were maintainer assessments of older code snapshots. They are not independent ratings, certifications, or a current assessment of release `v7.0.20.0`; they are not presented here as evidence of external assurance. See [Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md) and the [External Audit Scope](docs/EXTERNAL_AUDIT_SCOPE_EN.md).
 
 ---
 
@@ -91,6 +93,14 @@ Full localization across 12 languages:
 | **Android Mobile** | Signed APK, App Bundle (AAB) | ✅ Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
 | **Browser Extension** | Chrome (MV3 CRX), Firefox (XPI), Safari (WebExt) | ✅ Verified (Closed Shadow DOM, 30s clipboard auto-clear, eTLD+1) |
 
+The table above describes what the codebase supports and verifies. Published
+artifacts per release are narrower: the current `v7.0.20` release pipeline
+(`RELEASE_DESKTOP_PLATFORMS=linux`) publishes **Linux desktop packages, signed
+Android APKs, and browser extension packages**. Windows and macOS builds are
+supported and tested in CI but are not attached to the release assets for this
+version. Check the [releases page](https://github.com/hafgit99/kalderashield/releases)
+for the exact asset list of any given version.
+
 ---
 
 ## 📊 Verification, Testing & Quality Gates
@@ -102,16 +112,16 @@ KalderaShield maintains rigorous automated testing standards with defense-in-dep
 | Metric | Result | Status | Framework / Tool |
 |---|---|---|---|
 | **TypeScript Typecheck** | **`0 errors`** | ✅ 100% Clean | `tsc --noEmit` |
-| **Unit & Integration Test Suite** | **`216 test files passed (216/216)`** | ✅ 100% Green | Vitest 4.1 |
-| **Unit Tests Executed** | **`1,800 tests passed (1,800/1,800)`** | ✅ 100% Green | Vitest / React Testing Library |
-| **Property-Based Fuzz Tests** | **`36 tests across 9 files passed`** | ✅ 100% Green | fast-check v4 |
+| **Unit & Integration Test Suite** | **`247 test files passed (247/247)`** | ✅ 100% Green | Vitest 4.1 |
+| **Unit Tests Executed** | **`2,237 tests passed (2,237/2,237)`** | ✅ 100% Green | Vitest / React Testing Library |
+| **Property-Based Fuzz Tests** | **`37 tests across 9 files passed`** | ✅ 100% Green | fast-check v4 |
 | **End-to-End (E2E) Suites** | **`34 scenarios x 3 browsers = 102/102 passed`** | ✅ 100% Green | Playwright (Chromium, Firefox, WebKit) |
 | **Mutation Testing** | **`8 specialized Stryker suites - 90.8% peak gate score`** | ✅ Measured & Gated | @stryker-mutator/core v9 |
 | **Rust Backend Tests** | **`18 tests passed (18/18)`** | ✅ 100% Green | `cargo test` (Tauri 2) |
-| **Lines Coverage** | **`92.17%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
-| **Statements Coverage** | **`90.62%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
-| **Functions Coverage** | **`88.85%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
-| **Branches Coverage** | **`82.72%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
+| **Lines Coverage** | **`91.12%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
+| **Statements Coverage** | **`89.56%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
+| **Functions Coverage** | **`88.98%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
+| **Branches Coverage** | **`82.18%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
 
 ---
 

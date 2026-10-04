@@ -21,6 +21,7 @@
     "test:e2e:chromium": "playwright test --project=chromium",
     "icon:apply": "node scripts/apply-icon.cjs",
     "icons:verify": "node scripts/verify-icons.cjs",
+    "docs:screenshot": "node scripts/capture-app-screenshot.cjs",
     "site:preview": "node scripts/serve-site.cjs",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
