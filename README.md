@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🛡️ KalderaShield
+<img src="public/app-icon.png" alt="KalderaShield app icon" width="112" />
+
+# KalderaShield
 
 **The Offline-First, Zero-Knowledge Security Vault & Password Manager**
 
