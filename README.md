@@ -85,21 +85,31 @@ Full localization across 12 languages:
 
 ## 💻 Platform Matrix
 
-| Platform | Target Artifacts | Security Status |
+| Platform | Published Artifacts | Security Status |
 |---|---|---|
-| **Windows Desktop** | MSI Installer, NSIS Setup, Portable EXE | ✅ Verified (Tauri 2.11, updater signature verification active) |
-| **Linux Desktop** | AppImage, DEB, RPM | ✅ Verified (PipeWire / D-Bus screen recording shield active) |
-| **macOS Desktop** | DMG, App Bundle | ✅ Verified (Native WebExtension bridge) |
-| **Android Mobile** | Signed APK, App Bundle (AAB) | ✅ Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
-| **Browser Extension** | Chrome (MV3 CRX), Firefox (XPI), Safari (WebExt) | ✅ Verified (Closed Shadow DOM, 30s clipboard auto-clear, eTLD+1) |
+| **Windows Desktop** | *Not published* — awaiting a code-signing certificate | 🔒 Build-verified (Tauri 2.11). Updater signature verification is implemented but inactive until Windows artifacts ship |
+| **Linux Desktop** | AppImage, DEB | 🔒 Verified (PipeWire / D-Bus screen recording shield active, Tauri updater signatures verified) |
+| **macOS Desktop** | *Not published* — awaiting Apple notarization | 🔒 Build-verified (Native WebExtension bridge) |
+| **Android Mobile** | Signed APK, App Bundle (AAB) | 🔒 Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
+| **Browser Extension** | Chrome (MV3 CRX), Firefox (XPI), Safari (WebExt) | 🔒 Verified (Closed Shadow DOM, 30s clipboard auto-clear, eTLD+1) |
 
-The table above describes what the codebase supports and verifies. Published
-artifacts per release are narrower: the current `v7.0.20` release pipeline
-(`RELEASE_DESKTOP_PLATFORMS=linux`) publishes **Linux desktop packages, signed
-Android APKs, and browser extension packages**. Windows and macOS builds are
-supported and tested in CI but are not attached to the release assets for this
-version. Check the [releases page](https://github.com/hafgit99/kalderashield/releases)
-for the exact asset list of any given version.
+**Why some rows have no artifacts.** v7.0.20 publishes Linux, Android and the
+browser extensions only. The release pipeline fails closed on unsigned desktop
+builds by design — `desktop:release:signing:report --require-signed` blocks the
+job rather than letting an unverified `.exe` reach users (policy Y-19 in
+[CODE_SIGNING_GUIDE_2026.md](docs/CODE_SIGNING_GUIDE_2026.md)). Windows and macOS
+build and pass CI, but publishing them is gated on a code-signing certificate
+and Apple notarization respectively. Support for both is implemented; neither
+artifact list above is aspirational.
+
+**RPM is not published.** `KalderaShield-7.0.20-1.x86_64.rpm.sig` is present on
+the release without its `.rpm`, so the signature currently verifies nothing.
+DEB and AppImage are the supported Linux packages; if RPM matters to you,
+[open an issue](https://github.com/hafgit99/kalderashield/issues).
+
+Check the [releases page](https://github.com/hafgit99/kalderashield/releases)
+for the exact asset list of any given version, and `SHA256SUMS.txt` to verify a
+download.
 
 ---
 
