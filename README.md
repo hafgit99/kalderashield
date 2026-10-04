@@ -15,7 +15,7 @@
 <br />
 
 ![Security Score](https://img.shields.io/badge/Security_Audit-92%2F100_(A%2B)-brightgreen?style=flat-square&logo=shield)
-![Tests](https://img.shields.io/badge/Unit_Tests-2237_Passed-success?style=flat-square&logo=vitest)
+![Tests](https://img.shields.io/badge/Unit_Tests-2243_Passed-success?style=flat-square&logo=vitest)
 ![Fuzz Tests](https://img.shields.io/badge/Fuzz_Tests-37_Passed-success?style=flat-square&logo=vitest)
 ![Coverage](https://img.shields.io/badge/Coverage-91.1%25_Lines_·_82.2%25_Branches-brightgreen?style=flat-square&logo=vitest)
 ![Mutation Testing](https://img.shields.io/badge/Mutation_Testing-8_Stryker_Suites_·_90.8%25_Peak-blue?style=flat-square&logo=stryker)
@@ -112,8 +112,8 @@ KalderaShield maintains rigorous automated testing standards with defense-in-dep
 | Metric | Result | Status | Framework / Tool |
 |---|---|---|---|
 | **TypeScript Typecheck** | **`0 errors`** | ✅ 100% Clean | `tsc --noEmit` |
-| **Unit & Integration Test Suite** | **`247 test files passed (247/247)`** | ✅ 100% Green | Vitest 4.1 |
-| **Unit Tests Executed** | **`2,237 tests passed (2,237/2,237)`** | ✅ 100% Green | Vitest / React Testing Library |
+| **Unit & Integration Test Suite** | **`253 test files passed (253/253)`** | ✅ 100% Green | Vitest 4.1 |
+| **Unit Tests Executed** | **`2,243 tests passed (2,243/2,243)`** | ✅ 100% Green | Vitest / React Testing Library |
 | **Property-Based Fuzz Tests** | **`37 tests across 9 files passed`** | ✅ 100% Green | fast-check v4 |
 | **End-to-End (E2E) Suites** | **`34 scenarios x 3 browsers = 102/102 passed`** | ✅ 100% Green | Playwright (Chromium, Firefox, WebKit) |
 | **Mutation Testing** | **`8 specialized Stryker suites - 90.8% peak gate score`** | ✅ Measured & Gated | @stryker-mutator/core v9 |
