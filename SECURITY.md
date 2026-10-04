@@ -16,9 +16,9 @@ KalderaShield is a local-first, zero-knowledge password manager. Security is the
 Report vulnerabilities privately via either channel:
 
 - **GitHub Private Vulnerability Reporting (preferred):** [Report a vulnerability](https://github.com/hafgit99/kalderashield/security/advisories/new)
-- **Email:** **admin@KalderaShield.xyz**
+- **Email:** **admin@.......**
 
-Our machine-readable disclosure policy is published at [`https://KalderaShield.xyz/.well-known/security.txt`](https://KalderaShield.xyz/.well-known/security.txt) (RFC 9116). Internal handling procedures are documented in [docs/INCIDENT_RESPONSE.md](docs/INCIDENT_RESPONSE.md).
+Our machine-readable disclosure policy is published at [`https://KalderaShield....../.well-known/security.txt`](https://KalderaShield....../.well-known/security.txt) (RFC 9116). Internal handling procedures are documented in [docs/INCIDENT_RESPONSE.md](docs/INCIDENT_RESPONSE.md).
 
 
 You will receive:

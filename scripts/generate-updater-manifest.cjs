@@ -34,7 +34,18 @@ const version = packageJson.version; // full numeric version, e.g. 7.0.5.0 (tag 
 // the manifest version MUST match it exactly for the update comparison.
 const tauriConf = JSON.parse(fs.readFileSync(path.join(rootDir, 'src-tauri', 'tauri.conf.json'), 'utf8'));
 const updaterVersion = tauriConf.version || version.split('.').slice(0, 3).join('.');
-const repoUrl = packageJson.repository ? packageJson.repository.replace(/\.git$/, '') : 'https://github.com/hafgit99/kalderashield';
+// `repository` may be a string ("owner/name" or a URL) or the npm object form
+// ({ type, url }), which is what npm documents and what this package.json now
+// declares. `.replace` on the object form threw "repository.replace is not a
+// function" and took the whole manifest generator down, so the updater manifest
+// could not be produced at all. Normalise both before stripping the .git suffix.
+const repositoryField = packageJson.repository;
+const repositoryUrl = typeof repositoryField === 'string'
+  ? repositoryField
+  : (repositoryField?.url ?? '');
+const repoUrl = repositoryUrl
+  ? repositoryUrl.replace(/^(git\+|git:)/, '').replace(/\.git$/, '')
+  : 'https://github.com/hafgit99/kalderashield';
 const releaseTag = `v${version}`;
 const downloadBaseUrl = `${repoUrl}/releases/download/${releaseTag}`;
 
