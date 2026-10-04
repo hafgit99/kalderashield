@@ -3,6 +3,15 @@
   "private": true,
   "version": "7.0.20.0",
   "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hafgit99/kalderashield.git"
+  },
+  "homepage": "https://github.com/hafgit99/kalderashield#readme",
+  "bugs": {
+    "url": "https://github.com/hafgit99/kalderashield/issues"
+  },
   "bin": {
     "kalderashield-cli": "./scripts/kalderashield-cli.cjs"
   },
