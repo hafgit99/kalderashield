@@ -131,11 +131,28 @@ jobs:
         run: npm run release:collect -- --platform linux --skip-extensions
 
       - name: Collect Linux updater bundles and signatures
+        # `*.rpm` is collected here, not in collect-release-artifacts.cjs, because
+        # this step copies by suffix from the bundle tree while the script only
+        # knows about deb/appimage. The script's absence of any "rpm" string was
+        # the whole bug: v7.0.20 shipped KalderaShield-7.0.20-1.x86_64.rpm.sig
+        # with no .rpm beside it, so the only RPM artifact on the release was a
+        # signature verifying a file that did not exist.
+        #
+        # Tauri builds the RPM in-process via the `rpm` crate and does not shell
+        # out to rpmbuild, so bundle/rpm/<name>.rpm is present on ubuntu-22.04
+        # without the `rpm` system package installed.
+        #
+        # `cp` must not overwrite: a .rpm whose .sig is also copied is collected
+        # as a pair, and a bare .sig with no package is exactly what this fixes.
         run: |
-          find src-tauri/target/release/bundle -type f \( \
+          set -euo pipefail
+          bundle=src-tauri/target/release/bundle
+          find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ \;
+          find "$bundle" -type f \( \
             -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
             -exec cp {} release-local/linux/ \;
           ls -la release-local/linux/
+          node scripts/verify-signature-payloads.cjs --dir release-local/linux
 
       - name: 'Signing report gate — block unsigned releases (Y-19)'
         run: npm run desktop:release:signing:report -- --platform linux --dir release-local/linux --require-signed
@@ -326,6 +343,7 @@ jobs:
             esac
           done
           ls -la release-local/macos/
+          node scripts/verify-signature-payloads.cjs --dir release-local/macos
 
       - name: 'Signing report gate — block unsigned releases (Y-19)'
         run: npm run desktop:release:signing:report -- --platform macos --dir release-local/macos --require-signed
@@ -451,6 +469,7 @@ jobs:
             Where-Object { $_.Name -match '\.sig$|\.tar\.gz$|\.nsis\.zip$' } |
             Copy-Item -Destination release-local/windows
           Get-ChildItem release-local/windows | Select-Object -ExpandProperty Name
+          node scripts/verify-signature-payloads.cjs --dir release-local/windows
 
       - name: 'Signing report gate — block unsigned releases (Y-19)'
         run: npm run desktop:release:signing:report -- --platform windows --dir release-local/windows --require-signed
