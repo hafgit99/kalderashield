@@ -146,6 +146,6 @@ const NOT_FOUND = `<!doctype html>
 
 const notFound = path.join(root, '404.html');
 const existing = fs.readFileSync(notFound, 'utf8');
-const version = (existing.match(/data-site-version="([^"]+)"/) || [, '7.0.18'])[1];
+const version = (existing.match(/data-site-version="([^"]+)"/) || [, '7.0.20'])[1];
 fs.writeFileSync(notFound, NOT_FOUND.replace(/\{\{VERSION\}\}/g, version), 'utf8');
 console.log(`404.html: standart header ve footer eklendi (v${version}).`);
