@@ -1,7 +1,7 @@
 #!/bin/sh
 # KalderaShield installer for Linux.
 #
-#   curl -fsSL https://{{DOMAIN}}/install.sh -o install.sh
+#   curl -fsSL https://kalderashield.com/install.sh -o install.sh
 #   less install.sh
 #   sh install.sh
 #

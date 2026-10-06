@@ -8,10 +8,15 @@
   twelve languages without maintaining 204 hand-written files.
 
   Placeholders:
-    {{SLUG}} {{TITLE}} {{DESCRIPTION}} {{OG_TITLE}} {{CANONICAL}}
+    {{SLUG}} {{TITLE}} {{DESCRIPTION}} {{OG_TITLE}} {{CANONICAL}} {{DOMAIN}}
     {{H1}} {{EYEBROW}} {{LEAD}} {{PRIMARY_LABEL}} {{PRIMARY_HREF}} {{SECONDARY_LABEL}} {{SECONDARY_HREF}} {{H1_KEY}}
     {{WHAT_PARAS}}            {{STEPS}}           {{SHOTS}}
     {{SECURITY_NOTE}}         {{TECH}}            {{RELATED}}            {{FAQ}}
+
+  {{DOMAIN}} is the host from site.config.json, substituted by the generator.
+  {{VERSION}} and {{TESTCOUNT}} survive into the output on purpose: they are
+  replaced in the browser by assets/js/i18n-apply.js from data-site-version and
+  the x-test-count meta, so a release is one attribute rather than twelve edits.
 -->
 <html lang="{{LANG}}" dir="{{DIR}}" data-site-version="{{VERSION}}">
 <head>

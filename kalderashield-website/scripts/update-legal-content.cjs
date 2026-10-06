@@ -7,10 +7,12 @@
 const fs = require('fs');
 const path = require('path');
 
+const { MAILTO_ADMIN } = require('./lib/site-config.cjs');
+
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
 
-const MAIL = '<a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>';
+const MAIL = MAILTO_ADMIN;
 
 const content = {
   en: {

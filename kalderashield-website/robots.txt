@@ -5,7 +5,7 @@ Allow: /
 # generated product/security/platform pages and the legal documents. The
 # sitemap lists every indexable URL; nothing else exists to crawl.
 
-# Without this line a crawler has to guess where the sitemap lives. The token is
-# substituted at deploy time like every other absolute URL here, and
-# check-placeholders.cjs fails the build if it is ever left unfilled.
-Sitemap: https://{{DOMAIN}}/sitemap.xml
+# Without this line a crawler has to guess where the sitemap lives. The host
+# comes from site.config.json, and check-placeholders.cjs fails the build if this
+# line and that file ever disagree.
+Sitemap: https://kalderashield.com/sitemap.xml

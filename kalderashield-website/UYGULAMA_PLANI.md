@@ -2,7 +2,7 @@
 
 **Tarih:** 29 Eylül 2026
 **Hedef:** `kalderashield-website/` iskeletini, KalderaShield ürününü (hafgit99/kalderashield) profesyonel biçimde tanıtan modern bir statik siteye dönüştürmek.
-**Mevcut temel:** Build'siz statik HTML + tek CSS + tek JS + 12 dil `data-i18n`; `{{DOMAIN}}` placeholder sistemi ve rebrand koruma gate'i (`scripts/check-placeholders.cjs`) hazır.
+**Mevcut temel:** Build'siz statik HTML + tek CSS + tek JS + 12 dil `data-i18n`; `kalderashield.com` placeholder sistemi ve rebrand koruma gate'i (`scripts/check-placeholders.cjs`) hazır.
 
 ---
 
@@ -11,7 +11,7 @@
 **Güçlü başlangıç (korumalı):**
 - Çok sayfalı iskelet: landing + download + 404, temiz URL yapısı
 - i18n mimarisi `data-i18n` deseninde kurulmuş (12 dil dosyası mevcut)
-- `{{DOMAIN}}` placeholder + `node scripts/check-placeholders.cjs` gate'i — **"Aegis" geçen her yerde başarısız olan** rebrand koruması dâhil
+- `site.config.json` tek kaynak (domain `kalderashield.com`, marka, iletişim adresleri) + `node scripts/check-placeholders.cjs` gate'i — **yayımlanan çıktıda "Aegis" geçen her yerde başarısız olan** rebrand koruması ve **yapılandırılmış domain dışı mutlak URL kontrolü** dâhil
 - `security.txt` iskeleti, robots, sitemap, webmanifest mevcut
 - `install.sh` mevcut (AegisVault'taki digest-pinned sürümden uyarlanmalı)
 
@@ -19,7 +19,7 @@
 - `assets/css/` ve `assets/js/` **boş** — tüm tasarım katmanı yazılacak
 - README "two legal pages" diyor ama **privacy.html / terms.html klasörde yok**
 - Repo README'sindeki `Security_Audit-92/100 (A+)` badge'i, aynı README'nin dürüst "bağımsız denetim yok" bildirimiyle **çelişiyor** (AegisVault dersimiz — düzeltilmeli)
-- Kritik yol: **{{DOMAIN}} alan adı kararı** — 28 nokta, sitemap, security.txt ve install.sh buna kilitli
+- Kritik yol: **kalderashield.com alan adı kararı** — 28 nokta, sitemap, security.txt ve install.sh buna kilitli
 
 ---
 
@@ -54,9 +54,9 @@
 | WP | İş | Not |
 |---|---|---|
 | 3.1 | nginx vhost şablonu: HSTS (preload), CSP `'self'` (+ self-hosted font), COOP/COEP/CORP, nosniff, referrer, permissions — **`nginx.conf` referans dosyası olarak repoya** | AegisVault'taki onaylı setin kopyası |
-| 3.2 | `security.txt` doldurma (Contact, Expires, Policy → kalderashield SECURITY.md) | |
+| 3.2 | `security.txt` — Contact/Canonical/Policy **dolduruldu** (`security@kalderashield.com`); Expires 2027-12-31 | Policy hâlâ `privacy.html`'i gösteriyor; SECURITY.md varsa oraya yönlendir |
 | 3.3 | Umami (mevcut VPS kurulumun) → `stats.` subdomain ya da same-origin proxy ile ölçüm; çerez banner'ı **gerekmez** | Şeffaflık: ayak izinde analytics kullanımı belirtilir |
-| 3.4 | `install.sh`: `{{DOMAIN}}` doldurma + **SHA-256 digest pinleme** (AegisVault install.sh deseninin aynısı) | |
+| 3.4 | `install.sh`: domain `site.config.json`'dan geliyor + **SHA-256 digest pinleme** çalışıyor | |
 
 ## 5. Faz 4 — Performans + Görseller (2 gün)
 
@@ -76,12 +76,13 @@
 
 ## 7. Faz 6 — Launch Kontrol Listesi
 
-- [ ] **Alan adı kararı** (kritik yol: `kalderashield.com` / `.io` / `.dev`?) → 28 `{{DOMAIN}}` noktasını doldur → gate PASS
-- [ ] DNS + Let's Encrypt (webroot) + nginx vhost canlı
+- [x] **Alan adı kararı** → `kalderashield.com` (2026-10-06). Tek kaynak `site.config.json`; 8948 domain placeholder'ı kaldırıldı, `check-placeholders.cjs` gate'i PASS
+- [x] **Posta altyapısı** (2026-10-06): `mail.kalderashield.com` Let's Encrypt sertifikası + deploy hook, DKIM (`mail._domainkey`, selector `mail`), SPF `ip4:… -all`, DMARC `p=none` + `rua`, PTR `mail.kalderashield.com`. `admin@kalderashield.com` gerçek kutu; `security@` / `postmaster@` / `abuse@` / `dmarc@` / `noreply@` alias. mail-tester **10/10**
+- [ ] DNS + Let's Encrypt (webroot) + nginx vhost canlı — **web tarafı hâlâ bekliyor**; mail için sertifika ve DNS tamam, `mail.kalderashield.com` yayında
 - [ ] GitHub: repo **Social preview** upload (og-card) + README badge düzeltmesi (`Security_Audit 92/100 A+` badge'i dürüst bildirimle çelişiyor → kaldır veya "internal review" yap)
-- [ ] GitHub repo description: zaten güncel ✓
+- [x] GitHub repo description: zaten güncel ✓
 - [ ] AegisVault sitesiyle ilişki kararı: kalderashield yeni ana markaysa aegisvault.xyz'e yönlendirme/duyuru sayfası planı
-- [ ] security.txt Expires tarihi takvime
+- [x] `security.txt` Expires tarihi takvime — `2027-12-31`, ~29 ay geçerli
 
 ---
 
@@ -97,7 +98,7 @@
 | Faz 5 | 1-2 gün | CI + deploy otomasyonu |
 | **Toplam** | **~2 hafta** | Launch-ready |
 
-Kritik yol: **alan adı kararı** (Faz 0'ı bloke etmez; Faz 3 sonu / launch öncesi gerekli).
+Kritik yol: **alan adı kararı** — 2026-10-06'da `kalderashield.com` ile kapandı. Kalan uçtaki iş web barındırma (nginx vhost + sertifika); mail tarafı tamamlandı.
 
 ---
 
