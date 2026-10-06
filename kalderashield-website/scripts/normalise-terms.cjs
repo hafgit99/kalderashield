@@ -24,6 +24,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { ADMIN_EMAIL } = require('./lib/site-config.cjs');
+
 const I18N_DIR = path.resolve(__dirname, '..', 'assets', 'js', 'i18n');
 
 const VALUES = {
@@ -103,18 +105,18 @@ const VALUES = {
     zh: '100% 离线 & 零知识',
   },
   'footer-link-support': {
-    en: 'Support & Contact (admin@{{DOMAIN}})',
-    tr: 'Destek & İletişim (admin@{{DOMAIN}})',
-    de: 'Support & Kontakt (admin@{{DOMAIN}})',
-    fr: 'Assistance & Contact (admin@{{DOMAIN}})',
-    es: 'Soporte y Contacto (admin@{{DOMAIN}})',
-    it: 'Supporto e Contatti (admin@{{DOMAIN}})',
-    pt: 'Suporte e Contato (admin@{{DOMAIN}})',
-    ar: 'الدعم والتواصل (admin@{{DOMAIN}})',
-    ru: 'Поддержка и контакты (admin@{{DOMAIN}})',
-    ja: 'サポート・お問い合わせ (admin@{{DOMAIN}})',
-    ko: '지원 및 문의 (admin@{{DOMAIN}})',
-    zh: '技术支持与联系 (admin@{{DOMAIN}})',
+    en: 'Support & Contact (${ADMIN_EMAIL})',
+    tr: 'Destek & İletişim (${ADMIN_EMAIL})',
+    de: 'Support & Kontakt (${ADMIN_EMAIL})',
+    fr: 'Assistance & Contact (${ADMIN_EMAIL})',
+    es: 'Soporte y Contacto (${ADMIN_EMAIL})',
+    it: 'Supporto e Contatti (${ADMIN_EMAIL})',
+    pt: 'Suporte e Contato (${ADMIN_EMAIL})',
+    ar: 'الدعم والتواصل (${ADMIN_EMAIL})',
+    ru: 'Поддержка и контакты (${ADMIN_EMAIL})',
+    ja: 'サポート・お問い合わせ (${ADMIN_EMAIL})',
+    ko: '지원 및 문의 (${ADMIN_EMAIL})',
+    zh: '技术支持与联系 (${ADMIN_EMAIL})',
   },
 };
 

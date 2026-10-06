@@ -19,6 +19,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { ORIGIN } = require('./lib/site-config.cjs');
+
 const root = path.resolve(__dirname, '..');
 
 /* The published surface: every index.html plus the two legal pages. */
@@ -112,7 +114,7 @@ for (const file of files) {
   if (description) descriptions.set(description, [...(descriptions.get(description) || []), rel]);
 
   if (!canonical) problems.push(`${rel}: canonical yok`);
-  else if (!canonical.startsWith('https://{{DOMAIN}}' + expectedCanonical(file))) {
+  else if (!canonical.startsWith(ORIGIN + expectedCanonical(file))) {
     problems.push(`${rel}: canonical "${canonical}" beklenen yol "${expectedCanonical(file)}" degil`);
   }
 

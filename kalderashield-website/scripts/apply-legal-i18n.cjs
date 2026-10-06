@@ -12,6 +12,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { ADMIN_EMAIL } = require('./lib/site-config.cjs');
+
 const I18N_DIR = path.resolve(__dirname, '..', 'assets', 'js', 'i18n');
 
 // Markup must survive translation: applyText switches to innerHTML when the
@@ -117,18 +119,18 @@ const TRANSLATIONS = {
     zh: '4. 联系方式',
   },
   'privacy-p1-4': {
-    en: 'Privacy questions: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    tr: 'Gizlilik sorularınız için: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    de: 'Fragen zum Datenschutz: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    fr: 'Questions relatives à la vie privée : <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    es: 'Preguntas sobre privacidad: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    it: 'Domande sulla privacy: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    pt: 'Perguntas sobre privacidade: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ar: 'أسئلة الخصوصية: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ja: 'プライバシーに関するご質問: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ko: '개인정보 문의: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ru: 'Вопросы о конфиденциальности: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    zh: '隐私相关问题：<a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
+    en: 'Privacy questions: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    tr: 'Gizlilik sorularınız için: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    de: 'Fragen zum Datenschutz: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    fr: 'Questions relatives à la vie privée : <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    es: 'Preguntas sobre privacidad: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    it: 'Domande sulla privacy: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    pt: 'Perguntas sobre privacidade: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ar: 'أسئلة الخصوصية: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ja: 'プライバシーに関するご質問: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ko: '개인정보 문의: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ru: 'Вопросы о конфиденциальности: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    zh: '隐私相关问题：<a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
   },
   'privacy-governing': {
     en: 'In case of any discrepancy, the Turkish text of this policy governs.',
@@ -286,18 +288,18 @@ const TRANSLATIONS = {
     zh: '5. 联系方式',
   },
   'terms-p1-5': {
-    en: 'Questions about these terms: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    tr: 'Şartlar hakkındaki sorularınız için: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    de: 'Fragen zu diesen Bedingungen: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    fr: 'Questions sur ces conditions : <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    es: 'Preguntas sobre estos términos: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    it: 'Domande su questi termini: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    pt: 'Perguntas sobre estes termos: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ar: 'أسئلة حول هذه الشروط: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ja: '本条件に関するお問い合わせ: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ko: '본 이용약관에 관한 문의: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    ru: 'Вопросы об этих условиях: <a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
-    zh: '关于本条款的问题：<a href="mailto:admin@{{DOMAIN}}">admin@{{DOMAIN}}</a>',
+    en: 'Questions about these terms: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    tr: 'Şartlar hakkındaki sorularınız için: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    de: 'Fragen zu diesen Bedingungen: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    fr: 'Questions sur ces conditions : <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    es: 'Preguntas sobre estos términos: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    it: 'Domande su questi termini: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    pt: 'Perguntas sobre estes termos: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ar: 'أسئلة حول هذه الشروط: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ja: '本条件に関するお問い合わせ: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ko: '본 이용약관에 관한 문의: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    ru: 'Вопросы об этих условиях: <a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
+    zh: '关于本条款的问题：<a href="mailto:${ADMIN_EMAIL}">${ADMIN_EMAIL}</a>',
   },
   'terms-governing': {
     en: 'In case of any discrepancy, the Turkish text of these terms governs.',

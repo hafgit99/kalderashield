@@ -21,10 +21,10 @@ const CONTENT = path.join(root, 'content', 'pages');
 const TEMPLATE = path.join(root, 'assets', 'templates', 'page.html');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
 
+const { DOMAIN, ORIGIN, REPOSITORY } = require('./lib/site-config.cjs');
+
 const LANGS = ['tr', 'en', 'de', 'fr', 'es', 'it', 'pt', 'ru', 'ja', 'zh', 'ko', 'ar'];
 const RTL = new Set(['ar']);
-
-const DOMAIN_TOKEN = '{{DOMAIN}}';
 
 /* Pages can set "section" to publish outside /urun/: section "guvenlik" with
  * slug "tehdit-modeli" lands on /guvenlik/tehdit-modeli/. A page whose slug
@@ -185,8 +185,8 @@ ${panel}
         <div class="menu-panel menu-panel-sm">
           <ul>
             <li><a href="/kaynak-kodu/" data-i18n="footer-link-source">${label('footer-link-source')}</a></li>
-            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">${label('footer-link-issues')}</a></li>
-            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">${label('footer-link-discussions')}</a></li>
+            <li><a href="https://github.com/${REPOSITORY}/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">${label('footer-link-issues')}</a></li>
+            <li><a href="https://github.com/${REPOSITORY}/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">${label('footer-link-discussions')}</a></li>
           </ul>
         </div>
       </details>
@@ -277,7 +277,7 @@ function render(page, locale, dict, pageList) {
       case 'LANG': return locale;
       case 'DIR': return RTL.has(locale) ? 'rtl' : 'ltr';
       case 'VERSION': return VERSION;
-      case 'DOMAIN': return DOMAIN_TOKEN;
+      case 'DOMAIN': return DOMAIN;
       case 'SLUG': return page.slug;
       case 'CANONICAL': return pageHref(page);
       // The <head> follows the locale being written. Reading English here while
@@ -300,7 +300,7 @@ function render(page, locale, dict, pageList) {
       case 'PRIMARY_HREF': return src.primaryHref || '/download/';
       case 'SECONDARY_LABEL': return esc(src.secondary);
       case 'SECONDARY_KEY': return k + '-secondary';
-      case 'SECONDARY_HREF': return src.secondaryHref || 'https://github.com/hafgit99/kalderashield';
+      case 'SECONDARY_HREF': return src.secondaryHref || `https://github.com/${REPOSITORY}`;
 
       case 'WHAT_LABEL': return esc(src.whatLabel);
       case 'WHAT_KEY': return k + '-what-label';
@@ -509,9 +509,9 @@ patchMenu(path.join(root, '404.html'), '/', pageList, dicts);
 console.log(`menuler guncellendi (${pageList.length} urun, 3 sayfa)`);
 
 /* The sitemap is derived from the same page list, so a new page cannot be
- * shipped without its search entry. The {{DOMAIN}} token is left in place:
- * the real domain is a launch (Faz 6) decision and check-placeholders keeps
- * the token visible until it exists. */
+ * shipped without its search entry. The domain comes from site.config.json, so
+ * the entries carry the real host rather than a token someone has to remember
+ * to replace before a deploy. */
 function buildSitemap(pageList) {
   const sectionPriority = { urun: '0.8', guvenlik: '0.8', eklenti: '0.8', platformlar: '0.7', 'kaynak-kodu': '0.7', sss: '0.6' };
   const fixed = [
@@ -531,7 +531,7 @@ function buildSitemap(pageList) {
   const urls = [...fixed, ...generated, ...legal]
     .map(
       (u) => `  <url>
-    <loc>https://${DOMAIN_TOKEN}${u.loc}</loc>
+    <loc>${ORIGIN}${u.loc}</loc>
     <changefreq>${u.freq}</changefreq>
     <priority>${u.pri}</priority>
   </url>`

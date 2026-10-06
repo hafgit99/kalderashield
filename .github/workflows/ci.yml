@@ -59,7 +59,19 @@ jobs:
   website-gates:
     name: Website quality gates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 25, not 10. `npx playwright install --with-deps chromium` below takes
+    # ~10 minutes on a cold runner -- Chromium plus ~32MB of apt packages -- and
+    # at 10 this job was killed at 10m16s before a single gate had run, so a copy
+    # or i18n failure surfaced as a cancelled run with no output at all. The
+    # browser is the long pole in here, not the gates: npm ci plus the fourteen
+    # checks is about two minutes. Splitting the contrast audit into its own job
+    # was tried to get the browser out of this budget; that job failed twice in
+    # a row at "Prepare all required actions" with "Unable to resolve action
+    # actions/setup-node@820762... -- unable to find version", while the other
+    # jobs in the same run resolved that same SHA, so the split stayed broken
+    # and the timeout stayed too low. One job with enough minutes is the state
+    # that actually runs.
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

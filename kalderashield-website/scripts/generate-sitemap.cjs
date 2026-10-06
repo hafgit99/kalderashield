@@ -21,9 +21,10 @@
 const fs = require('fs');
 const path = require('path');
 
+const { DOMAIN } = require('./lib/site-config.cjs');
+
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
-const DOMAIN = '{{DOMAIN}}';
 const SITE = path.join(root, 'sitemap.xml');
 
 const locales = JSON.parse(fs.readFileSync(path.join(root, 'assets', 'locales.json'), 'utf8'));

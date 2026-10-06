@@ -34,11 +34,11 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const structuredData = require('./lib/structured-data.cjs');
+const { DOMAIN } = require('./lib/site-config.cjs');
 
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
 const LOCALES_FILE = path.join(root, 'assets', 'locales.json');
-const DOMAIN = '{{DOMAIN}}';
 
 if (!fs.existsSync(LOCALES_FILE)) {
   console.error('assets/locales.json yok. Once scripts/measure-locale-coverage.cjs calistir.');

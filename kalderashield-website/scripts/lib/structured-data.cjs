@@ -24,13 +24,12 @@
  * heading otherwise. No string is invented, because an untranslated section
  * label in a breadcrumb is worse than a shallower breadcrumb.
  */
-const DOMAIN = '{{DOMAIN}}';
-const BRAND = 'KalderaShield';
+const { DOMAIN, BRAND, REPOSITORY } = require('./site-config.cjs');
 
 /* The repository is read out of the download page rather than repeated here, so
  * a project move changes one file instead of every schema block on the site. */
 function repositoryUrl() {
-  return 'https://github.com/hafgit99/kalderashield';
+  return `https://github.com/${REPOSITORY}`;
 }
 
 function releasesUrl() {

@@ -1,0 +1,12 @@
+{
+  "domain": "kalderashield.com",
+  "brand": "KalderaShield",
+  "repository": "hafgit99/kalderashield",
+  "email": {
+    "admin": "admin@kalderashield.com",
+    "security": "security@kalderashield.com"
+  },
+  "legal": {
+    "governingLaw": "Türkiye Cumhuriyeti"
+  }
+}

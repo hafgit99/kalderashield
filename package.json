@@ -128,7 +128,6 @@
     "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-biometric": "^2.3.3",
     "@tauri-apps/plugin-updater": "^2.12.0",
@@ -150,6 +149,7 @@
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/typescript-checker": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.11.5",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
