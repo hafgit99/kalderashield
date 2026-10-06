@@ -140,7 +140,7 @@
     "lucide-react": "^1.48.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.1",
-    "react-dom": "^19.0.1",
+    "react-dom": "^19.3.0",
     "wa-sqlite": "^1.0.0"
   },
   "devDependencies": {
@@ -159,7 +159,7 @@
     "@types/node": "^26.6.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "adm-zip": "0.6.1",
