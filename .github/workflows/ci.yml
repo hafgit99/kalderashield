@@ -59,7 +59,7 @@ jobs:
   website-gates:
     name: Website quality gates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -70,19 +70,22 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Three of the scripts below are not dependency-free, which the previous
+      # Two of the scripts below are not dependency-free, which the previous
       # version of this job assumed:
       #   generate-locales  jsdom, to apply a dictionary to a document offline
-      #   audit-contrast    playwright, to measure rendered text in three themes
       #   sync-claims       vitest, to read the real test count
       # The rest are plain Node. Installing the whole tree is the honest option:
-      # the lockfile is already there and these three would otherwise fail on
+      # the lockfile is already there and these two would otherwise fail on
       # the first line with a module-not-found that says nothing about the site.
+      #
+      # The contrast audit is deliberately not in this job. It is the one gate
+      # that needs a browser, and `playwright install --with-deps chromium`
+      # takes close to ten minutes on its own -- downloading Chromium plus ~32MB
+      # of apt packages. That made the whole job exceed its timeout, so a copy
+      # or i18n failure was reported as a cancelled run with no gate output.
+      # It lives in the website-contrast job below, which budgets for it.
       - name: Install dependencies
         run: npm ci
-
-      - name: Install Chromium for the contrast audit
-        run: npx playwright install --with-deps chromium
 
       - name: Copy and dictionary gates
         working-directory: kalderashield-website
@@ -93,14 +96,6 @@ jobs:
           node scripts/audit-page-packs.cjs
           node scripts/audit-translation-scripts.cjs
           node scripts/audit-page-meta.cjs
-
-      # Walks the rendered pages in three theme states -- including a dark OS with
-      # the toggle set to light -- and fails on any text under WCAG AA. Reading
-      # the palette does not catch this: --text-faint passed on --bg and failed on
-      # --bg-raised, which is where the footer headings actually sit.
-      - name: Text contrast meets WCAG AA
-        working-directory: kalderashield-website
-        run: node scripts/audit-contrast.cjs
 
       # The homepage publishes how many tests the suite has. It used to be a
       # hardcoded number in the markup and in twelve translation files, and it
@@ -192,6 +187,52 @@ jobs:
       # production domain does not exist yet (Faz 6), which is a documented,
       # time-boxed state rather than a regression. Add it here when the domain
       # is chosen.
+
+  # The one gate that renders pages. Kept in its own job so the browser download
+  # cannot eat the budget of the copy and i18n gates -- when they shared a
+  # 10-minute timeout, `playwright install --with-deps chromium` (~10 min on a
+  # cold runner: Chromium plus ~32MB of apt packages) pushed the job over it and
+  # every other gate reported nothing at all.
+  website-contrast:
+    name: Website text contrast (WCAG AA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0ffc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Keyed on the resolved playwright-core version, not "latest": the browser
+      # build must match the library that launches it, and a lockfile pin is the
+      # only thing here that says which build that is. Restoring is worth roughly
+      # 150MB of download on a cache hit; a miss falls through to the normal
+      # install, which is always correct, just slow.
+      - name: Cache the Playwright browser
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Chromium for the contrast audit
+        run: npx playwright install --with-deps chromium
+
+      # Walks the rendered pages in three theme states -- including a dark OS with
+      # the toggle set to light -- and fails on any text under WCAG AA. Reading
+      # the palette does not catch this: --text-faint passed on --bg and failed on
+      # --bg-raised, which is where the footer headings actually sit.
+      - name: Text contrast meets WCAG AA
+        working-directory: kalderashield-website
+        run: node scripts/audit-contrast.cjs
 
   rust-tests:
     name: Rust check and tests
