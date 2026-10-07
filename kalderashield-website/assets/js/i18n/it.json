@@ -537,8 +537,8 @@
   "sec-verify-btn": "Visualizza guida alla verifica",
   "donate-spotlight-title": "Sostieni lo sviluppo indipendente e open source",
   "donate-spotlight-desc": "KalderaShield è sviluppato al 100% dalla community, senza venture capital, annunci o tracciamento. Le donazioni sostengono audit indipendenti e infrastruttura.",
-  "win-store-title": "Anteprima non firmata — candidatura non ancora presentata",
-  "win-store-desc": "<strong>Questi file non sono firmati.</strong> Windows mostrerà \"Il PC è protetto\" e sarà necessario fare clic su \"Altre informazioni\" → \"Esegui comunque\" per avviare il programma di installazione. È previsto e non significa che il file sia malware. Verifica il digest SHA-256 in SHA256SUMS.txt prima di eseguirlo. Questa è un'<em>anteprima</em>, non una release stabile. Perché non firmato: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi non c'è ancora un certificato con cui firmare. Il progetto ha preparato una domanda alla SignPath Foundation per la firma open source gratuita; non è ancora stata inoltrata. Quando la firma sarà disponibile, le successive release Windows saranno firmate e questo avviso rimosso.",
+  "win-store-title": "Anteprima non firmata — pubblicata",
+  "win-store-desc": "<strong>Questi file non sono firmati.</strong> Windows SmartScreen mostrerà «Il PC è protetto» e sarà necessario fare clic su «Altre informazioni» → «Esegui comunque» per avviare il programma di installazione. È previsto e non significa che il file sia malware. Verifica il digest SHA-256 in SHA256SUMS.txt prima di eseguirlo. Questa è un'<em>anteprima</em>: non una release stabile, e <code>latest</code> non punta a essa. Perché non firmato: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi non c'è ancora un certificato con cui firmare. La domanda alla SignPath Foundation <strong>non è ancora stata inoltrata</strong>. Quando la firma sarà disponibile, le successive release Windows saranno firmate e questo avviso rimosso.",
   "win-store-cta": "Segui questa pagina",
   "win-pinned-note": "Questo pacchetto Windows non è firmato: senza un certificato di firma del codice, Windows può mostrare un avviso SmartScreen durante l’installazione. Il checksum SHA-256 permette di verificare che il file non sia stato modificato.",
   "privacy-eyebrow": "Note legali",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "Registra lo sblocco di piattaforma così l’accesso quotidiano è uno sguardo o un PIN, con il supporto di TPM 2.0. La password principale resta sempre la vera radice del gestore.",
   "p-windows-sec-title": "Particolarità di Windows che conviene conoscere",
   "p-windows-sec-label": "Firme e SmartScreen",
-  "p-windows-sec-body": "Gli installer Windows <strong>non sono firmati</strong> e non portano una firma Authenticode. Non c'è un certificato di firma: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi al momento viene pubblicata soltanto un'<em>anteprima</em> etichettata esplicitamente. Questi file attivano l'avviso SmartScreen «Il PC è protetto» e sarà necessario fare clic su «Altre informazioni» → «Esegui comunque»: è previsto. Verifica il digest SHA-256 in SHA256SUMS.txt prima di installare. Una domanda alla SignPath Foundation per la firma open source gratuita è stata preparata ma non ancora inoltrata; quando la firma sarà disponibile, le release successive saranno firmate e questo avviso scomparirà.",
+  "p-windows-sec-body": "Gli installer Windows sono pubblicati come <strong>anteprima non firmata</strong> e non portano una firma Authenticode. Non c'è un certificato di firma: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi l'anteprima è contrassegnata come <em>pre-release</em> e <code>latest</code> non punta a essa. I file non firmati attivano l'avviso SmartScreen «Il PC è protetto» e sarà necessario fare clic su «Altre informazioni» → «Esegui comunque»: è previsto. Verifica il digest SHA-256 in SHA256SUMS.txt prima di installare. Una domanda alla SignPath Foundation per la firma open source gratuita è stata preparata ma non ancora inoltrata; quando la firma sarà disponibile, le release successive saranno firmate e questo avviso scomparirà.",
   "p-windows-tech1-title": "Architettura x64",
   "p-windows-tech1-desc": "Un solo download serve per entrambi. L’applicazione è distribuita come app desktop Tauri con un’interfaccia basata su WebView.",
   "p-windows-tech2-title": "Sblocco con Windows Hello",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "stato dell'audit di sicurezza",
   "csp-p1-19-head": "KalderaShield è un gestore di password offline-first a conoscenza zero. I contenuti della cassaforte sono cifrati sul dispositivo con chiavi derivate dalla password principale e non vengono mai trasmessi. Non c'è alcun account, alcun servizio di sincronizzazione, alcuna telemetria e alcuna analisi. I binari Windows non contengono alcun client di rete oltre ai componenti del sistema operativo stesso. Testo completo:",
   "csp-p1-19-link": "Informativa sulla privacy",
-  "csp-p1-19-tail": "Il comportamento dei componenti di terze parti che incid sugli utenti è coperto da LICENSE-3RD-PARTY.md."
+  "csp-p1-19-tail": "Il comportamento dei componenti di terze parti che incid sugli utenti è coperto da LICENSE-3RD-PARTY.md.",
+  "win-preview-link": "Scarica l'anteprima non firmata da GitHub Releases",
+  "win-preview-assets": "Programma di installazione NSIS (.exe), pacchetto MSI ed EXE portatile: tutti non firmati.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

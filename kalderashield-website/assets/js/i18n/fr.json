@@ -537,8 +537,8 @@
   "sec-verify-btn": "Consulter le guide de vérification",
   "donate-spotlight-title": "Soutenez le développement indépendant et open source",
   "donate-spotlight-desc": "KalderaShield est développé à 100 % par et pour la communauté, sans capital-risque, publicité ni suivi. Les dons financent les audits indépendants et l'infrastructure.",
-  "win-store-title": "Aperçu non signé — candidature pas encore déposée",
-  "win-store-desc": "<strong>Ces fichiers ne sont pas signés.</strong> Windows affichera « Votre PC est protégé » et vous devrez cliquer sur « Informations » → « Exécuter quand même » pour lancer l'installeur. C'est attendu et cela ne signifie pas que le fichier est un logiciel malveillant. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant de l'exécuter. Ceci est une <em>préversion</em>, pas une version stable. Pourquoi non signé : la chaîne de publication traite une version de bureau non signée comme un échec, il n'y a donc pas encore de certificat de signature. Le projet a préparé une candidature auprès de la SignPath Foundation pour la signature open source gratuite ; elle n'a pas encore été déposée. Dès que la signature sera possible, les versions Windows suivantes seront signées et cet avertissement supprimé.",
+  "win-store-title": "Aperçu non signé — publié",
+  "win-store-desc": "<strong>Ces fichiers ne sont pas signés.</strong> Windows SmartScreen affichera « Votre PC est protégé » et vous devrez cliquer sur « Informations » → « Exécuter quand même » pour lancer l'installeur. C'est attendu et cela ne signifie pas que le fichier est un logiciel malveillant. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant de l'exécuter. Ceci est une <em>préversion</em> : pas une version stable, et <code>latest</code> ne pointe pas dessus. Pourquoi non signé : la chaîne de publication traite une version de bureau non signée comme un échec, il n'y a donc pas encore de certificat de signature. Une candidature auprès de la SignPath Foundation <strong>n'a pas encore été déposée</strong>. Dès que la signature sera possible, les versions Windows suivantes seront signées et cet avertissement supprimé.",
   "win-store-cta": "Suivez cette page",
   "win-pinned-note": "Ce paquet Windows n'est pas signé : sans certificat de signature de code, Windows peut afficher un avertissement SmartScreen lors de l'installation. La somme de contrôle SHA-256 permet de vérifier que le fichier est inchangé.",
   "privacy-eyebrow": "Mentions légales",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "Inscrivez le déverrouillage de plateforme pour que l’accès quotidien soit un regard ou un code PIN, adossé au TPM 2.0. Le mot de passe principal demeure toujours la vraie racine du coffre.",
   "p-windows-sec-title": "Ce qu’il faut savoir côté Windows",
   "p-windows-sec-label": "Signatures et SmartScreen",
-  "p-windows-sec-body": "Les installeurs Windows sont <strong>non signés</strong> et ne portent pas de signature Authenticode. Il n'y a pas de certificat de signature : la chaîne de publication traite une version de bureau non signée comme un échec, donc seule une <em>préversion</em> explicitement étiquetée est publiée pour l'instant. Ces fichiers déclenchent l'avertissement SmartScreen « Votre PC est protégé », et vous devrez cliquer sur « Informations » → « Exécuter quand même » — c'est attendu. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant l'installation. Une candidature auprès de la SignPath Foundation pour la signature open source gratuite a été préparée mais n'a pas encore été déposée ; dès que la signature sera possible, les versions suivantes seront signées et cet avertissement disparaîtra.",
+  "p-windows-sec-body": "Les installeurs Windows sont publiés en <strong>aperçu non signé</strong> et ne portent pas de signature Authenticode. Il n'y a pas de certificat de signature : la chaîne de publication traite une version de bureau non signée comme un échec, donc l'aperçu est marqué comme <em>préversion</em> et <code>latest</code> ne pointe pas dessus. Les fichiers non signés déclenchent l'avertissement SmartScreen « Votre PC est protégé », et vous devrez cliquer sur « Informations » → « Exécuter quand même » pour lancer l'installeur ; c'est attendu. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant l'installation. Une candidature auprès de la SignPath Foundation pour la signature open source gratuite a été préparée mais pas encore déposée ; dès que la signature sera possible, les versions suivantes seront signées et cet avertissement disparaîtra.",
   "p-windows-tech1-title": "Architecture x64",
   "p-windows-tech1-desc": "Un seul téléchargement sert aux deux. L’application est livrée comme application de bureau Tauri avec une interface en WebView.",
   "p-windows-tech2-title": "Déverrouillage Windows Hello",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "statut de l'audit de sécurité",
   "csp-p1-19-head": "KalderaShield est un gestionnaire de mots de passe hors ligne et à connaissance nulle. Le contenu du coffre est chiffré sur l'appareil avec des clés dérivées du mot de passe principal et n'est jamais transmis. Il n'y a ni compte, ni service de synchronisation, ni télémétrie, ni analyse. Les binaires Windows ne contiennent aucun client réseau, hormis les composants du système d'exploitation lui-même. Texte complet :",
   "csp-p1-19-link": "Politique de confidentialité",
-  "csp-p1-19-tail": "Le comportement des composants tiers qui affecte les utilisateurs est couvert par LICENSE-3RD-PARTY.md."
+  "csp-p1-19-tail": "Le comportement des composants tiers qui affecte les utilisateurs est couvert par LICENSE-3RD-PARTY.md.",
+  "win-preview-link": "Télécharger l'aperçu non signé depuis GitHub Releases",
+  "win-preview-assets": "Installeur NSIS (.exe), paquet MSI et EXE portable — tous non signés.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

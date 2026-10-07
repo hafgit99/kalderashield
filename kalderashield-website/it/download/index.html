@@ -332,9 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 a 64 bit e successivi</p>
           <p data-i18n="dl-c1-desc">Installer nativo basato su Tauri (MSI) o eseguibile portatile autonomo.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Anteprima non firmata — candidatura non ancora presentata</strong></p>
-            <p data-i18n="win-store-desc"><strong>Questi file non sono firmati.</strong> Windows mostrerà "Il PC è protetto" e sarà necessario fare clic su "Altre informazioni" → "Esegui comunque" per avviare il programma di installazione. È previsto e non significa che il file sia malware. Verifica il digest SHA-256 in SHA256SUMS.txt prima di eseguirlo. Questa è un'<em>anteprima</em>, non una release stabile. Perché non firmato: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi non c'è ancora un certificato con cui firmare. Il progetto ha preparato una domanda alla SignPath Foundation per la firma open source gratuita; non è ancora stata inoltrata. Quando la firma sarà disponibile, le successive release Windows saranno firmate e questo avviso rimosso.</p>
+            <p><strong data-i18n="win-store-title">Anteprima non firmata — pubblicata</strong></p>
+            <p data-i18n="win-store-desc"><strong>Questi file non sono firmati.</strong> Windows SmartScreen mostrerà «Il PC è protetto» e sarà necessario fare clic su «Altre informazioni» → «Esegui comunque» per avviare il programma di installazione. È previsto e non significa che il file sia malware. Verifica il digest SHA-256 in SHA256SUMS.txt prima di eseguirlo. Questa è un'<em>anteprima</em>: non una release stabile, e <code>latest</code> non punta a essa. Perché non firmato: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi non c'è ancora un certificato con cui firmare. La domanda alla SignPath Foundation <strong>non è ancora stata inoltrata</strong>. Quando la firma sarà disponibile, le successive release Windows saranno firmate e questo avviso rimosso.</p>
           </div>
+          <p class="pick-req" data-i18n="win-preview-assets">Programma di installazione NSIS (.exe), pacchetto MSI ed EXE portatile: tutti non firmati.</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview" rel="noopener noreferrer" data-i18n="win-preview-link">Scarica l'anteprima non firmata da GitHub Releases</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/it/code-signing-policy.html" data-i18n="dl-csp-link">Informativa sulla firma del codice</a></p>
         </article>
 

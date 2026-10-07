@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">알아두어야 할 Windows 특이 사항</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">서명과 SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Windows 설치 관리자는 <strong>서명되어 있지 않으며</strong> Authenticode 서명도 없습니다. 서명 인증서가 없기 때문입니다. 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 현재는 명시적으로 라벨된 <em>프리릴리스</em>만 게시됩니다. 이 파일에서는 Windows SmartScreen "PC가 보호됩니다" 경고가 표시되며, 실행하려면 "자세히 정보" → "그래도 실행"을 눌러야 합니다. 이는 예상된 동작입니다. 설치하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 오픈소스 무료 서명을 위한 SignPath Foundation 신청은 준비됐지만 아직 제출하지 않았으며, 서명이 가능해지면 이후 릴리스는 서명되고 이 경고는 사라집니다.</p>
+        <p data-i18n="p-windows-sec-body">Windows 설치 관리자는 <strong>서명 없는 미리보기</strong>로 게시되며 Authenticode 서명이 없습니다. 서명 인증서가 없기 때문입니다. 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 미리보기는 <em>프리릴리스</em>로 표시되며 <code>latest</code>도 이를 가리키지 않습니다. 서명되지 않은 파일에서는 Windows SmartScreen "PC가 보호됩니다" 경고가 표시되고, 설치 관리자를 실행하려면 "자세히 정보" → "그래도 실행"을 눌러야 합니다. 이는 예상된 동작입니다. 설치하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 오픈소스 무료 서명을 위한 SignPath Foundation 신청은 준비됐지만 아직 제출하지 않았으며, 서명이 가능해지면 이후 릴리스는 서명되고 이 경고는 사라집니다.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">

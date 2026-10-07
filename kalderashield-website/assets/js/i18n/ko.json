@@ -537,8 +537,8 @@
   "sec-verify-btn": "검증 가이드 보기",
   "donate-spotlight-title": "독립적인 오픈 소스 개발 후원하기",
   "donate-spotlight-desc": "KalderaShield는 벤처 투자, 광고, 사용자 추적 없이 100% 커뮤니티 주도로 개발됩니다. 기부금은 독립적인 보안 감사 및 인프라 유지에 사용됩니다.",
-  "win-store-title": "서명 없는 미리보기 — 서명 신청 아직 제출되지 않음",
-  "win-store-desc": "<strong>이 파일들은 서명되어 있지 않습니다.</strong> Windows가 \"PC가 보호됩니다\"를 표시하며, 설치 관리자를 실행하려면 \"자세히 정보\" → \"그래도 실행\"을 눌러야 합니다. 이는 예상된 동작이며 파일이 악성코드라는 뜻이 아닙니다. 실행하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 이는 <em>프리릴리스</em>이며 정식 릴리스가 아닙니다. 서명되지 않은 이유: 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 아직 서명할 인증서가 없습니다. 이 프로젝트는 오픈소스 무료 서명을 위한 SignPath Foundation 신청을 준비했으나 아직 제출하지 않았습니다. 서명이 가능해지면 이후 Windows 릴리스는 서명되고 이 경고는 제거됩니다.",
+  "win-store-title": "서명 없는 미리보기 — 게시됨",
+  "win-store-desc": "<strong>이 파일들은 서명되어 있지 않습니다.</strong> Windows SmartScreen가 \"PC가 보호됩니다\"를 표시하며, 설치 관리자를 실행하려면 \"자세히 정보\" → \"그래도 실행\"을 눌러야 합니다. 이는 예상된 동작이며 파일이 악성코드라는 뜻이 아닙니다. 실행하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 이는 <em>프리릴리스</em>로 정식 릴리스가 아니며 <code>latest</code>도 이를 가리키지 않습니다. 서명되지 않은 이유: 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 아직 서명할 인증서가 없습니다. SignPath Foundation 서명 신청은 <strong>아직 제출되지 않았습니다</strong>. 서명이 가능해지면 이후 Windows 릴리스는 서명되고 이 경고는 제거됩니다.",
   "win-store-cta": "이 페이지의 출시 정보를 확인해 주세요",
   "win-pinned-note": "이 Windows 패키지는 서명하지 않습니다. 코드 서명 인증서가 없어 Windows가 설치 시 SmartScreen 경고를 표시할 수있어요. SHA-256 체산사로 파일이 변경도버리었을 확인할 수있습니다.",
   "privacy-eyebrow": "법적 고지",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "플랫폼 잠금 해제를 등록하면 TPM 2.0 기반으로 매일의 접근이 한 번의 시선이나 PIN으로 이루어집니다. 마스터 비밀번호는 언제나 보관함의 실제 뿌리로 남습니다.",
   "p-windows-sec-title": "알아두어야 할 Windows 특이 사항",
   "p-windows-sec-label": "서명과 SmartScreen",
-  "p-windows-sec-body": "Windows 설치 관리자는 <strong>서명되어 있지 않으며</strong> Authenticode 서명도 없습니다. 서명 인증서가 없기 때문입니다. 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 현재는 명시적으로 라벨된 <em>프리릴리스</em>만 게시됩니다. 이 파일에서는 Windows SmartScreen \"PC가 보호됩니다\" 경고가 표시되며, 실행하려면 \"자세히 정보\" → \"그래도 실행\"을 눌러야 합니다. 이는 예상된 동작입니다. 설치하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 오픈소스 무료 서명을 위한 SignPath Foundation 신청은 준비됐지만 아직 제출하지 않았으며, 서명이 가능해지면 이후 릴리스는 서명되고 이 경고는 사라집니다.",
+  "p-windows-sec-body": "Windows 설치 관리자는 <strong>서명 없는 미리보기</strong>로 게시되며 Authenticode 서명이 없습니다. 서명 인증서가 없기 때문입니다. 릴리스 파이프라인이 서명되지 않은 데스크톱 릴리스를 실패로 취급하므로 미리보기는 <em>프리릴리스</em>로 표시되며 <code>latest</code>도 이를 가리키지 않습니다. 서명되지 않은 파일에서는 Windows SmartScreen \"PC가 보호됩니다\" 경고가 표시되고, 설치 관리자를 실행하려면 \"자세히 정보\" → \"그래도 실행\"을 눌러야 합니다. 이는 예상된 동작입니다. 설치하기 전에 SHA256SUMS.txt와 SHA-256 다이제스트를 대조하십시오. 오픈소스 무료 서명을 위한 SignPath Foundation 신청은 준비됐지만 아직 제출하지 않았으며, 서명이 가능해지면 이후 릴리스는 서명되고 이 경고는 사라집니다.",
   "p-windows-tech1-title": "x64 아키텍처",
   "p-windows-tech1-desc": "하나의 다운로드로 둘 다 처리합니다. 애플리케이션은 WebView 기반 프런트 엔드를 갖춘 Tauri 데스크톱 앱으로 배포됩니다.",
   "p-windows-tech2-title": "Windows Hello 잠금 해제",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "보안 감사 상태",
   "csp-p1-19-head": "KalderaShield는 오프라인 우선이며 제로 지식을 기반으로 한 비밀번호 관리자입니다. 보관함 내용은 기기 위에서 마스터 비밀번호에서 파생된 키로 암호화되며 절대 전송되지 않습니다. 계정도, 동기화 서비스도, 텔레메트리도, 분석도 없습니다. Windows 바이너리에는 운영 체제 자체의 구성요소를 제외한 어떤 네트워크 클라이언트도 들어 있지 않습니다. 전문:",
   "csp-p1-19-link": "개인정보 처리방침",
-  "csp-p1-19-tail": "사용자에게 영향을 미치는 타사 구성요소의 동작은 LICENSE-3RD-PARTY.md에 정리되어 있습니다."
+  "csp-p1-19-tail": "사용자에게 영향을 미치는 타사 구성요소의 동작은 LICENSE-3RD-PARTY.md에 정리되어 있습니다.",
+  "win-preview-link": "GitHub Releases에서 서명 없는 미리보기 다운로드",
+  "win-preview-assets": "NSIS 설치 관리자(.exe), MSI 패키지, 휴대형 EXE — 모두 서명 없음.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

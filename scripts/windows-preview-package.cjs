@@ -118,9 +118,22 @@ if (binaries.length === 0) {
  *
  * The version is read from each filename rather than trusted from the directory
  * name, so a stale file cannot hide behind a folder that was renamed.
+ *
+ * Comparison is on the significant components only, and this is not a detail.
+ * package.json carries `7.0.20.0` -- four components, Tauri's convention -- and
+ * the build writes `7.0.20.0` into the filenames. A strict string comparison
+ * against the three-component tag version would therefore reject the project's
+ * own current build and tell the maintainer to clean a directory that is already
+ * correct. A missing fourth component is a Tauri patch/revision number and does
+ * not change which release this is; a *different* value in the first three does.
  */
 const NAME_VERSION = /(\d+\.\d+\.\d+(?:\.\d+)?)/;
 const found = new Map();
+
+/* Compare as version tuples, dropping a fourth component. Leading zeroes and
+ * differing lengths beyond the third are normalised so `7.0.20` and `7.0.20.0`
+ * are the same release rather than a mismatch to be explained away. */
+const significant = (v) => String(v).split('.').slice(0, 3).join('.');
 
 for (const file of binaries) {
   const m = path.basename(file).match(NAME_VERSION);
@@ -133,7 +146,7 @@ for (const file of binaries) {
 }
 
 const expected = VERSION;
-const mismatched = [...found.keys()].filter((v) => v !== expected);
+const mismatched = [...found.keys()].filter((v) => significant(v) !== significant(expected));
 
 if (mismatched.length > 0) {
   console.error('REFUSING TO STAGE: the artifacts are not the version being released.');
@@ -142,7 +155,7 @@ if (mismatched.length > 0) {
   console.error(`  release tag would be : ${TAG}`);
   console.error('');
   for (const [v, files] of found) {
-    const mark = v === expected ? 'ok  ' : 'DIFF';
+    const mark = significant(v) === significant(expected) ? 'ok  ' : 'DIFF';
     console.error(`  [${mark}] ${v}`);
     files.forEach((f) => console.error(`           ${f}`));
   }

@@ -332,9 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64-bit and later</p>
           <p data-i18n="dl-c1-desc">Native Tauri-based installer (MSI) or standalone portable executable.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Unsigned preview — signing application not yet submitted</strong></p>
-            <p data-i18n="win-store-desc"><strong>These files are not signed.</strong> Windows SmartScreen will show "Windows protected your PC" and you must click "More info" → "Run anyway" to run the installer. This is expected and it does not mean the file is malware. Verify the SHA-256 digest against SHA256SUMS.txt before running it. This is a <em>pre-release</em>, not a stable release. Why unsigned: the release pipeline treats an unsigned desktop release as a failure, so there is no certificate to sign with yet. The project has prepared an application to the SignPath Foundation for free open-source signing; it has not yet been submitted. When signing is available, subsequent Windows releases will be signed and this warning will be removed.</p>
+            <p><strong data-i18n="win-store-title">Unsigned preview — published</strong></p>
+            <p data-i18n="win-store-desc"><strong>These files are not signed.</strong> Windows SmartScreen will show "Windows protected your PC" and you must click "More info" → "Run anyway" to run the installer. This is expected and it does not mean the file is malware. Verify the SHA-256 digest against SHA256SUMS.txt before running it. This is a <em>pre-release</em>: not a stable release, and <code>latest</code> does not point at it. Why unsigned: the release pipeline treats an unsigned desktop release as a failure, so there is no certificate to sign with yet. An application to the SignPath Foundation <strong>has not yet been submitted</strong>. When signing is available, subsequent Windows releases will be signed and this warning will be removed.</p>
           </div>
+          <p class="pick-req" data-i18n="win-preview-assets">NSIS installer (.exe), MSI package and portable EXE — all unsigned.</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview" rel="noopener noreferrer" data-i18n="win-preview-link">Download the unsigned preview from GitHub Releases</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/en/code-signing-policy.html" data-i18n="dl-csp-link">Code signing policy</a></p>
         </article>
 

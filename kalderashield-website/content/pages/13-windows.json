@@ -35,7 +35,7 @@
       ],
       "secTitle": "Windows specifics you should know",
       "secLabel": "Signatures and SmartScreen",
-      "secBody": "Windows installers are <strong>not signed</strong> and carry no Authenticode signature. There is no signing certificate: the release pipeline treats an unsigned desktop release as a failure, so only an explicitly labelled <em>pre-release</em> is published for now. These files will trigger the Windows SmartScreen \"Windows protected your PC\" warning, and you must click \"More info\" → \"Run anyway\" to run the installer — this is expected. Verify the SHA-256 digest against SHA256SUMS.txt before installing. An application to the SignPath Foundation for free open-source signing has been prepared but has not yet been submitted; once signing is available, subsequent releases will be signed and this warning goes away.",
+      "secBody": "Windows installers are published as an <strong>unsigned preview</strong> and carry no Authenticode signature. There is no signing certificate: the release pipeline treats an unsigned desktop release as a failure, so the preview is marked as a <em>pre-release</em> and <code>latest</code> does not point at it. Unsigned files trigger the Windows SmartScreen \"Windows protected your PC\" warning, and you must click \"More info\" → \"Run anyway\" to run the installer; this is expected. Verify the SHA-256 digest against SHA256SUMS.txt before installing. An application to the SignPath Foundation for free open-source signing <strong>has not yet been submitted</strong>; once signing is available, subsequent releases will be signed and this warning goes away.",
       "tech": [
         {
           "tag": "Windows 10 / 11",
@@ -117,7 +117,7 @@
       ],
       "secTitle": "Bilmeniz gereken Windows ayrıntıları",
       "secLabel": "İmzalar ve SmartScreen",
-      "secBody": "Windows kurucuları <strong>imzalı değildir</strong> ve Authenticode imzası taşımıyor. İmza sertifikası yok: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şu anda yalnızca açıkça etiketlenmiş bir <em>ön sürüm</em> yayımlanır. Bu dosyalarda Windows SmartScreen \"PC'niz korundu\" gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek — bu beklenen bir durumdur. Kurmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. İmzalama için SignPath Foundation programına hazırlık yapıldı, başvuru henüz gönderilmedi; imza sağlandığında sonraki sürümler imzalanacak ve bu uyarı kalkacak.",
+      "secBody": "Windows kurucuları <strong>imzasız önizleme</strong> olarak yayımlanmıştır ve Authenticode imzası taşımaz. İmza sertifikası yok: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden önizleme <em>ön sürüm</em> olarak işaretlenir ve <code>latest</code> ona işaret etmez. İmzalanmamış dosyalarda Windows SmartScreen \"PC'niz korundu\" uyarısı gösterir ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekir; bu beklenen bir durumdur. Kurmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. İmzalama için SignPath Foundation programına başvuru <strong>henüz gönderilmemiştir</strong>; imza sağlandığında sonraki sürümler imzalanacak ve bu uyarı kalkacak.",
       "tech": [
         {
           "tag": "Windows 10 / 11",

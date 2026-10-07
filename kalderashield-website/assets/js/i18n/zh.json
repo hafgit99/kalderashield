@@ -537,8 +537,8 @@
   "sec-verify-btn": "查看验证指南",
   "donate-spotlight-title": "支持独立的开源软件开发",
   "donate-spotlight-desc": "KalderaShield 完全由社区驱动开发，没有任何风险投资、商业广告或用户追踪。所有捐助均用于独立安全审计与基础设施维护。",
-  "win-store-title": "未签名预览 — 签名申请尚未提交",
-  "win-store-desc": "<strong>这些文件未签名。</strong>Windows 会显示\"已保护你的电脑\"，需要点击\"更多信息\"→\"仍要运行\"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>，不是稳定发行版。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。本项目已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。",
+  "win-store-title": "未签名预览 — 已发布",
+  "win-store-desc": "<strong>这些文件未签名。</strong>Windows SmartScreen 会显示\"已保护你的电脑\"，需要点击\"更多信息\"→\"仍要运行\"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>：不是稳定发行版，<code>latest</code> 也不会指向它。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。",
   "win-store-cta": "请关注此页面",
   "win-pinned-note": "这个 Windows 安装包未签名：因为没有代码签名证书，安装时 Windows 可能会显示 SmartScreen 警告。您可以通过 SHA-256 校验和确认文件未被修改。",
   "privacy-eyebrow": "法律",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "登记平台解锁，让日常访问只需一瞥或一个 PIN，并由 TPM 2.0 提供支撑。主密码始终是密码库真正的根源。",
   "p-windows-sec-title": "你应该了解的 Windows 特有事项",
   "p-windows-sec-label": "签名与 SmartScreen",
-  "p-windows-sec-body": "Windows 安装程序<strong>未签名</strong>，也不带 Authenticode 签名。没有签名证书：发布流水线把未签名的桌面发行版视为失败，因此目前只发布明确标注的<em>预发行版</em>。这些文件会触发 Windows SmartScreen 的\"已保护你的电脑\"提示，需要点击\"更多信息\"→\"仍要运行\"才能安装——这是预期行为。安装前请用 SHA256SUMS.txt 核对 SHA-256 摘要。已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交；签名可用后，后续发行版将签名，本提示也会消失。",
+  "p-windows-sec-body": "Windows 安装程序以<strong>未签名预览</strong>形式发布，不带 Authenticode 签名。没有签名证书：发布流水线把未签名的桌面发行版视为失败，因此该预览被标记为<em>预发行版</em>，<code>latest</code> 不会指向它。未签名文件会触发 Windows SmartScreen 的\"已保护你的电脑\"提示，需要点击\"更多信息\"→\"仍要运行\"才能运行安装程序——这是预期行为。安装前请用 SHA256SUMS.txt 核对 SHA-256 摘要。已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交；签名可用后，后续发行版将签名，本提示也会消失。",
   "p-windows-tech1-title": "x64 架构",
   "p-windows-tech1-desc": "一个下载包适用于两者。应用以 Tauri 桌面应用的形式发布，前端基于 WebView。",
   "p-windows-tech2-title": "Windows Hello 解锁",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "安全审计状态",
   "csp-p1-19-head": "KalderaShield 是一款离线优先、零知识的密码管理器。保管库内容在设备上使用由主密码派生的密钥加密，绝不传输。它没有账户、没有同步服务、没有遥测、没有分析。Windows 二进制文件中除操作系统自身的组件外，不含任何网络客户端。完整文本见",
   "csp-p1-19-link": "隐私政策",
-  "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。"
+  "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。",
+  "win-preview-link": "从 GitHub Releases 下载未签名预览版",
+  "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

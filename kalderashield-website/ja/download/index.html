@@ -332,9 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64ビット以降</p>
           <p data-i18n="dl-c1-desc">Tauri 最適化ネイティブ Windows MSI インストーラーまたはポータブル版 EXE。</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">未署名プレビュー — 署名申請は未提出</strong></p>
-            <p data-i18n="win-store-desc"><strong>これらのファイルは署名されていません。</strong> Windows が「PC を保護しています」と表示し、インストーラーを実行するには「詳細」→「実行する」をクリックする必要があります。これは想定された動作であり、ファイルがマルウェアであることを意味しません。実行する前に SHA256SUMS.txt と SHA-256 ダイジェストを照合してください。これは<em>プレリリース</em>であり、安定したリリースではありません。未署名である理由: リリースパイプラインは未署名のデスクトップリリースを失敗として扱うため、現時点で署名に使える証明書がありません。本プロジェクトはオープンソース向けの無料署名について SignPath Foundation への申請を準備済みですが、まだ提出していません。署名が可能になったら以降の Windows リリースは署名され、この警告は削除されます。</p>
+            <p><strong data-i18n="win-store-title">未署名プレビュー — 公開済み</strong></p>
+            <p data-i18n="win-store-desc"><strong>これらのファイルは署名されていません。</strong> Windows SmartScreen が「PC を保護しています」と表示され、インストーラーを実行するには「詳細」→「実行する」をクリックする必要があります。これは想定された動作であり、ファイルがマルウェアであることを意味しません。実行する前に SHA256SUMS.txt と SHA-256 ダイジェストを照合してください。これは<em>プレリリース</em>であり、安定したリリースではなく、<code>latest</code> もこれを指しません。未署名である理由: リリースパイプラインは未署名のデスクトップリリースを失敗として扱うため、現時点で署名に使える証明書がありません。SignPath Foundation への署名は<strong>まだ提出されていません</strong>。署名が可能になったら以降の Windows リリースは署名され、この警告は削除されます。</p>
           </div>
+          <p class="pick-req" data-i18n="win-preview-assets">NSIS インストーラー (.exe)、MSI パッケージ、ポータブル EXE — いずれも未署名。</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview" rel="noopener noreferrer" data-i18n="win-preview-link">GitHub Releases から未署名プレビューをダウンロード</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/ja/code-signing-policy.html" data-i18n="dl-csp-link">コード署名ポリシー</a></p>
         </article>
 

@@ -537,8 +537,8 @@
   "sec-verify-btn": "View Verification Guide",
   "donate-spotlight-title": "Support Independent & Open-Source Development",
   "donate-spotlight-desc": "KalderaShield is developed 100% community-driven without venture capital, advertisements, or user tracking. Donations sustain independent audits and infrastructure.",
-  "win-store-title": "Unsigned preview — signing application not yet submitted",
-  "win-store-desc": "<strong>These files are not signed.</strong> Windows SmartScreen will show \"Windows protected your PC\" and you must click \"More info\" → \"Run anyway\" to run the installer. This is expected and it does not mean the file is malware. Verify the SHA-256 digest against SHA256SUMS.txt before running it. This is a <em>pre-release</em>, not a stable release. Why unsigned: the release pipeline treats an unsigned desktop release as a failure, so there is no certificate to sign with yet. The project has prepared an application to the SignPath Foundation for free open-source signing; it has not yet been submitted. When signing is available, subsequent Windows releases will be signed and this warning will be removed.",
+  "win-store-title": "Unsigned preview — published",
+  "win-store-desc": "<strong>These files are not signed.</strong> Windows SmartScreen will show \"Windows protected your PC\" and you must click \"More info\" → \"Run anyway\" to run the installer. This is expected and it does not mean the file is malware. Verify the SHA-256 digest against SHA256SUMS.txt before running it. This is a <em>pre-release</em>: not a stable release, and <code>latest</code> does not point at it. Why unsigned: the release pipeline treats an unsigned desktop release as a failure, so there is no certificate to sign with yet. An application to the SignPath Foundation <strong>has not yet been submitted</strong>. When signing is available, subsequent Windows releases will be signed and this warning will be removed.",
   "win-store-cta": "Watch this page",
   "win-pinned-note": "This Windows package is unsigned: there is no code-signing certificate, so Windows may show a SmartScreen warning during installation. You can check that the file is unmodified with its SHA-256 checksum.",
   "privacy-eyebrow": "Legal",
@@ -1065,7 +1065,7 @@
   "p-windows-step3-desc": "Enroll platform unlock so daily access is a glance or a PIN, backed by TPM 2.0. The master password always remains the real root of the vault.",
   "p-windows-sec-title": "Windows specifics you should know",
   "p-windows-sec-label": "Signatures and SmartScreen",
-  "p-windows-sec-body": "Windows installers are <strong>not signed</strong> and carry no Authenticode signature. There is no signing certificate: the release pipeline treats an unsigned desktop release as a failure, so only an explicitly labelled <em>pre-release</em> is published for now. These files will trigger the Windows SmartScreen \"Windows protected your PC\" warning, and you must click \"More info\" → \"Run anyway\" to run the installer — this is expected. Verify the SHA-256 digest against SHA256SUMS.txt before installing. An application to the SignPath Foundation for free open-source signing has been prepared but has not yet been submitted; once signing is available, subsequent releases will be signed and this warning goes away.",
+  "p-windows-sec-body": "Windows installers are published as an <strong>unsigned preview</strong> and carry no Authenticode signature. There is no signing certificate: the release pipeline treats an unsigned desktop release as a failure, so the preview is marked as a <em>pre-release</em> and <code>latest</code> does not point at it. Unsigned files trigger the Windows SmartScreen \"Windows protected your PC\" warning, and you must click \"More info\" → \"Run anyway\" to run the installer; this is expected. Verify the SHA-256 digest against SHA256SUMS.txt before installing. An application to the SignPath Foundation for free open-source signing <strong>has not yet been submitted</strong>; once signing is available, subsequent releases will be signed and this warning goes away.",
   "p-windows-tech1-title": "x64",
   "p-windows-tech1-desc": "One download serves both. The application ships as a Tauri desktop app with a WebView-based front end.",
   "p-windows-tech2-title": "Windows Hello unlock",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "Security audit status",
   "csp-p1-19-head": "KalderaShield is an offline-first, zero-knowledge password manager. Vault contents are encrypted on the device with keys derived from the master password and are never transmitted. There is no account, no sync service, no telemetry and no analytics. The Windows binaries contain no network client of any kind beyond the operating system's own components. Full text:",
   "csp-p1-19-link": "Privacy policy",
-  "csp-p1-19-tail": "The behaviour of third-party components that affects users is covered by LICENSE-3RD-PARTY.md."
+  "csp-p1-19-tail": "The behaviour of third-party components that affects users is covered by LICENSE-3RD-PARTY.md.",
+  "win-preview-link": "Download the unsigned preview from GitHub Releases",
+  "win-preview-assets": "NSIS installer (.exe), MSI package and portable EXE — all unsigned.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

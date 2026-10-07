@@ -537,8 +537,8 @@
   "sec-verify-btn": "Verifizierungsanleitung ansehen",
   "donate-spotlight-title": "Unterstützen Sie die unabhängige Open-Source-Entwicklung",
   "donate-spotlight-desc": "KalderaShield wird zu 100 % von der Community getragen – ohne Risikokapital, Werbung oder Nutzertracking. Spenden finanzieren Sicherheitsprüfungen und Infrastruktur.",
-  "win-store-title": "Unsignierte Vorschau — Signatur-Antrag noch nicht gestellt",
-  "win-store-desc": "<strong>Diese Dateien sind nicht signiert.</strong> Windows zeigt \"Der PC ist geschützt\", und Sie müssen auf \"Weitere Informationen\" → \"Trotzdem ausführen\" klicken, um das Installationsprogramm zu starten. Das ist erwartet und bedeutet nicht, dass die Datei Schadsoftware ist. Prüfen Sie vor dem Start die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Dies ist eine <em>Vorabversion</em>, keine stabile Version. Warum unsigniert: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, es gibt also noch kein Zertifikat zum Signieren. Das Projekt hat eine Bewerbung beim SignPath Foundation für kostenlose Open-Source-Signierung vorbereitet; sie wurde noch nicht eingereicht. Sobald Signieren möglich ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.",
+  "win-store-title": "Unsignierte Vorschau — veröffentlicht",
+  "win-store-desc": "<strong>Diese Dateien sind nicht signiert.</strong> Windows SmartScreen zeigt \"Der PC ist geschützt\", und Sie müssen auf \"Weitere Informationen\" → \"Trotzdem ausführen\" klicken, um das Installationsprogramm zu starten. Das ist erwartet und bedeutet nicht, dass die Datei Schadsoftware ist. Prüfen Sie vor dem Start die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Dies ist eine <em>Vorabversion</em>: kein stabiles Release, und <code>latest</code> zeigt nicht darauf. Warum unsigniert: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, es gibt also noch kein Zertifikat zum Signieren. Eine Bewerbung beim SignPath Foundation <strong>wurde noch nicht eingereicht</strong>. Sobald Signieren möglich ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.",
   "win-store-cta": "Diese Seite verfolgen",
   "win-pinned-note": "Dieses Windows-Paket ist nicht signiert: Es liegt kein Code-Signatur-Zertifikat vor, daher zeigt Windows bei der Installation möglicherweise eine SmartScreen-Warnung. Mit der SHA-256-Prüfsumme können Sie prüfen, ob die Datei unverändert ist.",
   "privacy-eyebrow": "Rechtliches",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "Richten Sie die Plattform-Entsperrung ein, damit der tägliche Zugriff ein Blick oder eine PIN ist, abgesichert durch TPM 2.0. Das Masterpasswort bleibt stets die eigentliche Wurzel des Tresors.",
   "p-windows-sec-title": "Windows-Besonderheiten, die Sie kennen sollten",
   "p-windows-sec-label": "Signaturen und SmartScreen",
-  "p-windows-sec-body": "Windows-Installationsprogramme sind <strong>nicht signiert</strong> und tragen keine Authenticode-Signatur. Es gibt kein Signaturzertifikat: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, daher wird derzeit nur eine ausdrücklich gekennzeichnete <em>Vorabversion</em> veröffentlicht. Diese Dateien lösen die SmartScreen-Warnung \"Der PC ist geschützt\" aus, und Sie müssen auf \"Weitere Informationen\" → \"Trotzdem ausführen\" klicken — das ist erwartet. Prüfen Sie vor der Installation die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Eine Bewerbung beim SignPath Foundation für kostenlose Open-Source-Signierung ist vorbereitet, aber noch nicht eingereicht worden; sobald Signieren möglich ist, werden nachfolgende Versionen signiert und diese Warnung entfällt.",
+  "p-windows-sec-body": "Windows-Installationsprogramme sind als <strong>unsignierte Vorschau</strong> veröffentlicht und tragen keine Authenticode-Signatur. Es gibt kein Signaturzertifikat: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, daher ist die Vorschau als <em>Vorabversion</em> gekennzeichnet und <code>latest</code> zeigt nicht darauf. Unsignierte Dateien lösen die SmartScreen-Warnung \"Der PC ist geschützt\" aus, und Sie müssen auf \"Weitere Informationen\" → \"Trotzdem ausführen\" klicken; das ist erwartet. Prüfen Sie vor der Installation die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Eine Bewerbung beim SignPath Foundation für kostenlose Open-Source-Signierung ist vorbereitet, aber noch nicht eingereicht; sobald Signieren möglich ist, werden nachfolgende Versionen signiert und diese Warnung entfällt.",
   "p-windows-tech1-title": "x64-Architektur",
   "p-windows-tech1-desc": "Ein Download genügt für beide. Die Anwendung erscheint als Tauri-Desktop-App mit einem WebView-basierten Frontend.",
   "p-windows-tech2-title": "Entsperren mit Windows Hello",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "Status des Sicherheitsaudits",
   "csp-p1-19-head": "KalderaShield ist ein Offline-First-Passwortmanager nach dem Prinzip des Nullwissens. Tresorinhalte werden auf dem Gerät mit aus dem Master-Passwort abgeleiteten Schlüsseln verschlüsselt und niemals übermittelt. Es gibt kein Konto, keinen Synchronisationsdienst, keine Telemetrie und keine Analyse. Die Windows-Binärdateien enthalten über die Komponenten des Betriebssystems hinaus keinerlei Netzwerk-Client. Vollständiger Text:",
   "csp-p1-19-link": "Datenschutzrichtlinie",
-  "csp-p1-19-tail": "Das Verhalten Dritter, das Nutzer betrifft, ist in LICENSE-3RD-PARTY.md geregelt."
+  "csp-p1-19-tail": "Das Verhalten Dritter, das Nutzer betrifft, ist in LICENSE-3RD-PARTY.md geregelt.",
+  "win-preview-link": "Unsignierte Vorschau von GitHub Releases herunterladen",
+  "win-preview-assets": "NSIS-Installationsprogramm (.exe), MSI-Paket und portable EXE — alle unsigniert.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }
