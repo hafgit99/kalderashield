@@ -537,8 +537,8 @@
   "sec-verify-btn": "Doğrulama Rehberini İnceleyin",
   "donate-spotlight-title": "Bağımsız & Açık Kaynak Geliştirmeye Katkıda Bulunun",
   "donate-spotlight-desc": "KalderaShield yatırım fonu, reklam veya kullanıcı verisi satışı olmadan %100 topluluk odaklı geliştirilir. Bağışlar; bağımsız güvenlik denetimleri ve altyapı giderleri için kullanılır.",
-  "win-store-title": "İmzasız Önizleme — İmza Başvurusu Yapılmadı",
-  "win-store-desc": "<strong>Bu dosyalar imzalı değildir.</strong> Windows \"PC'niz korundu\" uyarısı gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek. Bu beklenen bir durumdur ve kötü amaçlı yazılım anlamına gelmez. Çalıştırmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. Bu bir <em>ön sürümdür</em> ve kararlı sürüm değildir. Neden imzasız olduğu: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şimdilik imzalayacak bir sertifika yok. İmzalama için SignPath Foundation programına hazırlık yapıldı, başvuru henüz gönderilmedi. İmza sağlandığında sonraki Windows sürümleri imzalanacak ve bu uyarı kaldırılacak.",
+  "win-store-title": "İmzasız Önizleme — Yayımlandı",
+  "win-store-desc": "<strong>Bu dosyalar imzalı değildir.</strong> Windows SmartScreen \"PC'niz korundu\" uyarısı gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek. Bu beklenen bir durumdur ve kötü amaçlı yazılım anlamına gelmez. Çalıştırmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. Bu bir <em>ön sürümdür</em>: kararlı sürüm değildir ve <code>latest</code> ona işaret etmez. Neden imzasız olduğu: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şimdilik imzalayacak bir sertifika yok. SignPath Foundation programına başvuru <strong>henüz gönderilmemiştir</strong>. İmza sağlandığında sonraki Windows sürümleri imzalanacak ve bu uyarı kaldırılacak.",
   "win-store-cta": "Bu sayfayı takip edin",
   "win-pinned-note": "Bu Windows paketi imzasızdır: kod imzalama sertifikası bulunmadığı için kurulum särasında SmartScreen uyarısı görülû. Dosyanın değiştirilmediğini SHA-256 özetiyle doğrulayabilirsiniz.",
   "privacy-eyebrow": "Yasal",
@@ -1065,7 +1065,7 @@
   "p-windows-step3-desc": "Günlük erişim bir bakış ya da PIN olsun diye platform kilit açmasını kaydedin, TPM 2.0 destekli. Ana parola her zaman kasanın gerçek kökü kalır.",
   "p-windows-sec-title": "Bilmeniz gereken Windows ayrıntıları",
   "p-windows-sec-label": "İmzalar ve SmartScreen",
-  "p-windows-sec-body": "Windows kurucuları <strong>imzalı değildir</strong> ve Authenticode imzası taşımıyor. İmza sertifikası yok: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şu anda yalnızca açıkça etiketlenmiş bir <em>ön sürüm</em> yayımlanır. Bu dosyalarda Windows SmartScreen \"PC'niz korundu\" gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek — bu beklenen bir durumdur. Kurmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. İmzalama için SignPath Foundation programına hazırlık yapıldı, başvuru henüz gönderilmedi; imza sağlandığında sonraki sürümler imzalanacak ve bu uyarı kalkacak.",
+  "p-windows-sec-body": "Windows kurucuları <strong>imzasız önizleme</strong> olarak yayımlanmıştır ve Authenticode imzası taşımaz. İmza sertifikası yok: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden önizleme <em>ön sürüm</em> olarak işaretlenir ve <code>latest</code> ona işaret etmez. İmzalanmamış dosyalarda Windows SmartScreen \"PC'niz korundu\" uyarısı gösterir ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekir; bu beklenen bir durumdur. Kurmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. İmzalama için SignPath Foundation programına başvuru <strong>henüz gönderilmemiştir</strong>; imza sağlandığında sonraki sürümler imzalanacak ve bu uyarı kalkacak.",
   "p-windows-tech1-title": "x64",
   "p-windows-tech1-desc": "Tek indirme ikisine de hizmet eder. Uygulama, WebView tabanlı ön yüzlü bir Tauri masaüstü uygulaması olarak gelir.",
   "p-windows-tech2-title": "Windows Hello ile açma",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "Güvenlik Denetimi Durumu",
   "csp-p1-19-head": "KalderaShield çevrimdışı öncelikli, sıfır bilgili bir şifre yöneticisidir. Kasa içerikleri cihazda, ana paroladan türetilen anahtarlarla şifrelenir ve hiçbir zaman iletilmez. Hesap yoktur, eşitleme hizmeti yoktur, telemetri yoktur, analitik yoktur. Windows ikili dosyaları, işletim sisteminin kendi bileşenleri dışında hiçbir ağ istemcisi içermez. Ayrıntılı metin:",
   "csp-p1-19-link": "Gizlilik Politikası",
-  "csp-p1-19-tail": "Kullanıcıları etkileyen üçüncü taraf bileşenlerin davranışı LICENSE-3RD-PARTY.md ile kapsanır."
+  "csp-p1-19-tail": "Kullanıcıları etkileyen üçüncü taraf bileşenlerin davranışı LICENSE-3RD-PARTY.md ile kapsanır.",
+  "win-preview-link": "İmzasız önizlemeyi GitHub Releases'dan indirin",
+  "win-preview-assets": "NSIS kurucusu (.exe), MSI paketi ve taşınabilir EXE — hepsi imzasız.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

@@ -332,9 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64 位及更高版本</p>
           <p data-i18n="dl-c1-desc">基于 Tauri 深度优化的原生 MSI 安装程序或独立便携版 EXE。</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">未签名预览 — 签名申请尚未提交</strong></p>
-            <p data-i18n="win-store-desc"><strong>这些文件未签名。</strong>Windows 会显示"已保护你的电脑"，需要点击"更多信息"→"仍要运行"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>，不是稳定发行版。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。本项目已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。</p>
+            <p><strong data-i18n="win-store-title">未签名预览 — 已发布</strong></p>
+            <p data-i18n="win-store-desc"><strong>这些文件未签名。</strong>Windows SmartScreen 会显示"已保护你的电脑"，需要点击"更多信息"→"仍要运行"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>：不是稳定发行版，<code>latest</code> 也不会指向它。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。</p>
           </div>
+          <p class="pick-req" data-i18n="win-preview-assets">NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview" rel="noopener noreferrer" data-i18n="win-preview-link">从 GitHub Releases 下载未签名预览版</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/zh/code-signing-policy.html" data-i18n="dl-csp-link">代码签名政策</a></p>
         </article>
 

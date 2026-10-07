@@ -537,8 +537,8 @@
   "sec-verify-btn": "Ver guia de verificação",
   "donate-spotlight-title": "Apoie o desenvolvimento independente e de código aberto",
   "donate-spotlight-desc": "O KalderaShield é desenvolvido 100% pela comunidade, sem capital de risco, anúncios ou rastreamento. As doações financiam auditorias e infraestrutura.",
-  "win-store-title": "Pré-visualização sem assinatura — candidatura ainda não submetida",
-  "win-store-desc": "<strong>Estes ficheiros não estão assinados.</strong> O Windows mostrará \"O seu PC está protegido\" e terá de clicar em \"Mais informações\" → \"Executar mesmo assim\" para executar o instalador. É o esperado e não significa que o ficheiro seja malware. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de o executar. Esta é uma <em>pré-visualização</em>, não um lançamento estável. Porquê sem assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso ainda não há certificado com que assinar. O projeto preparou uma candidatura à SignPath Foundation para assinatura de código aberto gratuita; ainda não foi submetida. Quando a assinatura estiver disponível, os lançamentos Windows seguintes serão assinados e este aviso removido.",
+  "win-store-title": "Pré-visualização sem assinatura — publicada",
+  "win-store-desc": "<strong>Estes ficheiros não estão assinados.</strong> O Windows SmartScreen mostrará \"O seu PC está protegido\" e terá de clicar em \"Mais informações\" → \"Executar mesmo assim\" para executar o instalador. É o esperado e não significa que o ficheiro seja malware. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de o executar. Esta é uma <em>pré-visualização</em>: não é um lançamento estável, e o <code>latest</code> não aponta para ela. Porquê sem assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso ainda não há certificado com que assinar. A candidatura à SignPath Foundation <strong>ainda não foi submetida</strong>. Quando a assinatura estiver disponível, os lançamentos Windows seguintes serão assinados e este aviso removido.",
   "win-store-cta": "Acompanhe esta página",
   "win-pinned-note": "Este pacote do Windows não é assinado: sem certificado de assinatura de código, o Windows pode exibir um aviso do SmartScreen durante a instalação. O checksum SHA-256 permite confirmar que o arquivo não foi alterado.",
   "privacy-eyebrow": "Jurídico",
@@ -1068,7 +1068,7 @@
   "p-windows-step3-desc": "Regista o desbloqueio por plataforma para que o acesso diário seja um olhar ou um PIN, com o suporte do TPM 2.0. A palavra-passe mestra continua sempre a ser a verdadeira raiz do cofre.",
   "p-windows-sec-title": "Especificidades do Windows que deves conhecer",
   "p-windows-sec-label": "Assinaturas e SmartScreen",
-  "p-windows-sec-body": "Os instaladores do Windows <strong>não estão assinados</strong> e não têm assinatura Authenticode. Não existe certificado de assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso por agora só é publicada uma <em>pré-visualização</em> explicitamente rotulada. Estes arquivos acionam o aviso do SmartScreen \"O seu PC está protegido\" e terá de clicar em \"Mais informações\" → \"Executar mesmo assim\" — é o esperado. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de instalar. Foi preparada uma candidatura à SignPath Foundation para assinatura de código aberto gratuita, mas ainda não submetida; quando a assinatura estiver disponível, os lançamentos seguintes serão assinados e este aviso desaparece.",
+  "p-windows-sec-body": "Os instaladores do Windows são publicados como <strong>pré-visualização sem assinatura</strong> e não têm assinatura Authenticode. Não existe certificado de assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso a pré-visualização é marcada como <em>pré-lançamento</em> e o <code>latest</code> não aponta para ela. Os ficheiros sem assinatura acionam o aviso do SmartScreen \"O seu PC está protegido\" e terá de clicar em \"Mais informações\" → \"Executar mesmo assim\" — é o esperado. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de instalar. A candidatura à SignPath Foundation para assinatura de código aberto gratuita <strong>ainda não foi submetida</strong>; quando a assinatura estiver disponível, os lançamentos seguintes serão assinados e este aviso desaparece.",
   "p-windows-tech1-title": "Arquitetura x64",
   "p-windows-tech1-desc": "Uma única transferência serve ambos. A aplicação é distribuída como uma aplicação Tauri de computador com uma interface baseada em WebView.",
   "p-windows-tech2-title": "Desbloqueio com Windows Hello",
@@ -1410,5 +1410,8 @@
   "csp-p1-8-link": "estado da auditoria de segurança",
   "csp-p1-19-head": "O KalderaShield é um gestor de senhas offline-first e de conhecimento zero. O conteúdo do cofre é cifrado no dispositivo com chaves derivadas da senha mestra e nunca é transmitido. Não há conta, serviço de sincronização, telemetria nem análise. Os binários Windows não contêm qualquer cliente de rede para além dos próprios componentes do sistema operativo. Texto completo:",
   "csp-p1-19-link": "Política de privacidade",
-  "csp-p1-19-tail": "O comportamento de componentes de terceiros que afeta os utilizadores está coberto por LICENSE-3RD-PARTY.md."
+  "csp-p1-19-tail": "O comportamento de componentes de terceiros que afeta os utilizadores está coberto por LICENSE-3RD-PARTY.md.",
+  "win-preview-link": "Transferir a pré-visualização sem assinatura do GitHub Releases",
+  "win-preview-assets": "Instalador NSIS (.exe), pacote MSI e EXE portátil — todos sem assinatura.",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
 }

@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">你应该了解的 Windows 特有事项</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">签名与 SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Windows 安装程序<strong>未签名</strong>，也不带 Authenticode 签名。没有签名证书：发布流水线把未签名的桌面发行版视为失败，因此目前只发布明确标注的<em>预发行版</em>。这些文件会触发 Windows SmartScreen 的"已保护你的电脑"提示，需要点击"更多信息"→"仍要运行"才能安装——这是预期行为。安装前请用 SHA256SUMS.txt 核对 SHA-256 摘要。已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交；签名可用后，后续发行版将签名，本提示也会消失。</p>
+        <p data-i18n="p-windows-sec-body">Windows 安装程序以<strong>未签名预览</strong>形式发布，不带 Authenticode 签名。没有签名证书：发布流水线把未签名的桌面发行版视为失败，因此该预览被标记为<em>预发行版</em>，<code>latest</code> 不会指向它。未签名文件会触发 Windows SmartScreen 的"已保护你的电脑"提示，需要点击"更多信息"→"仍要运行"才能运行安装程序——这是预期行为。安装前请用 SHA256SUMS.txt 核对 SHA-256 摘要。向 SignPath Foundation 申请免费的开源代码签名<strong>尚未提交</strong>；签名可用后，后续发行版将签名，本提示也会消失。</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">
