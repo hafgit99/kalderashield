@@ -30,7 +30,6 @@
  * a local staging directory and stops.
  */
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
