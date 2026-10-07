@@ -203,6 +203,20 @@ rows.sort((a, b) => a.base.localeCompare(b.base));
 const sums = rows.map((r) => `${r.digest}  ${r.base}`).join('\n') + '\n';
 fs.writeFileSync(path.join(STAGE, 'SHA256SUMS.txt'), sums, 'utf8');
 
+/* The notes tell a reader how to check the digest by hand, so the filename in
+ * that command has to be a file that is actually in the release. Hardcoding it
+ * from VERSION produced `KalderaShield-7.0.20-x64-setup.exe` while the staged
+ * file is `KalderaShield-7.0.20.0-windows-x64-setup.exe` -- four components and
+ * the platform token. A reader who pasted the command got "file not found" at
+ * exactly the moment they were trying to verify an unsigned binary. Take the
+ * name from what was staged instead of reconstructing it. */
+const setupRow = rows.find((r) => /-windows-x64-setup\.exe$/i.test(r.base));
+if (!setupRow) {
+  console.error('No NSIS setup executable among the artifacts; cannot name a file in the release notes.');
+  process.exit(1);
+}
+const SETUP_FILE = setupRow.base;
+
 /* ------------------------------------------------------- release note body -- */
 
 const notes = `## ⚠️ Windows artifacts in this release are NOT code-signed
@@ -216,7 +230,7 @@ Verify the SHA-256 digest against \`SHA256SUMS.txt\` before running anything:
 
 \`\`\`
 sha256sum -c SHA256SUMS.txt          # Linux / macOS
-certutil -hashfile KalderaShield-${VERSION}-x64-setup.exe SHA256   # Windows
+certutil -hashfile ${SETUP_FILE} SHA256   # Windows
 \`\`\`
 
 **Why unsigned.** This project's release pipeline treats an unsigned desktop
