@@ -146,18 +146,21 @@ Two things worth sending, in this order:
    metadata restrictions. For this project: `KalderaShield` as the product name,
    the release version as the product version, matching `productName` and
    `version` in `src-tauri/tauri.conf.json`.
-3. **Delete `.github/workflows/windows-unsigned-preview.yml`.** It fails by design
-   once signing secrets exist, but leaving it in the repository invites the wrong
-   conclusion about what the project's signing story is.
-4. Add the SignPath step to `release-desktop.yml`, SHA-pinned, replacing the
+3. Add the SignPath step to `release-desktop.yml`, SHA-pinned, replacing the
    `WINDOWS_SIGNING_CERT_BASE64` path. SignPath holds the key in its HSM; this
    project never receives it.
-5. Tag a release and confirm the `.exe` and `.msi` show a valid Authenticode
+4. Tag a release and confirm the `.exe` and `.msi` show a valid Authenticode
    signature.
-6. Update the code signing policy **before** announcing the signed release. It
+5. Update the code signing policy **before** announcing the signed release. It
    currently says "not yet applied" and "it is not signed", and both become false
    the moment a signed build ships.
-7. Update the download page and the Windows platform page, which will say a
+6. Update the download page and the Windows platform page, which will say a
    signed release exists.
-8. The preview release can then be deleted from the releases page, or left in
+7. The preview release can then be deleted from the releases page, or left in
    place as a record of the period before signing. Leaving it is more honest.
+
+Nothing about the preview has to be undone to sign. It was published from the
+maintainer's machine through the GitHub Releases form rather than by a workflow,
+so there is no unsigned pipeline in `.github/workflows/` to remove and no
+exception in `scripts/security-release-signing-gate.cjs` to delete. The gate has
+been green throughout.

@@ -1390,7 +1390,7 @@
   "csp-p1-5": "将被签名的文件是 NSIS 安装程序（<code>KalderaShield_&lt;版本&gt;_x64-setup.exe</code>）、用于受管部署的 MSI 包（<code>KalderaShield_&lt;版本&gt;_x64.msi</code>）以及无需安装的便携可执行文件（<code>KalderaShield_&lt;版本&gt;_x64-portable.exe</code>）。三者均由本仓库构建，并在<a href=\"https://github.com/hafgit99/kalderashield/releases\" rel=\"noopener noreferrer\">发行页面</a>发布。凡非由本仓库构建的产物，一律不以本项目证书签名；也不会用该证书对任何第三方二进制文件重新签名。",
   "csp-p1-6": "<strong>密钥保管：</strong>私钥在 SignPath 的 HSM 中生成并保存。本项目从不持有该密钥，从不导出，也绝不将其传递给构建运行器或开发人员机器。签名在 SignPath 一侧进行，响应的是本仓库 CI 提交并由人工批准的签名请求。",
   "csp-p1-7": "<strong>链条：</strong>推送版本标签 → GitHub Actions 构建这些文件（工作流是公开的，第三方 action 按 commit SHA 固定，令牌权限为只读）→ 构建将文件上传至 SignPath 并发起签名请求，但自身不签名 → 一位 Approver 批准或拒绝 → SignPath 使用 Foundation 证书签名 → 已签名文件与 <code>SHA256SUMS.txt</code> 一并发布。每个发行版都需要人工批准；不存在无人值守的签名路径，也不会新增。",
-  "csp-p1-8": "有效的 SignPath Foundation 签名意味着该二进制文件是可验证的自动化构建，源自本仓库在发行版所指明提交处的源代码。这<strong>并不</strong>意味着软件经过审计，也不构成对该应用的安全背书。本项目发布了威胁模型与质量门禁文档，但没有完成的独立第三方安全审计：<a href=\"/guvenlik/denetim-durumu/\">安全审计状态</a>。",
+  "csp-p1-8": "有效的 SignPath Foundation 签名意味着该二进制文件是可验证的自动化构建，源自本仓库在发行版所指明提交处的源代码。这<strong>并不</strong>意味着软件经过审计，也不构成对该应用的安全背书。本项目发布了威胁模型与质量门禁文档，但没有完成的独立第三方安全审计：",
   "csp-h2-3": "3. 团队角色",
   "csp-p1-9": "KalderaShield 由一人维护。此处如实说明，而非包装成团队，因为下面这些角色正是 SignPath 所要求的，而唯一的维护者只有独自一人才能诚实地承担。所有对本仓库拥有写入权限的账户均已启用多重身份验证。",
   "csp-p1-11": "<p><strong>作者（Authors）</strong> — 无需额外审查即可修改源代码的人员：</p>\n      <ul>\n        <li><code>hafgit99</code> — <a href=\"https://github.com/hafgit99\" rel=\"noopener noreferrer\">github.com/hafgit99</a></li>\n      </ul>\n      <p>这是唯一拥有写入权限的账户。本仓库由个人账户而非组织所有，因此写入路径是一个启用了多重身份验证的单一身份。</p>",
@@ -1402,9 +1402,13 @@
   "csp-h2-5": "5. 其他平台",
   "csp-p1-21": "<strong>macOS</strong> — 产物使用 Apple Developer ID 签名并由 Apple 公证。证书尚未签发，因此没有任何 macOS 产物已签名，也没有发布任何 macOS 产物。<strong>Linux</strong> — <code>.deb</code>、<code>.rpm</code>、<code>.AppImage</code> 以分离式 GPG 签名（<code>.sig</code>）发布；SBOM 与浏览器扩展包以无密钥 Sigstore 签名（<code>.sigstore.json</code>）发布。<strong>Android</strong> — 发行版 APK 使用保存在 GitHub Actions 机密中的发行密钥库签名；Android 签名与 Authenticode 相互独立。任何平台在真正签名之前，都不会被描述为已签名。",
   "csp-p1-24": "<strong>当前状态：</strong>Linux、Android 和浏览器扩展已发布并已签名。<strong>Windows 仅以未签名预览形式发布</strong>：这是一份<em>预发行版</em>，不是稳定发行版，<code>latest</code> 也不会指向它。未签名文件会触发 Windows SmartScreen 的\"已保护你的电脑\"提示，需要点击\"更多信息\"→\"仍要运行\"才能运行安装程序——这是预期行为。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。macOS 未发布且未签名（证书尚未签发）。",
-  "csp-p1-25": "Windows 产物不作为发行版发布——发布流水线把未签名的桌面发行版视为失败。唯一的例外是明确标注为未签名预览的预览版；该工作流将其标记为<em>预发行版</em>，因此 <code>latest</code> 绝不会指向它，下一个已签名发行版会取代它。该流水线的 fail-closed 闸门记录在<a href=\"https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md\" rel=\"noopener noreferrer\">代码签名与产物签名指南</a>中，且普通发行版标签无法发布任何未签名文件。",
+  "csp-p1-25": "Windows 产物不作为发行版发布——发布流水线把未签名的桌面发行版视为失败，且 <code>.github/workflows/</code> 中没有任何工作流能够发布它。预览版由维护者在自己的机器上手工组装、通过 GitHub 自身的发行表单上传，并标记为<em>预发行版</em>，因此它明显是临时性的，<code>latest</code> 绝不会指向它，下一个已签名发行版会取代它。这条路线是有意为之，而非变通做法。仓库中有一道安全闸门（<code>npm run security:release-signing</code>），会拒绝任何能把未签名构建变成发布物的工作流，它的结论性主张是：没有签名机密时，公开的桌面发行版<em>按设计不可能存在</em>。为工作流添加例外，等于用一项便利换取这条主张变成谎言。把上传留在浏览器里，才保住了这个保证。该闸门记录在<a href=\"https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md\" rel=\"noopener noreferrer\">代码签名与产物签名指南</a>中，分步流程见<a href=\"https://github.com/hafgit99/kalderashield/blob/main/docs/WINDOWS_UNSIGNED_RELEASE_PLAN.md\" rel=\"noopener noreferrer\">计划：先上线站点，再发布 Windows 未签名预览</a>。",
   "csp-h2-9": "6. 报告问题",
   "csp-p1-26": "如果你认为某个以 SignPath Foundation 证书签名的产物违反了本政策，请将该产物的哈希值和理由发送至 <a href=\"mailto:support@signpath.io\">support@signpath.io</a>。关于这些产物的其他任何问题，请使用 <a href=\"mailto:security@kalderashield.com\">security@kalderashield.com</a>；披露流程见 <a href=\"https://github.com/hafgit99/kalderashield/blob/main/SECURITY.md\" rel=\"noopener noreferrer\">SECURITY.md</a>。",
   "csp-governing": "如有差异，以本政策的土耳其语文本为准。",
-  "dl-csp-link": "代码签名政策"
+  "dl-csp-link": "代码签名政策",
+  "csp-p1-8-link": "安全审计状态",
+  "csp-p1-19-head": "KalderaShield 是一款离线优先、零知识的密码管理器。保管库内容在设备上使用由主密码派生的密钥加密，绝不传输。它没有账户、没有同步服务、没有遥测、没有分析。Windows 二进制文件中除操作系统自身的组件外，不含任何网络客户端。完整文本见",
+  "csp-p1-19-link": "隐私政策",
+  "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。"
 }

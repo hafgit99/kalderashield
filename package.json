@@ -125,7 +125,8 @@
     "security:release-signing": "node scripts/security-release-signing-gate.cjs",
     "security:argon2-bounds": "node scripts/security-argon2-bounds-parity.cjs",
     "android:lint": "cd src-tauri/gen/android && gradlew.bat :app:lintArmDebug --console=plain",
-    "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1"
+    "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1",
+    "windows:preview:package": "node scripts/windows-preview-package.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",

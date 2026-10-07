@@ -1,141 +1,196 @@
-# Plan — unsigned Windows preview, then the site, then SignPath later
+# Plan — site first, then the unsigned Windows preview, then SignPath
 
-The order of operations, and why it is this order. Three steps, and the second one
-depends on the first.
+The order of operations. The site comes first this time, which is not the order
+this document originally proposed, and the reason it changed is worth recording.
 
-## Where this stands
+## Why the order changed
 
-- **Done.** The Trend Micro false positive that quarantined the unsigned build was
-  reported and has since stopped. Recorded in
-  [fp-evidence-kalderashield-7.0.18.0.md](fp-evidence-kalderashield-7.0.18.0.md)
-  §9–10, including what that resolution does *not* cover.
-- **Done.** The code signing policy exists in the repository
-  ([CODE_SIGNING_POLICY.md](../CODE_SIGNING_POLICY.md)) and on the site in twelve
-  languages.
-- **Done.** A workflow that publishes an unsigned Windows preview as a
-  pre-release: `.github/workflows/windows-unsigned-preview.yml`.
-- **Not done.** No Windows artifact has been published yet.
-- **Not done.** `kalderashield.com` does not resolve — NS and MX records are set,
-  but there is no A record, so the site is unreachable.
-- **Deferred.** The SignPath Foundation application, deliberately, until after the
-  preview is out and the site is live.
+The first version of this plan had a workflow publish the unsigned preview, and
+the site follow it. That workflow would have needed `contents: write` and the
+ability to create a GitHub Release, and
+`scripts/security-release-signing-gate.cjs` exists to close exactly that route:
 
-## Step 1 — publish the unsigned Windows preview
+> An entry [in the exceptions table] is a claim that the workflow cannot turn an
+> unsigned build into a published one. That claim is verified below rather than
+> trusted.
 
-### Run it
+The gate verified it and refused. Adding the exception would have made the gate
+pass, but it would also have made its closing line untrue — *"without the signing
+secrets configured, a public desktop release remains impossible by design"* — and
+the exception would have been added by an assistant reacting to a failing check
+rather than by a maintainer deciding it.
 
-**Actions → Windows unsigned preview release → Run workflow.**
+So the build stays where the gate already permits it to be. The judgment about
+publishing happens in a browser, by a person, with the gate untouched.
 
-- `version`: `7.0.21` (the tag becomes `v7.0.21-unsigned-preview`)
-- `dry_run`: leave **on** for the first run
+## Step 1 — bring the site live
 
-The dry run builds everything, runs the gates, asserts the binaries are unsigned,
-checks `SHA256SUMS.txt` covers them, and stops before creating the release. Read
-the log. If the artifact list looks wrong, fix it here rather than after
-publishing.
+The site is first because its content already describes the Windows position, and
+every page of it would need rewriting if the preview shipped first. Full
+instructions in [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md).
 
-Second run: `dry_run` off. It creates the release as a **pre-release**.
+Short version: add an A record, write the nginx vhost, get the certificate,
+`rsync` the tree, verify ten URLs.
 
-### What it will not do
+The repository should be committed and pushed first, so the site describes a
+repository that is true.
 
-- It will not run if release signing is configured. There is an explicit check at
-  the top that fails the job, because publishing an unsigned preview once a
-  certificate exists is exactly the confusion this file is meant to prevent.
-- It will not be triggered by a tag. `workflow_dispatch` only.
-- It will not touch the fail-closed gate in `release-desktop.yml`. A normal version
-  tag still fails on an unsigned artifact.
-- It will not move `latest`.
+## Step 2 — build the Windows artifacts
 
-### Verify after publishing
+Two routes. The CI one is preferred: it builds on a clean runner, so nothing from
+a previous version can leak in.
+
+**From GitHub Actions:**
+
+1. Actions → **Windows unsigned build** → Run workflow.
+2. When it finishes, download the `kalderashield-windows-unsigned` artifact.
+3. Unpack it somewhere.
+
+That workflow has `contents: read` and cannot publish. That is the point of it.
+
+**Locally:**
+
+```bash
+Remove-Item -Recurse -Force release-local    # Windows PowerShell
+npm run release:local:skip-tests
+```
+
+The `Remove-Item` is not optional. `release-local` is not emptied between
+versions, and `npm run windows:preview:package` refuses to stage a directory
+holding a different version's binaries — see "The check that will probably fire"
+below.
+
+## Step 3 — stage for manual upload
+
+```bash
+npm run windows:preview:package
+```
+
+Point it at the unpacked artifact if you built in CI:
+
+```bash
+npm run windows:preview:package -- C:\Users\you\Downloads\kalderashield-windows-unsigned
+```
+
+It writes `release-preview/windows/` containing the binaries, a fresh
+`SHA256SUMS.txt`, and `RELEASE-NOTES.md`, then prints the tag, the title and the
+eight steps of the GitHub form.
+
+It does not touch GitHub. It cannot.
+
+### The check that will probably fire
+
+The first run is likely to be refused:
 
 ```
-gh release view v7.0.21-unsigned-preview --json tagName,isPrerelease,isLatest
-gh release view --json tagName,isPrerelease,isLatest     # latest must be v7.0.20
+  package.json version : 7.0.20
+  release tag would be : v7.0.20-unsigned-preview
+  [DIFF] 7.0.19.0
+           KalderaShield-7.0.19.0-windows-x64-setup.exe
+           ...
 ```
 
-Then check by hand:
+That is the stale-directory case, and it is the one that matters. A release tagged
+`v7.0.20` carrying 7.0.19 installers claims a provenance the bytes do not have,
+and `SHA256SUMS.txt` would checksum them happily, which makes it *look* verified.
+Clean `release-local` and rebuild.
 
-- [ ] The release shows as a pre-release in the GitHub UI.
-- [ ] The release notes open with the unsigned warning, above the changelog.
-- [ ] `SHA256SUMS.txt` is attached and lists every `.exe` and `.msi`.
-- [ ] Download one artifact and confirm its SHA-256 matches the published line.
-- [ ] `latest` still resolves to a signed release.
+If you genuinely mean to release the older build, say so explicitly:
 
-### Before running it at all
+```bash
+npm run windows:preview:package -- 7.0.19.0
+```
 
-- [ ] Complete the Windows manual smoke checklist in
-      [DESKTOP_MANUAL_SMOKE_CHECKLIST.md](DESKTOP_MANUAL_SMOKE_CHECKLIST.md) for
-      these artifacts, with the tester field filled in.
-      [PUBLIC_RELEASE_BLOCKERS.md](PUBLIC_RELEASE_BLOCKERS.md) blocks Windows
-      distribution on this, and the signoff should not be skipped because the
-      files are unsigned. The difference between a preview and a release is the
-      signature, not the testing.
+The tag is then derived from the bytes rather than from `package.json`.
 
-## Step 2 — bring the site live
+The script also refuses to stage fewer than three binaries. The installer, the MSI
+and the portable executable are three ways to install the same application, and a
+user who comes for one and finds nothing has been failed for no reason.
 
-The site is last on purpose. Its content is already written, but it currently
-describes a Windows state that is about to change, and every line of it would need
-rewriting if it went out first and then got replaced by the preview.
+## Step 4 — publish it
 
-Order within this step:
+In the GitHub Releases form, exactly as the script prints:
 
-1. Commit and push the Step 1 outcome, so the repository the site describes is
-   true.
-2. Point the domain at the VPS (see
-   [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) for the DNS and server side).
-3. Update the site copy for the preview (Step 3 below) — the Windows card, the
-   platform page, the FAQ.
-4. Regenerate and deploy.
+1. Releases → **Draft a new release**
+2. Tag `v7.0.20-unsigned-preview` — type it, do not pick an existing one, and do
+   not let GitHub default to `main`.
+3. Target: the commit the artifacts were built from.
+4. Title: `KalderaShield 7.0.20 for Windows (unsigned preview)`
+5. Paste `RELEASE-NOTES.md` as the description.
+6. Drag every file from `release-preview/windows/` in.
+7. **Set "Set as a pre-release" ON.** This is the step that keeps `latest`
+   pointing at the signed releases. It is the only one that cannot be checked
+   afterwards, so check it before clicking Publish.
+8. Publish.
 
-## Step 3 — what on the site has to change when the preview ships
+Verify:
 
-Three places currently say Windows is not published. All three are in
-`kalderashield-website/`, and all three have dictionaries to update as well:
+```bash
+gh release view v7.0.20-unsigned-preview --json tagName,isPrerelease,isLatest
+gh release view --json tagName      # must NOT be the preview
+```
 
-| File | Change |
+Then download one artifact and confirm its SHA-256 matches the published line.
+
+## Step 5 — update the site's copy
+
+The site currently describes the preview as forthcoming. Once it exists, three
+places change, and all three have twelve languages:
+
+| File | Script to run |
 | --- | --- |
-| `download/index.html` | The Windows card. `win-store-title` / `win-store-desc` already say the application is in progress; they now also need to say an unsigned preview exists. |
-| `content/pages/13-windows.json` | `secBody` says no Authenticode signature and no release. Add the preview. |
-| `kalderashield-website/assets/js/i18n/*.json` | Whatever the two above change, in twelve languages. |
+| `download/index.html` | `scripts/apply-windows-preview-download-i18n.cjs` |
+| `content/pages/13-windows.json` | `scripts/apply-windows-preview-platform-i18n.cjs` then `build-pages.cjs` then `scripts/apply-windows-preview-platform-keys.cjs` |
+| `assets/js/i18n/*.json` | the two above write all twelve |
 
-The pattern for doing this is the one the repository already uses: a one-shot
-script under `scripts/` that writes the keys into all twelve dictionaries, kept in
-the tree. See `apply-signpath-policy-status-i18n.cjs` for the shape of one.
+Then:
 
-The rule that matters: **the release notes, the download page and the code signing
-policy must all say the same thing.** They were briefly inconsistent once already,
-which is why the code signing policy page now carries an explicit "updated before,
-not after, the first signed release" commitment.
+```bash
+cd kalderashield-website
+node scripts/generate-locales.cjs
+node scripts/check-signing-copy-agreement.cjs
+```
 
-## Step 4 — SignPath, later
+Those scripts are written and were run when the copy was prepared. They state the
+preview as existing, so **they must only be run after step 4**, not before.
 
-Not now. The application values are prepared in
-[SIGNPATH_APPLICATION_2026.md](SIGNPATH_APPLICATION_2026.md) and can be pasted into
-the form whenever it is sent.
+`check-signing-copy-agreement.cjs` is the one that matters. The download card, the
+code signing policy and the Windows platform page have each said something
+different about Windows signing at some point, and on one occasion the download
+page said the packages were coming to the Microsoft Store while the policy page
+described a SignPath application. Both were reachable from the navigation. That
+check compares six specific facts across all three and fails if they disagree.
 
-Two things make "later" a reasonable position rather than a postponement:
+## Step 6 — SignPath, when it is ready
 
-- Their terms require a released Windows artifact. After Step 1 that condition is
-  met, so the application becomes possible whenever it is sent.
-- Their terms also require the code signing policy on the project's home page.
-  After Step 2 that is true. Sending it before either would be sending it
-  incomplete.
+Prepared in [SIGNPATH_APPLICATION_2026.md](SIGNPATH_APPLICATION_2026.md). Nothing
+has been submitted.
 
-When it does go in, the reputation question will be the hard part, and the
-preview's download count is the main thing that will have moved.
+Their terms require two things this plan produces: a released Windows artifact,
+and the code signing policy on the home page. Both are true after steps 1 and 4.
 
-## If the preview is a mistake
+## Before step 4 — the things that are not optional
 
-The release can be deleted. Nothing else has to be undone: no version was
-consumed, `latest` never pointed at it, and the tag is suffixed so it is
-distinguishable in a clone. This is the property the `-unsigned-preview` suffix
-and the pre-release flag exist to provide, and it is worth remembering when
-deciding whether to go ahead, because it is the difference between a reversible
-step and an irreversible one.
+- [ ] **Windows manual smoke checklist** in
+      [DESKTOP_MANUAL_SMOKE_CHECKLIST.md](DESKTOP_MANUAL_SMOKE_CHECKLIST.md),
+      complete for these exact artifacts, tester field filled in.
+      [PUBLIC_RELEASE_BLOCKERS.md](PUBLIC_RELEASE_BLOCKERS.md) blocks Windows
+      distribution on this. The difference between a preview and a release is the
+      signature, not the testing.
+- [ ] **The site is live.** The release notes tell users the policy is published at
+      `kalderashield.com/code-signing-policy.html`. If the site is not up, that is
+      a link to nowhere in a document whose purpose is to be credible.
+- [ ] **The repository is pushed.** The release notes name this repository as the
+      source of the artifacts.
 
-## The one thing that does not reverse
+## If it is a mistake
 
-Anything a user does with the files. A user who downloads, gets a SmartScreen
-warning, clicks through, and then gets a different antivirus product's quarantine
-has had that experience. This is the cost of the step, stated plainly so it is not
-discovered later as a surprise.
+The release can be deleted, and the tag with it. Nothing else has to be undone: no
+version was consumed, `latest` never pointed at it, and the `-unsigned-preview`
+suffix means the tag is distinguishable in a clone. That reversibility is the
+property the suffix and the pre-release flag exist to provide.
+
+The one thing that does not reverse is anything a user did with the files. Someone
+who downloads, gets the SmartScreen warning, clicks through, and then hits a
+different antivirus product's quarantine has had that experience. That is the cost
+of the step, stated here so it is not discovered later.

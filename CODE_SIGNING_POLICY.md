@@ -176,11 +176,22 @@ in the form that should be signed, so one unsigned release has to exist before t
 application can be made at all.
 
 The fail-closed gate in `release-desktop.yml` is unchanged and still blocks any
-unsigned artifact from a normal release tag. The preview is published by a
-separate manual workflow that marks the release as a pre-release, so it is
-visibly provisional, `latest` never points at it, and the next signed release
-replaces it. The pipeline's gate is documented in
-[Code Signing & Artifact Signing Guide](docs/CODE_SIGNING_GUIDE_2026.md).
+unsigned artifact from a normal release tag, and there is no workflow in
+`.github/workflows/` that can publish one. The preview is assembled and uploaded
+by hand, from the maintainer's machine through GitHub's own release form, marked
+as a pre-release — so it is visibly provisional, `latest` never points at it, and
+the next signed release replaces it.
+
+That route is deliberate rather than a workaround. The repository contains a
+security gate (`npm run security:release-signing`) that fails any workflow capable
+of turning an unsigned build into a published one, and its closing claim is that
+without the signing secrets a public desktop release is *impossible by design*.
+Adding an exception for a workflow would have made that claim false in exchange
+for a convenience. Keeping the upload in a browser keeps the guarantee intact. The
+gate is documented in
+[Code Signing & Artifact Signing Guide](docs/CODE_SIGNING_GUIDE_2026.md), and the
+step-by-step procedure is in
+[Plan: site, then the unsigned Windows preview](docs/WINDOWS_UNSIGNED_RELEASE_PLAN.md).
 
 ## Reporting a problem
 

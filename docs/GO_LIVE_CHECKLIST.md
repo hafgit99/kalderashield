@@ -187,10 +187,15 @@ cd kalderashield-website
 node scripts/check-placeholders.cjs          # must PASS
 node scripts/audit-page-meta.cjs            # must be clean
 node scripts/audit-locale-links.cjs         # must PASS
+node scripts/audit-static-i18n.cjs          # must PASS
 node scripts/check-signing-copy-agreement.cjs  # must PASS
 node scripts/check-policy-strays.cjs        # must be clean
 node scripts/audit-i18n.cjs                 # baseline was 34; investigate anything above
 ```
+
+`audit-static-i18n.cjs` is the one that fails if a page's static text disagrees
+with its dictionary — the check that keeps the served page from depending on
+JavaScript running at all.
 
 The last two are new and exist because of what this work uncovered:
 `check-signing-copy-agreement.cjs` because three pages had already disagreed about
