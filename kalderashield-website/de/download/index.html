@@ -332,9 +332,10 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64-Bit und höher</p>
           <p data-i18n="dl-c1-desc">Tauri-basierter MSI-Installer oder eigenständige portable EXE-Datei.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Kommt in den Microsoft Store</strong></p>
-            <p data-i18n="win-store-desc">Der Store signiert das Paket mit seinem eigenen Zertifikat neu. Sie installieren ohne SmartScreen-Warnung, und es muss kein Code-Signatur-Zertifikat gekauft werden.</p>
+            <p><strong data-i18n="win-store-title">Unsignierte Vorschau — Signatur-Antrag noch nicht gestellt</strong></p>
+            <p data-i18n="win-store-desc"><strong>Diese Dateien sind nicht signiert.</strong> Windows zeigt "Der PC ist geschützt", und Sie müssen auf "Weitere Informationen" → "Trotzdem ausführen" klicken, um das Installationsprogramm zu starten. Das ist erwartet und bedeutet nicht, dass die Datei Schadsoftware ist. Prüfen Sie vor dem Start die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Dies ist eine <em>Vorabversion</em>, keine stabile Version. Warum unsigniert: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, es gibt also noch kein Zertifikat zum Signieren. Das Projekt hat eine Bewerbung beim SignPath Foundation für kostenlose Open-Source-Signierung vorbereitet; sie wurde noch nicht eingereicht. Sobald Signieren möglich ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.</p>
           </div>
+          <p class="card-action"><a class="btn btn-ghost" href="/de/code-signing-policy.html" data-i18n="dl-csp-link">Richtlinie zur Code-Signierung</a></p>
         </article>
 
         <article class="card soon" id="macos">

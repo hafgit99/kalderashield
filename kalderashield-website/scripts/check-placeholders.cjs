@@ -64,11 +64,22 @@ function foreignOrigin(text) {
   return [...found];
 }
 
+/* Hosts that legitimately appear as absolute URLs in published output.
+ *
+ * The list is short on purpose: every entry is a host the site has a stated
+ * reason to link to, and a new one has to be argued for here rather than added
+ * silently. signpath.io and signpath.org are here because the code signing
+ * policy is required to name them -- "Free code signing provided by SignPath.io,
+ * certificate by SignPath Foundation" -- and because the reporting address for a
+ * certificate signed under their name is their own. A page that has to quote
+ * those words cannot also be forbidden from linking to them. */
 const ALLOWED_HOSTS = new Set([
   'github.com',
   'www.apache.org',
   'www.w3.org',
   'www.sitemaps.org',
+  'signpath.io',
+  'signpath.org',
 ]);
 
 for (const file of collect(root)) {

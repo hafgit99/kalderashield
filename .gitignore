@@ -22,6 +22,17 @@ key.properties
 native-host-local/
 dist-extension*/com.kalderashield.desktop.json
 dist-extension*/KalderaShield-host.bat
+release-local/
+
+# Staging for the manually uploaded unsigned Windows preview. Holds copies of the
+# build's own binaries plus a generated SHA256SUMS.txt -- megabytes of derived
+# output that must never enter the repository, for the same reason release-local/
+# does not.
+# Staging for the manually uploaded unsigned Windows preview. Holds copies of the
+# build's own binaries plus a generated SHA256SUMS.txt -- megabytes of derived
+# output that must never enter the repository, for the same reason release-local/
+# does not.
+release-preview/
 release-local/**/com.kalderashield.desktop.json
 release-local/**/KalderaShield-host.bat
 

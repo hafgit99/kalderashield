@@ -89,7 +89,7 @@ Full localization across 12 languages:
 
 | Platform | Published Artifacts | Security Status |
 |---|---|---|
-| **Windows Desktop** | *Not published* — awaiting a code-signing certificate | 🔒 Build-verified (Tauri 2.11). Updater signature verification is implemented but inactive until Windows artifacts ship |
+| **Windows Desktop** | *Unsigned preview only* — NSIS installer, MSI and portable EXE, published as a GitHub **pre-release**. Not code-signed: SmartScreen will warn, verify the SHA-256 digest before running. See the [code signing policy](CODE_SIGNING_POLICY.md) | 🔒 Build-verified (Tauri 2.11). Updater signature verification is implemented but inactive until signed Windows artifacts ship |
 | **Linux Desktop** | AppImage, DEB | 🔒 Verified (PipeWire / D-Bus screen recording shield active, Tauri updater signatures verified) |
 | **macOS Desktop** | *Not published* — awaiting Apple notarization | 🔒 Build-verified (Native WebExtension bridge) |
 | **Android Mobile** | Signed APK, App Bundle (AAB) | 🔒 Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
@@ -315,6 +315,8 @@ npm run package:firefox:xpi
 - 🏗️ [Architecture Review & System Boundaries](docs/ARCHITECTURE_REVIEW.md)
 - 🛠️ [KalderaShield CLI Usage Guide](CLI_USAGE.md)
 - 🔑 [Code Signing & Distribution Guide](docs/CODE_SIGNING_GUIDE_2026.md)
+- ✍️ [Code Signing Policy](CODE_SIGNING_POLICY.md) — required by the [SignPath Foundation](https://signpath.org/terms.html) for open-source signing: which artifacts are signed, by whom, under which key custody, and who approves each signature. Published at <https://kalderashield.com/code-signing-policy.html>.
+- 📮 [Plan: unsigned Windows preview, then the site](docs/WINDOWS_UNSIGNED_RELEASE_PLAN.md) · [SignPath application values](docs/SIGNPATH_APPLICATION_2026.md) (prepared, not submitted) · [Go-live checklist](docs/GO_LIVE_CHECKLIST.md)
 - 🤖 [Android Readiness & Hardware Security](docs/ANDROID_READINESS.md)
 - 🦊 [Firefox XPI Packaging & AMO Guide](FIREFOX_XPI.md)
 - 🍏 [Safari Manifest V3 Extension Guide](SAFARI_EXTENSION.md)

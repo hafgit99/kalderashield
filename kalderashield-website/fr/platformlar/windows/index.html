@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Ce qu’il faut savoir côté Windows</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Signatures et SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Les installateurs Windows ne portent pas encore de signature Authenticode : le projet n’a pas de certificat de signature de code, et son garde-fou de version empêche la publication d’artefacts non signés comme versions officielles. Tant que cela ne change pas, Windows SmartScreen peut afficher « Windows a protégé votre PC » pour des fichiers obtenus par une compilation — vérifiez le hachage SHA-256 contre les sommes de contrôle publiées, et voyez la page de vérification pour ce que cet avertissement signifie et ne signifie pas.</p>
+        <p data-i18n="p-windows-sec-body">Les installeurs Windows sont <strong>non signés</strong> et ne portent pas de signature Authenticode. Il n'y a pas de certificat de signature : la chaîne de publication traite une version de bureau non signée comme un échec, donc seule une <em>préversion</em> explicitement étiquetée est publiée pour l'instant. Ces fichiers déclenchent l'avertissement SmartScreen « Votre PC est protégé », et vous devrez cliquer sur « Informations » → « Exécuter quand même » — c'est attendu. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant l'installation. Une candidature auprès de la SignPath Foundation pour la signature open source gratuite a été préparée mais n'a pas encore été déposée ; dès que la signature sera possible, les versions suivantes seront signées et cet avertissement disparaîtra.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">

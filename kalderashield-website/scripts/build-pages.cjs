@@ -526,6 +526,11 @@ function buildSitemap(pageList) {
   const legal = [
     { loc: '/privacy.html', freq: 'yearly', pri: '0.3' },
     { loc: '/terms.html', freq: 'yearly', pri: '0.3' },
+    // The code signing policy sits with the legal pages because that is where
+    // SignPath Foundation asks for it: their terms say the policy must be on the
+    // project's home page, and a reader who follows a signing complaint should
+    // land somewhere adjacent to the privacy policy rather than have to search.
+    { loc: '/code-signing-policy.html', freq: 'monthly', pri: '0.4' },
   ];
 
   const urls = [...fixed, ...generated, ...legal]

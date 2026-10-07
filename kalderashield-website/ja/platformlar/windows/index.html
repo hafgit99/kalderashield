@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Windows で知っておくべきこと</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">署名と Windows の警告</strong>
-        <p data-i18n="p-windows-sec-body">Windows インストーラーにはまだ Windows の正式なコード署名がありません。プロジェクトはコード署名証明書を持たず、リリースゲートは未署名の成果物が公式リリースとして公開されるのを遮断しています。状況が変わるまで、ビルドから入手したファイルには Windows の警告機能が「Windows によって PC が保護されました」と表示することがあります。公開済みチェックサムと SHA-256 ハッシュを比べ、この警告の意味と意味でないものについては検証ページを参照してください。</p>
+        <p data-i18n="p-windows-sec-body">Windows インストーラーは<strong>署名されていません</strong>。Authenticode 署名も付いていません。署名証明書がないためです。リリースパイプラインは未署名のデスクトップリリースを失敗として扱うので、現時点では明示的にラベルされた<em>プレリリース</em>のみを公開しています。これらのファイルでは Windows SmartScreen の「PC を保護しています」が表示され、「詳細」→「実行する」をクリックする必要があります。これは想定された動作です。インストール前に SHA256SUMS.txt と SHA-256 ダイジェストを照合してください。オープンソース向けの無料署名について SignPath Foundation への申請は準備済みですが、まだ提出していません。署名が可能になったら以降のリリースは署名され、この警告はなくなります。</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">

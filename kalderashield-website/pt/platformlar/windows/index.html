@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Especificidades do Windows que deves conhecer</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Assinaturas e SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Os instaladores de Windows ainda não trazem assinatura Authenticode: o projeto não tem certificado de assinatura de código, e a sua verificação de lançamento impede que artefactos não assinados sejam publicados como lançamentos oficiais. Até isso mudar, o Windows SmartScreen pode mostrar "O Windows protegeu o seu PC" para ficheiros que obtenhas de uma compilação — verifica o hash SHA-256 contra os checksums publicados e vê a página de verificação para saber o que esse aviso significa e o que não significa.</p>
+        <p data-i18n="p-windows-sec-body">Os instaladores do Windows <strong>não estão assinados</strong> e não têm assinatura Authenticode. Não existe certificado de assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso por agora só é publicada uma <em>pré-visualização</em> explicitamente rotulada. Estes arquivos acionam o aviso do SmartScreen "O seu PC está protegido" e terá de clicar em "Mais informações" → "Executar mesmo assim" — é o esperado. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de instalar. Foi preparada uma candidatura à SignPath Foundation para assinatura de código aberto gratuita, mas ainda não submetida; quando a assinatura estiver disponível, os lançamentos seguintes serão assinados e este aviso desaparece.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">

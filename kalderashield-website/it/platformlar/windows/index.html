@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Particolarità di Windows che conviene conoscere</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Firme e SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Gli installer Windows non portano ancora una firma Authenticode: il progetto non ha un certificato di firma del codice, e il suo controllo di rilascio blocca la pubblicazione degli artefatti non firmati come rilasci ufficiali. Finché non cambia, Windows SmartScreen può mostrare "Windows ha protetto il tuo PC" per i file che ottieni da una build — verifica l’hash SHA-256 contro i checksum pubblicati, e consulta la pagina di verifica per capire che cosa quell’avviso significa e che cosa no.</p>
+        <p data-i18n="p-windows-sec-body">Gli installer Windows <strong>non sono firmati</strong> e non portano una firma Authenticode. Non c'è un certificato di firma: la pipeline di rilascio tratta una release desktop non firmata come un fallimento, quindi al momento viene pubblicata soltanto un'<em>anteprima</em> etichettata esplicitamente. Questi file attivano l'avviso SmartScreen «Il PC è protetto» e sarà necessario fare clic su «Altre informazioni» → «Esegui comunque»: è previsto. Verifica il digest SHA-256 in SHA256SUMS.txt prima di installare. Una domanda alla SignPath Foundation per la firma open source gratuita è stata preparata ma non ancora inoltrata; quando la firma sarà disponibile, le release successive saranno firmate e questo avviso scomparirà.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">
