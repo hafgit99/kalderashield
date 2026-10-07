@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Windows specifics you should know</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Signatures and SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Windows installers do not carry an Authenticode signature yet: the project has no code-signing certificate, and its release gate blocks unsigned artifacts from being published as official releases. Until that changes, Windows SmartScreen may show "Windows protected your PC" for files you obtain from a build — verify the SHA-256 hash against the published checksums, and see the verification page for what that warning does and does not mean.</p>
+        <p data-i18n="p-windows-sec-body">Windows installers are <strong>not signed</strong> and carry no Authenticode signature. There is no signing certificate: the release pipeline treats an unsigned desktop release as a failure, so only an explicitly labelled <em>pre-release</em> is published for now. These files will trigger the Windows SmartScreen "Windows protected your PC" warning, and you must click "More info" → "Run anyway" to run the installer — this is expected. Verify the SHA-256 digest against SHA256SUMS.txt before installing. An application to the SignPath Foundation for free open-source signing has been prepared but has not yet been submitted; once signing is available, subsequent releases will be signed and this warning goes away.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">

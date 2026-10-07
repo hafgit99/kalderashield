@@ -95,8 +95,18 @@ for (const p of byPath.keys()) {
   if (!onDisk.has(p)) problems.push(`sitemap'te var ama sayfa yok: ${p}`);
 }
 
-/* No stray top-level files, and no dotfile can become a published address. */
-const stray = [...onDisk].filter((p) => /\.[a-z]+$/i.test(p) && !/\/(privacy|terms)\.html$/.test(p));
+/* No stray top-level files, and no dotfile can become a published address.
+ *
+ * The allow-list is the set of hand-written pages that live at the root rather
+ * than under a section directory. Each one is listed because it exists, not
+ * because the check can recognise it: the rule this enforces is "a new root page
+ * is a deliberate decision", and a regex that tried to infer intent would either
+ * accept any file whose name looked legal-shaped or reject a legitimate one for a
+ * spelling reason. */
+const ROOT_PAGES = ['privacy.html', 'terms.html', 'code-signing-policy.html'];
+const stray = [...onDisk].filter(
+  (p) => /\.[a-z]+$/i.test(p) && !ROOT_PAGES.includes(p.replace(/^\//, ''))
+);
 for (const p of stray) problems.push(`beklenmeyen dosya turu, adrese donustu: ${p}`);
 
 if (problems.length) {

@@ -332,9 +332,10 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 de 64 bits y posterior</p>
           <p data-i18n="dl-c1-desc">Instalador MSI optimizado basado en Tauri o ejecutable portable independiente.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Próximamente en Microsoft Store</strong></p>
-            <p data-i18n="win-store-desc">La Store vuelve a firmar el paquete con su propio certificado: instalarás sin advertencias de SmartScreen y sin necesidad de comprar un certificado de firma de código.</p>
+            <p><strong data-i18n="win-store-title">Vista previa sin firmar — solicitud de firma aún no presentada</strong></p>
+            <p data-i18n="win-store-desc"><strong>Estos archivos no están firmados.</strong> Windows mostrará "Tu PC está protegido" y tendrás que hacer clic en "Más información" → "Ejecutar de todas formas" para ejecutar el instalador. Es lo esperado y no significa que el archivo sea malware. Verifica el resumen SHA-256 en SHA256SUMS.txt antes de ejecutarlo. Esta es una <em>versión preliminar</em>, no una versión estable. Por qué sin firmar: la cadena de publicación trata una versión de escritorio sin firmar como un fallo, así que todavía no hay certificado con el que firmar. El proyecto ha preparado una solicitud al programa de SignPath Foundation para firma de código abierto gratuita; aún no se ha enviado. Cuando la firma esté disponible, las siguientes versiones de Windows irán firmadas y este aviso se eliminará.</p>
           </div>
+          <p class="card-action"><a class="btn btn-ghost" href="/es/code-signing-policy.html" data-i18n="dl-csp-link">Política de firma de código</a></p>
         </article>
 
         <article class="card soon" id="macos">

@@ -332,9 +332,10 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64 bits ou superior</p>
           <p data-i18n="dl-c1-desc">Instalador MSI nativo otimizado baseado em Tauri ou executável portátil.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Em breve no Microsoft Store</strong></p>
-            <p data-i18n="win-store-desc">A Store reassina o pacote com o próprio certificado: você instala sem avisos do SmartScreen e sem precisar comprar um certificado de assinatura de código.</p>
+            <p><strong data-i18n="win-store-title">Pré-visualização sem assinatura — candidatura ainda não submetida</strong></p>
+            <p data-i18n="win-store-desc"><strong>Estes ficheiros não estão assinados.</strong> O Windows mostrará "O seu PC está protegido" e terá de clicar em "Mais informações" → "Executar mesmo assim" para executar o instalador. É o esperado e não significa que o ficheiro seja malware. Verifique o resumo SHA-256 no SHA256SUMS.txt antes de o executar. Esta é uma <em>pré-visualização</em>, não um lançamento estável. Porquê sem assinatura: a cadeia de lançamento trata um lançamento de ambiente de trabalho sem assinatura como uma falha, por isso ainda não há certificado com que assinar. O projeto preparou uma candidatura à SignPath Foundation para assinatura de código aberto gratuita; ainda não foi submetida. Quando a assinatura estiver disponível, os lançamentos Windows seguintes serão assinados e este aviso removido.</p>
           </div>
+          <p class="card-action"><a class="btn btn-ghost" href="/pt/code-signing-policy.html" data-i18n="dl-csp-link">Política de assinatura de código</a></p>
         </article>
 
         <article class="card soon" id="macos">

@@ -1,0 +1,169 @@
+<!DOCTYPE html><html lang="zh" dir="ltr" data-site-version="7.0.20"><head>
+<meta charset="utf-8">
+<meta name="x-test-count" content="2243">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
+<link rel="sitemap" href="/sitemap.xml" type="application/xml">
+
+<title>代码签名政策 — KalderaShield</title>
+<meta name="description" content="本页说明 KalderaShield 的哪些发布产物由谁签名、采用何种密钥保管方式，以及每份签名由谁负责批准。仓库中同一文档的源版本：CODE_SIGNING_POLICY.md">
+<link rel="canonical" href="https://kalderashield.com/zh/code-signing-policy.html">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KalderaShield">
+<meta property="og:title" content="代码签名政策 — KalderaShield">
+<meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
+<meta property="og:description" content="本页说明 KalderaShield 的哪些发布产物由谁签名、采用何种密钥保管方式，以及每份签名由谁负责批准。仓库中同一文档的源版本：CODE_SIGNING_POLICY.md">
+<meta property="og:url" content="https://kalderashield.com/zh/code-signing-policy.html">
+
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/images/icon-192.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/code-signing-policy.html">
+<link rel="alternate" hreflang="de" href="https://kalderashield.com/de/code-signing-policy.html">
+<link rel="alternate" hreflang="en" href="https://kalderashield.com/en/code-signing-policy.html">
+<link rel="alternate" hreflang="es" href="https://kalderashield.com/es/code-signing-policy.html">
+<link rel="alternate" hreflang="fr" href="https://kalderashield.com/fr/code-signing-policy.html">
+<link rel="alternate" hreflang="it" href="https://kalderashield.com/it/code-signing-policy.html">
+<link rel="alternate" hreflang="ja" href="https://kalderashield.com/ja/code-signing-policy.html">
+<link rel="alternate" hreflang="ko" href="https://kalderashield.com/ko/code-signing-policy.html">
+<link rel="alternate" hreflang="pt" href="https://kalderashield.com/pt/code-signing-policy.html">
+<link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/code-signing-policy.html">
+<link rel="alternate" hreflang="tr" href="https://kalderashield.com/code-signing-policy.html">
+<link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/code-signing-policy.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/code-signing-policy.html">
+
+<script type="application/ld+json">{
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "KalderaShield",
+      "item": "https://kalderashield.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "代码签名政策"
+    }
+  ]
+}</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-i18n="skip-link">跳转到内容</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/zh/">
+      <img src="/assets/images/icon-128.png" alt="" width="40" height="40">
+      Kaldera<span class="brand-accent">Shield</span>
+    </a>
+
+    <nav class="site-nav" id="site-nav">
+      <a href="/zh/#features" data-i18n="nav-features">核心功能</a>
+      <a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a>
+      <a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a>
+      <a href="/zh/sss/" data-i18n="nav-faq">常见问题</a>
+      <a class="nav-cta" href="/zh/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">立即下载</span></a>
+
+      <details class="lang">
+        <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
+          <span class="lang-code" data-lang-code="">TR</span>
+          <span data-lang-current="">Türkçe</span>
+        </summary>
+        <div class="lang-menu" id="lang-menu"></div>
+      </details>
+
+      <details class="theme">
+        <summary data-i18n-attr="aria-label:theme-switch-label" aria-label="选择主题">
+          <span class="theme-glyph" aria-hidden="true">◐</span>
+          <span class="theme-current" data-theme-current="" data-i18n="theme-system">跟随系统</span>
+        </summary>
+        <div class="theme-menu" id="theme-menu"></div>
+      </details>
+    </nav>
+      <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" data-i18n-attr="aria-label:nav-menu-label" aria-label="菜单">
+        <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+      </button>
+  </div>
+</header>
+
+<main id="main" class="legal">
+
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="csp-eyebrow">法律信息</span>
+    <h1 data-i18n="csp-title">代码签名政策</h1>
+    <p class="muted prose" data-i18n="csp-updated">最后更新：2026 年 10 月 · 提供 12 种语言。</p>
+  </div>
+
+  <section>
+    <div class="wrap prose">
+
+      <h2 data-i18n="csp-h2-1">1. 本政策规定的内容</h2>
+      <p data-i18n="csp-p1-1">本页说明 KalderaShield 的哪些发布产物由谁签名、采用何种密钥保管方式，以及每份签名由谁负责批准。仓库中同一文档的源版本：<a href="https://github.com/hafgit99/kalderashield/blob/main/CODE_SIGNING_POLICY.md" rel="noopener noreferrer">CODE_SIGNING_POLICY.md</a></p>
+
+      <h2 data-i18n="csp-h2-2">2. Windows</h2>
+      <p data-i18n="csp-p1-3">Free code signing provided by SignPath.io, certificate by SignPath Foundation.</p>
+      <p data-i18n="csp-p1-4"><strong>状态：<strong>尚未提交</strong>申请。</strong> KalderaShield 计划向 SignPath Foundation 提交申请，并已提前准备好本政策，因为对方条款要求本政策在提交申请之前就已存在。申请尚未提交，也没有待决结论。本节不得被理解为任何 Windows 产物目前已签名。<strong>它并未签名。</strong>在首个已签名版本真正发布之前，诚实的表述就是下面的状态表；本节会在该版本发布<em>之前</em>更新。</p>
+      <p data-i18n="csp-p1-5">将被签名的文件是 NSIS 安装程序（<code>KalderaShield_&lt;版本&gt;_x64-setup.exe</code>）、用于受管部署的 MSI 包（<code>KalderaShield_&lt;版本&gt;_x64.msi</code>）以及无需安装的便携可执行文件（<code>KalderaShield_&lt;版本&gt;_x64-portable.exe</code>）。三者均由本仓库构建，并在<a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">发行页面</a>发布。凡非由本仓库构建的产物，一律不以本项目证书签名；也不会用该证书对任何第三方二进制文件重新签名。</p>
+      <p data-i18n="csp-p1-6"><strong>密钥保管：</strong>私钥在 SignPath 的 HSM 中生成并保存。本项目从不持有该密钥，从不导出，也绝不将其传递给构建运行器或开发人员机器。签名在 SignPath 一侧进行，响应的是本仓库 CI 提交并由人工批准的签名请求。</p>
+      <p data-i18n="csp-p1-7"><strong>链条：</strong>推送版本标签 → GitHub Actions 构建这些文件（工作流是公开的，第三方 action 按 commit SHA 固定，令牌权限为只读）→ 构建将文件上传至 SignPath 并发起签名请求，但自身不签名 → 一位 Approver 批准或拒绝 → SignPath 使用 Foundation 证书签名 → 已签名文件与 <code>SHA256SUMS.txt</code> 一并发布。每个发行版都需要人工批准；不存在无人值守的签名路径，也不会新增。</p>
+      <p data-i18n="csp-p1-8">有效的 SignPath Foundation 签名意味着该二进制文件是可验证的自动化构建，源自本仓库在发行版所指明提交处的源代码。这<strong>并不</strong>意味着软件经过审计，也不构成对该应用的安全背书。本项目发布了威胁模型与质量门禁文档，但没有完成的独立第三方安全审计：<a href="/zh/guvenlik/denetim-durumu/">安全审计状态</a>。</p>
+
+      <h2 data-i18n="csp-h2-3">3. 团队角色</h2>
+      <p data-i18n="csp-p1-9">KalderaShield 由一人维护。此处如实说明，而非包装成团队，因为下面这些角色正是 SignPath 所要求的，而唯一的维护者只有独自一人才能诚实地承担。所有对本仓库拥有写入权限的账户均已启用多重身份验证。</p>
+      <div class="prose" data-i18n="csp-p1-11"><p><strong>作者（Authors）</strong> — 无需额外审查即可修改源代码的人员：</p>
+      <ul>
+        <li><code>hafgit99</code> — <a href="https://github.com/hafgit99" rel="noopener noreferrer">github.com/hafgit99</a></li>
+      </ul>
+      <p>这是唯一拥有写入权限的账户。本仓库由个人账户而非组织所有，因此写入路径是一个启用了多重身份验证的单一身份。</p></div>
+      <div class="prose" data-i18n="csp-p1-13"><p><strong>审查者（Reviewers）</strong> — 在合并前审查无提交权限者提出的每一项更改的人员：</p>
+      <ul>
+        <li><code>hafgit99</code></li>
+      </ul>
+      <p>目前没有无提交权限的贡献者，因此该角色与其说人手稀少，不如说实际上是空的。</p></div>
+      <div class="prose" data-i18n="csp-p1-15"><p><strong>批准人（Approvers）</strong> — 在产物被签名前批准每份签名请求的人员：</p>
+      <ul>
+        <li><code>hafgit99</code></li>
+      </ul>
+      <p><strong>已知缺口：</strong>三个角色都由同一人承担，编写代码的人也就批准了自己的签名。SignPath 的模型假定 Approver 是「受全团队信任」的人，而这预设了团队成员不止一位。增设第二名 Approver 的计划已有，但尚未完成。认为这一点构成否决理由的审查者，应当现在就提出，而不是等到批准之后。</p></div>
+
+      <h2 data-i18n="csp-h2-4">4. 隐私政策</h2>
+      <p data-i18n="csp-p1-18"><strong>按 SignPath 要求的措辞：本程序不会将任何信息传输到其他联网系统，除非用户或安装、运行本程序的人明确提出要求。</strong></p>
+      <p data-i18n="csp-p1-19">KalderaShield 是一款离线优先、零知识的密码管理器。保管库内容在设备上使用由主密码派生的密钥加密，绝不传输。它没有账户、没有同步服务、没有遥测、没有分析。Windows 二进制文件中除操作系统自身的组件外，不含任何网络客户端。完整文本见<a href="/zh/privacy.html">隐私政策</a>。影响用户的第三方组件行为记录在<a href="https://github.com/hafgit99/kalderashield/blob/main/LICENSE-3RD-PARTY.md" rel="noopener noreferrer">LICENSE-3RD-PARTY.md</a>中。</p>
+
+      <h2 data-i18n="csp-h2-5">5. 其他平台</h2>
+      <p data-i18n="csp-p1-21"><strong>macOS</strong> — 产物使用 Apple Developer ID 签名并由 Apple 公证。证书尚未签发，因此没有任何 macOS 产物已签名，也没有发布任何 macOS 产物。<strong>Linux</strong> — <code>.deb</code>、<code>.rpm</code>、<code>.AppImage</code> 以分离式 GPG 签名（<code>.sig</code>）发布；SBOM 与浏览器扩展包以无密钥 Sigstore 签名（<code>.sigstore.json</code>）发布。<strong>Android</strong> — 发行版 APK 使用保存在 GitHub Actions 机密中的发行密钥库签名；Android 签名与 Authenticode 相互独立。任何平台在真正签名之前，都不会被描述为已签名。</p>
+      <p data-i18n="csp-p1-24"><strong>当前状态：</strong>Linux、Android 和浏览器扩展已发布并已签名。<strong>Windows 仅以未签名预览形式发布</strong>：这是一份<em>预发行版</em>，不是稳定发行版，<code>latest</code> 也不会指向它。未签名文件会触发 Windows SmartScreen 的"已保护你的电脑"提示，需要点击"更多信息"→"仍要运行"才能运行安装程序——这是预期行为。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。macOS 未发布且未签名（证书尚未签发）。</p>
+      <p data-i18n="csp-p1-25">Windows 产物不作为发行版发布——发布流水线把未签名的桌面发行版视为失败。唯一的例外是明确标注为未签名预览的预览版；该工作流将其标记为<em>预发行版</em>，因此 <code>latest</code> 绝不会指向它，下一个已签名发行版会取代它。该流水线的 fail-closed 闸门记录在<a href="https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md" rel="noopener noreferrer">代码签名与产物签名指南</a>中，且普通发行版标签无法发布任何未签名文件。</p>
+
+      <h2 data-i18n="csp-h2-9">6. 报告问题</h2>
+      <p data-i18n="csp-p1-26">如果你认为某个以 SignPath Foundation 证书签名的产物违反了本政策，请将该产物的哈希值和理由发送至 <a href="mailto:support@signpath.io">support@signpath.io</a>。关于这些产物的其他任何问题，请使用 <a href="mailto:security@kalderashield.com">security@kalderashield.com</a>；披露流程见 <a href="https://github.com/hafgit99/kalderashield/blob/main/SECURITY.md" rel="noopener noreferrer">SECURITY.md</a>。</p>
+
+      <p class="muted" data-i18n="csp-governing">如有差异，以本政策的土耳其语文本为准。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="base">
+      <a href="/zh/" style="color:var(--text-muted)">KalderaShield</a>
+      <a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a>
+      <a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a>
+      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">源码浏览</a>
+    </p>
+  </div>
+</footer>
+
+<script src="/assets/js/i18n-apply.js" defer></script>
+<script src="/assets/js/site.js" defer></script>
+
+
+</body></html>

@@ -208,7 +208,7 @@
       <h2 data-i18n="p-windows-sec-title">Windows-Besonderheiten, die Sie kennen sollten</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Signaturen und SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Windows-Installationsprogramme tragen noch keine Authenticode-Signatur: Das Projekt besitzt kein Code-Signing-Zertifikat, und sein Release-Gate blockiert unsignierte Artefakte von der Veröffentlichung als offizielle Releases. Solange sich das nicht ändert, kann Windows SmartScreen für Dateien, die Sie aus einem Build beziehen, „Windows hat Ihren PC geschützt“ anzeigen — verifizieren Sie den SHA-256-Hash gegen die veröffentlichten Prüfsummen, und lesen Sie auf der Verifikationsseite nach, was diese Warnung bedeutet und was nicht.</p>
+        <p data-i18n="p-windows-sec-body">Windows-Installationsprogramme sind <strong>nicht signiert</strong> und tragen keine Authenticode-Signatur. Es gibt kein Signaturzertifikat: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, daher wird derzeit nur eine ausdrücklich gekennzeichnete <em>Vorabversion</em> veröffentlicht. Diese Dateien lösen die SmartScreen-Warnung "Der PC ist geschützt" aus, und Sie müssen auf "Weitere Informationen" → "Trotzdem ausführen" klicken — das ist erwartet. Prüfen Sie vor der Installation die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Eine Bewerbung beim SignPath Foundation für kostenlose Open-Source-Signierung ist vorbereitet, aber noch nicht eingereicht worden; sobald Signieren möglich ist, werden nachfolgende Versionen signiert und diese Warnung entfällt.</p>
       </div>
       
       <div class="grid grid-3" style="margin-top:1.6rem">
