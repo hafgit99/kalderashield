@@ -10,6 +10,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Weekly cron and a push to main can both fire for the same commit, and the
+# scorecard action publishes to the OSSF API -- two runs racing that endpoint
+# produce a failed run that looks like a supply-chain finding rather than a
+# scheduling collision. Same reasoning as codeql.yml.
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: false
+
 # Declare read-only access upfront; jobs elevate their own scopes.
 permissions: read-all
 

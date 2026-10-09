@@ -156,6 +156,26 @@ jobs:
         working-directory: kalderashield-website
         run: node scripts/measure-locale-coverage.cjs
 
+      # Every other gate here runs dictionary-ward: "does this page say what its
+      # dictionary says", "does every locale have this key". None of them look at
+      # a key no page asks for, and that gap held two false claims -- a recovery
+      # KDF named PBKDF2 and a testimonial asserting that independent audits
+      # exist -- in all twelve dictionaries, shipped to every visitor, invisible
+      # on every page. The legacy orphans are recorded in a committed baseline so
+      # this fails only on new ones; the debt stops growing here and pruning it
+      # stays ordinary work.
+      - name: No dictionary key is left unrendered
+        working-directory: kalderashield-website
+        run: node scripts/audit-orphan-keys.cjs
+
+      # "kurulum särasında" for "sırasında". Turkish has no ä and no û, so those
+      # two characters are a corrupted character rather than a word, and no
+      # spellchecker flags them. Scoped to the Turkish copy because the same
+      # test is 340 false positives in German.
+      - name: Turkish copy has no corrupted characters
+        working-directory: kalderashield-website
+        run: node scripts/audit-turkish-copy.cjs
+
       # The committed locale pages must be what generate-locales.cjs produces
       # now. Regenerating and diffing is the check: the generator is the only
       # Every page is written in its own language at build time, so a
