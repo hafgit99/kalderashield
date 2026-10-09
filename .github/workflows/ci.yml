@@ -123,6 +123,18 @@ jobs:
         working-directory: kalderashield-website
         run: node scripts/sync-claims.cjs --check
 
+      # The homepage also publishes two claims that are statements about the
+      # product rather than about the repository: which KDF derives the recovery
+      # key, and whether an independent audit has happened. Both had parted
+      # ways with reality -- the recovery copy named PBKDF2 while
+      # src/lib/recoveryKey.ts derives with Argon2id, and the audit badge said
+      # "in progress" while the audit page said no audit had taken place. The
+      # first is read out of the source, so changing RECOVERY_KDF_PROFILE fails
+      # here instead of leaving twelve dictionaries publishing the old numbers.
+      - name: Cryptographic and audit claims match the code
+        working-directory: kalderashield-website
+        run: node scripts/sync-security-claims.cjs --check
+
       # theme-color as a prefers-color-scheme pair, and the rel="sitemap" link,
       # on every page. The colours are read from site.css by the script, so a
       # palette change cannot leave the browser chrome behind it.
@@ -193,6 +205,7 @@ jobs:
           node scripts/fix-faq-path-placeholder.cjs
           node scripts/rewrite-comparison-table.cjs
           node scripts/sync-claims.cjs
+          node scripts/sync-security-claims.cjs
           node scripts/sync-head-meta.cjs
           node scripts/sync-script-tags.cjs
           node scripts/generate-locales.cjs
