@@ -98,3 +98,20 @@ src-tauri/tauri.dev.conf.json
 # Windows Sandbox staging area. Holds a staged copy of the built executable plus
 # the unpacked extension, so it is build output that must not reach the remote.
 .sandbox/
+
+# ── Promo video, unpublished ───────────────────────────────────────────────
+# The homepage video block, the rendered assets and the Remotion project that
+# produces them are one unit. Committing the markup without assets would leave
+# every locale homepage pointing at a 12 MB file that is not in the repository,
+# and no gate looks at src attributes, so it would fail silently. Nothing about
+# the video is therefore committed until the video itself is: the block stays in
+# the working tree, and these entries keep the build tooling and the rendered
+# 20 MB of mp4/webm out of the remote in the meantime.
+promo-video/
+kalderashield-website/assets/video/
+kalderashield-website/scripts/add-promo-video.cjs
+kalderashield-website/scripts/verify-promo-video.cjs
+
+# Professional structure audit (private; the sibling docs/ reports above follow
+# the same rule and are excluded from the GitHub remote for the same reason)
+PROFESYONEL_YAPI_DENETIM_RAPORU.md

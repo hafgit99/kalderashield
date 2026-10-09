@@ -41,17 +41,21 @@ const BASE = 'en';
 const SKIP_DIRS = new Set(['assets', 'node_modules', 'scripts', '.sandbox']);
 
 /* Some keys are produced at runtime and therefore never appear as a literal
- * data-i18n="..." in the markup. build-chrome-dictionary.cjs extracts them by
- * name, and i18n-apply.js substitutes them into the text it is given, so they
- * have no node to find them on. Listing them is what keeps this report honest
- * about its own coverage: a key that is live but unlisted reads as dead. */
+ * data-i18n="..." in the markup. The cookie banner, the donate modal, the
+ * lightbox and the skip link are created by site.js after load, so they have
+ * no node to find them on. Listing them is what keeps this report honest about
+ * its own coverage: a key that is live but unlisted reads as dead.
+ *
+ * An allow-list entry has to earn its place. The first version of this list
+ * also carried promo-video-label and the five video-* keys, and both entries
+ * were wrong in opposite directions. promo-video-label is not runtime at all --
+ * it rides on data-i18n-attr on the static <video> element, which this script
+ * already reads -- so it only ever hid the real orphans behind it. The video-*
+ * keys went the other way: they name a YouTube embed the site no longer has,
+ * and whitelisting them marked unreferenced copy as live. The runtimeMissing
+ * check below is what turned the first of those into a red build.
+ */
 const RUNTIME_KEYS = [
-  'promo-video-label',
-  'video-play-btn-label',
-  'video-privacy-note',
-  'video-eyebrow',
-  'video-title',
-  'video-desc',
   'cookie-title',
   'cookie-desc',
   'cookie-btn-accept',
