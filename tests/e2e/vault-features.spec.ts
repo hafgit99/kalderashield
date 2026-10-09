@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { setupVault } from './helpers';
 
 const masterPassword = 'master-pass-features-e2e';

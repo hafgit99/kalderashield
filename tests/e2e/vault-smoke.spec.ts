@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { createLoginItem, exportEncryptedBackup, openSettings, setupVault, unlockVault } from './helpers';
 
 const masterPassword = 'master-pass-e2e';

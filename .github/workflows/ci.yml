@@ -53,8 +53,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests
-        run: npm run test:unit
+      # Coverage, not test:unit -- same 253 files and 2243 tests, plus the
+      # thresholds in vitest.config.ts actually enforced.
+      #
+      # The thresholds were configured and never run. `vitest run` alone does not
+      # enable coverage, so lines 90 / statements 88 / functions 85 / branches 80
+      # only applied when someone ran test:coverage by hand, which meant the
+      # homepage's "90% lines" claim rested on a person remembering to look. A
+      # threshold nothing enforces is a comment, not a gate.
+      #
+      # This replaces test:unit rather than following it: running both would
+      # execute the same suite twice for one extra number. The measured figures
+      # sit close to the floor on purpose -- lines 91.1 against 90, statements
+      # 89.6 against 88 -- so a regression shows up as a red build instead of a
+      # number nobody reads.
+      - name: Unit tests with coverage thresholds enforced
+        run: npm run test:coverage
+
+      # The report is uploaded so a failing threshold can be read rather than
+      # guessed at. Without it the log says which number missed and nothing
+      # about which lines moved, which is the difference between fixing a
+      # regression and guessing at one. Seven days matches the Scorecard SARIF
+      # retention in scorecard.yml.
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: unit-coverage
+          path: coverage/
+          retention-days: 7
 
   website-gates:
     name: Website quality gates

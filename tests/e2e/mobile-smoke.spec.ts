@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from './fixtures';
+import type { Locator, Page } from '@playwright/test';
 import { setupVault } from './helpers';
 
 const masterPassword = 'master-pass-mobile-e2e';
