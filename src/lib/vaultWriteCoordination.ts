@@ -34,6 +34,34 @@ import { readVaultIntegrityLedger, recordVaultSeal } from './vaultIntegrityLedge
 const VAULT_WRITE_LOCK_NAME = 'KalderaShield-vault-write';
 const VAULT_COMMIT_CHANNEL = 'KalderaShield-vault';
 
+/**
+ * Identifies this tab, so it can recognise its own broadcast.
+ *
+ * `BroadcastChannel` does not deliver a message back to the *object* that
+ * posted it -- but it does deliver it to every *other* channel object with the
+ * same name in the same origin, and this tab has two of those: the long-lived
+ * one held by `subscribeVaultCommits`, and the short-lived one
+ * `broadcastVaultCommit` opens for each post. Without this id the tab told
+ * itself that "another tab" had committed, on every single save, and the UI
+ * raised the stale-vault banner plus a blocking "your change was NOT saved"
+ * dialog over an entry it had in fact just written.
+ *
+ * Per-tab, not per-channel: a second subscriber in this tab must be filtered
+ * too. Generated once per module instance, which in a browser is once per tab.
+ */
+const COMMIT_CHANNEL_CLIENT_ID = createClientId();
+
+function createClientId(): string {
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* fall through to the manual path below */
+  }
+  return `client-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 /** Why a write was refused. Distinct so the UI can explain the real problem. */
 export const vaultWriteConflictCodes = {
   /** Another tab committed after this tab loaded; our snapshot is stale. */
@@ -141,7 +169,7 @@ export function broadcastVaultCommit(versionCounter: number): void {
   const channel = getCommitChannel();
   if (!channel) return;
   try {
-    channel.postMessage({ type: 'commit', versionCounter });
+    channel.postMessage({ type: 'commit', versionCounter, clientId: COMMIT_CHANNEL_CLIENT_ID });
   } catch {
     /* a closed channel must never break a save that already succeeded */
   } finally {
@@ -164,9 +192,12 @@ export function subscribeVaultCommits(listener: VaultCommitListener): () => void
   if (!channel) return () => undefined;
 
   const handler = (event: MessageEvent) => {
-    const data = event.data as { type?: unknown; versionCounter?: unknown } | null;
+    const data = event.data as { type?: unknown; versionCounter?: unknown; clientId?: unknown } | null;
     if (!data || data.type !== 'commit') return;
     if (typeof data.versionCounter !== 'number') return;
+    // Our own commit, relayed by a channel object we happened to hold open.
+    // Acting on it would report this tab's own save as somebody else's.
+    if (data.clientId === COMMIT_CHANNEL_CLIENT_ID) return;
     listener(data.versionCounter);
   };
 

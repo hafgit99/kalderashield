@@ -184,8 +184,25 @@ describe('vaultWriteCoordination (Y-15)', () => {
       announceVaultCommit(17);
 
       expect(recordVaultSeal).toHaveBeenCalledWith(17);
-      // The other tab is told, so it can refresh or refuse a stale write.
-      expect(listener).toHaveBeenCalledWith(17);
+      const posted = FakeBroadcastChannel.instances.flatMap((channel) => channel.posted);
+      expect(posted).toContainEqual(
+        expect.objectContaining({ type: 'commit', versionCounter: 17 }),
+      );
+      unsubscribe();
+    });
+
+    it('does not tell this tab that it committed itself', () => {
+      const listener = vi.fn();
+      const unsubscribe = subscribeVaultCommits(listener);
+
+      // The regression this guards: a single tab, one save. The subscriber and
+      // the poster are different channel objects in the same context, so
+      // BroadcastChannel delivered the tab's own commit back to it. The UI then
+      // showed "vault updated in another tab" and "your change was NOT saved"
+      // over an entry it had just written, behind a blocking dialog.
+      announceVaultCommit(18);
+
+      expect(listener).not.toHaveBeenCalled();
       unsubscribe();
     });
 
@@ -199,8 +216,9 @@ describe('vaultWriteCoordination (Y-15)', () => {
       const listener = vi.fn();
       const unsubscribe = subscribeVaultCommits(listener);
 
-      // A different tab commits.
-      new FakeBroadcastChannel('KalderaShield-vault').postMessage({ type: 'commit', versionCounter: 21 });
+      // A different tab commits: its module instance generated its own id.
+      const otherTab = new FakeBroadcastChannel('KalderaShield-vault');
+      otherTab.postMessage({ type: 'commit', versionCounter: 21, clientId: 'a-different-tab' });
 
       expect(listener).toHaveBeenCalledWith(21);
       unsubscribe();
