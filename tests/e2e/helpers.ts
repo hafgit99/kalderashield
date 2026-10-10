@@ -1,11 +1,30 @@
 import { expect, type Page } from '@playwright/test';
 
+/**
+ * The account secret key each setup produced, per page.
+ *
+ * The vault key is derived from the master password *and* the account secret
+ * key (`resolveVaultCredential`, storage.ts), and setup marks the key as
+ * required for every later unlock. The "remember on this device" checkbox
+ * cannot help here: `rememberAccountSecretKey` stores the key through
+ * `window.KalderaShieldAndroidSecureStorage`, which only the Android WebView
+ * injects (MainActivity.kt:150). In a browser -- including this suite's --
+ * that store is unavailable, so the checkbox is accepted and nothing is kept.
+ *
+ * So the user has to type the key again on every unlock, and the suite has to
+ * as well. Keeping it per page is what a real user does with a printed
+ * emergency kit; pretending the checkbox worked would make these tests cover a
+ * flow no browser user ever gets.
+ */
+const accountSecretKeys = new WeakMap<Page, string>();
+
 export async function setupVault(page: Page, masterPassword: string) {
   await page.goto('/');
 
   await page.getByTestId('lock-password-input').fill(masterPassword);
   await page.getByTestId('lock-confirm-password-input').fill(masterPassword);
   await expect(page.getByTestId('lock-secret-key-input')).toHaveValue(/^A3-/);
+  accountSecretKeys.set(page, await page.getByTestId('lock-secret-key-input').inputValue());
   await page.getByTestId('lock-terms-checkbox').check();
   await page.getByTestId('lock-remember-secret-key-checkbox').check();
   await page.getByTestId('lock-submit-button').click();
@@ -14,6 +33,10 @@ export async function setupVault(page: Page, masterPassword: string) {
 }
 
 export async function unlockVault(page: Page, masterPassword: string) {
+  const accountSecretKey = accountSecretKeys.get(page);
+  if (accountSecretKey) {
+    await page.getByTestId('lock-secret-key-input').fill(accountSecretKey);
+  }
   await page.getByTestId('lock-password-input').fill(masterPassword);
   await page.getByTestId('lock-submit-button').click();
 }
