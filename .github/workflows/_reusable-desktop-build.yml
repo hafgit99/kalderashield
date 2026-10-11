@@ -1,0 +1,236 @@
+# Reusable desktop build for one platform. See release-desktop.yml for the
+# full reasoning; the short version is that three jobs there were near-identical
+# and a change to the shared sequence had to be made three times.
+#
+# This workflow takes ONE platform per call. The caller fans out with a matrix,
+# which keeps platform selection (`plan`'s outputs) in the caller where `needs`
+# can reach it -- `workflow_call` does not pass a caller's job outputs into the
+# called workflow, so a `if:` reading `needs.plan.outputs` cannot live here.
+#
+# Platform-specific work stays in the caller. Certificate import, notarization
+# and Authenticode are injected as `run:` bodies, which the runner does
+# evaluate -- unlike `- ${{ inputs.steps }}`, which GitHub Actions does NOT
+# expand into step content. That constraint is why this is a matrix in the
+# caller with script inputs rather than one shared job here.
+
+name: Reusable desktop build
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: Platform slug, one of linux / macos / windows.
+        required: true
+        type: string
+      runner:
+        description: GitHub runner label.
+        required: true
+        type: string
+      timeout-minutes:
+        description: Job timeout.
+        required: true
+        type: number
+      rust-targets:
+        description: Extra rustup targets, macOS and Android only.
+        required: false
+        type: string
+        default: ''
+      system-deps:
+        description: Commands installing platform system packages.
+        required: false
+        type: string
+        default: ''
+      build-command:
+        description: The `npx tauri build` invocation.
+        required: true
+        type: string
+      build-identity:
+        description: >-
+          macOS signing identity, or empty elsewhere. Read from
+          APPLE_SIGNING_IDENTITY_RESOLVED, which the platform preparation step
+          writes to $GITHUB_ENV -- it cannot be a `with:` input, because those
+          are evaluated before any step in the called workflow has run and
+          would capture the empty pre-import value.
+        required: false
+        type: string
+        default: ''
+      prep-steps:
+        description: Step objects run before the build (certificate import).
+        required: false
+        type: string
+        default: ''
+      post-steps:
+        description: Step objects run after the build (notarize, Authenticode).
+        required: false
+        type: string
+        default: ''
+      updater-copy:
+        description: Script body copying updater bundles into release-local.
+        required: true
+        type: string
+      updater-shell:
+        description: Shell for the updater copy (pwsh on Windows).
+        required: false
+        type: string
+        default: bash
+      normalize-spaces:
+        description: Rename assets so names match the release URLs.
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned)
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 (SHA-pinned)
+        with:
+          node-version: 22
+          cache: npm
+
+      # Two steps rather than one with a conditional `targets:` because an empty
+      # `targets` is not the same as omitting it for rustup, and getting that
+      # wrong fails the toolchain install rather than the build.
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable (SHA-pinned)
+        if: ${{ inputs.rust-targets == '' }}
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable (SHA-pinned)
+        if: ${{ inputs.rust-targets != '' }}
+        with:
+          targets: ${{ inputs.rust-targets }}
+
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (SHA-pinned)
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install system dependencies
+        if: ${{ inputs.system-deps != '' }}
+        run: ${{ inputs.system-deps }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build browser extensions
+        run: npm run build:extension
+
+      # The certificate ceremony is a script passed in by the caller, but the
+      # secrets it reads have to be bound here: `secrets: inherit` makes them
+      # reachable from a called workflow, it does not put them in a step's
+      # environment. Omitting this block fails the step at `$CERT_PATH` with an
+      # unbound variable, which reads like a missing secret rather than a
+      # missing env binding.
+      #
+      # Linux receives all of these too and uses none of them. That is the cost
+      # of one shared spine, and it is paid deliberately: these are write-only
+      # from the runner's perspective (no `::set-output`, nothing echoed), and
+      # a Linux job that could read them is a far smaller exposure than a fourth
+      # copy of the release spine that has to be kept in sync.
+      - name: Platform preparation
+        if: ${{ inputs.prep-steps != '' }}
+        run: ${{ inputs.prep-steps }}
+        env:
+          APPLE_SIGNING_CERT_P12: ${{ secrets.APPLE_SIGNING_CERT_P12 }}
+          APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
+          WINDOWS_SIGNING_TIMESTAMP_URL: ${{ secrets.WINDOWS_SIGNING_TIMESTAMP_URL }}
+
+      - name: Build ${{ inputs.platform }} desktop packages
+        run: ${{ inputs.build-command }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS only. Empty everywhere else, which is what the Linux and
+          # Windows builds already sent (the variable was set, to nothing).
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || inputs.build-identity || '-' }}
+
+      - name: Platform signing
+        if: ${{ inputs.post-steps != '' }}
+        run: ${{ inputs.post-steps }}
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || inputs.build-identity || '-' }}
+          WINDOWS_SIGNING_THUMBPRINT: ${{ env.WINDOWS_SIGNING_THUMBPRINT }}
+
+      - name: Release security hardening gate
+        run: npm run security:release-hardening
+
+      - name: Collect ${{ inputs.platform }} release artifacts
+        run: npm run release:collect -- --platform ${{ inputs.platform }} --skip-extensions
+
+      - name: Collect ${{ inputs.platform }} updater bundles and signatures
+        shell: ${{ inputs.updater-shell }}
+        run: ${{ inputs.updater-copy }}
+
+      - name: Normalize asset names
+        # GitHub rewrites spaces in release asset names to dots. Renaming here
+        # makes artifact filename == release asset name == updater URL, which is
+        # what the manifest generator's exact-match lookup expects. macOS only:
+        # it is the one bundle whose filenames carry spaces.
+        if: ${{ inputs.normalize-spaces }}
+        run: |
+          for f in release-local/${{ inputs.platform }}/*; do
+            case "$f" in
+              *' '*) mv "$f" "release-local/${{ inputs.platform }}/$(basename "$f" | tr ' ' '.')" ;;
+            esac
+          done
+
+      - name: Signing report gate — block unsigned releases (Y-19)
+        run: npm run desktop:release:signing:report -- --platform ${{ inputs.platform }} --dir release-local/${{ inputs.platform }} --require-signed
+
+      - name: Desktop release gate
+        # Verify, do not rebuild.
+        #
+        # This gate also runs a Tauri desktop build and collect-release-artifacts.cjs,
+        # and the collect script begins with ensureCleanDir(), which is an rm -rf
+        # of its output directory. Run after the workflow's own collect steps, it
+        # would therefore delete what those steps had just staged:
+        #
+        #   - Linux: the Tauri minisign "*.sig" updater artifacts. This step's
+        #     build has no TAURI_SIGNING_PRIVATE_KEY in its environment, so tauri
+        #     skips updater artifact generation, and the collect step does not
+        #     copy signatures itself. `publish` then found no signed bundle and
+        #     the manifest generator refused to publish an updater offering
+        #     nothing.
+        #   - Windows/macOS: worse, and quieter. The signing-report gate above
+        #     had already verified the *signed* artifacts; this step then
+        #     replaced them with the output of an unsigned rebuild, and the
+        #     upload sent those.
+        #
+        # Building, collecting and reporting signatures are this workflow's job
+        # and all three already ran above, so the gate is only asked to check
+        # the tree. Locally the gate still does the full sequence, which is what
+        # a developer running a release from their own machine wants.
+        run: npm run desktop:release:gate -- --platform ${{ inputs.platform }} --skip-desktop-build --skip-collect --skip-signing-report
+
+      - name: Upload ${{ inputs.platform }} release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: kalderashield-${{ inputs.platform }}
+          if-no-files-found: error
+          retention-days: 14
+          path: release-local/${{ inputs.platform }}/**
+
+# `workflow_call` gives a called job no outputs back to the caller's `needs`, so
+# the artifact upload is what carries a built platform to `publish`. That is
+# unchanged by this refactor; it is recorded here because it is the one piece of
+# state crossing the new file boundary, and a future change assuming job outputs
+# are available would break the publish step silently.
