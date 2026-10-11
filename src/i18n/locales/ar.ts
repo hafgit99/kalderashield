@@ -827,6 +827,7 @@ export const ar = {
   'lock.secret.label': 'مفتاح الحساب السري',
   'lock.secret.rememberThisDevice': 'تذكر هذا المفتاح السري على هذا الكمبيوتر',
   'lock.secret.secureHardwareRequired': '(يتطلب جسر أجهزة/سطح مكتب آمن)',
+  'lock.secret.noSecureStore': 'لا يوجد تخزين آمن للمفاتيح على هذه المنصة، لذلك لا يمكن تذكّر المفتاح هنا. نزّل حزمة الطوارئ واحتفظ بها في مكان آمن — ستحتاج إلى إدخالها في كل مرة تفتح القفل.',
   'lock.secret.downloadEmergencyKit': 'تحميل عدة الطوارئ',
   'lock.error.biometricUnsupported': 'إلغاء القفل البيومتري (WebAuthn) غير مدعوم على جهازك أو متصفحك.',
   'lock.error.biometricIntegrity': 'فشل التحقق من سلامة كلمة المرور الرئيسية. الرجاء تسجيل الدخول يدويا.',

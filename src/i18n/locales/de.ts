@@ -827,6 +827,7 @@ export const de = {
   'lock.secret.label': 'Geheimer Kontoschlüssel',
   'lock.secret.rememberThisDevice': 'Merken Sie sich diesen geheimen Schlüssel auf diesem Computer',
   'lock.secret.secureHardwareRequired': '(Erfordert sichere Hardware-/Desktop-Brücke)',
+  'lock.secret.noSecureStore': 'Diese Plattform hat keinen sicheren Schlüsselspeicher, daher kann der Schlüssel hier nicht gemerkt werden. Laden Sie das Notfallpaket herunter und bewahren Sie es sicher auf — Sie geben ihn bei jedem Entsperren ein.',
   'lock.secret.downloadEmergencyKit': 'Laden Sie das Notfallset herunter',
   'lock.error.biometricUnsupported': 'Die biometrische Entsperrung (WebAuthn) wird auf Ihrem Gerät oder Browser nicht unterstützt.',
   'lock.error.biometricIntegrity': 'Die Überprüfung der Integrität des Master-Passworts ist fehlgeschlagen. Bitte melden Sie sich manuell an.',

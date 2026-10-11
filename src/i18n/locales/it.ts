@@ -827,6 +827,7 @@ export const it = {
   'lock.secret.label': 'Chiave segreta dell\'account',
   'lock.secret.rememberThisDevice': 'Ricorda questa chiave segreta su questo computer',
   'lock.secret.secureHardwareRequired': '(Richiede un bridge hardware/desktop sicuro)',
+  'lock.secret.noSecureStore': 'Questa piattaforma non ha un archivio sicuro delle chiavi, quindi la chiave non può essere ricordata qui. Scarica il kit di emergenza e conservalo al sicuro: lo inserirai a ogni sblocco.',
   'lock.secret.downloadEmergencyKit': 'Scarica Kit di emergenza',
   'lock.error.biometricUnsupported': 'Lo sblocco biometrico (WebAuthn) non è supportato sul tuo dispositivo o browser.',
   'lock.error.biometricIntegrity': 'La verifica dell\'integrità della password principale non è riuscita. Per favore accedi manualmente.',

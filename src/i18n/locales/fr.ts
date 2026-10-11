@@ -829,6 +829,7 @@ export const fr = {
   'lock.secret.label': 'Clé secrète du compte',
   'lock.secret.rememberThisDevice': 'Mémoriser cette clé secrète sur cet ordinateur',
   'lock.secret.secureHardwareRequired': '(Nécessite une passerelle matérielle/de bureau sécurisée)',
+  'lock.secret.noSecureStore': 'Cette plateforme n\'a pas de stockage de clés sécurisé, la clé ne peut donc pas être mémorisée ici. Téléchargez le kit d\'urgence et conservez-le en lieu sûr — vous la saisirez à chaque déverrouillage.',
   'lock.secret.downloadEmergencyKit': 'Télécharger le kit d\'urgence',
   'lock.error.biometricUnsupported': 'Le déverrouillage biométrique (WebAuthn) n\'est pas pris en charge sur votre appareil ou votre navigateur.',
   'lock.error.biometricIntegrity': 'La vérification de l\'intégrité du mot de passe principal a échoué. Veuillez vous connecter manuellement.',

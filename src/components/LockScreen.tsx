@@ -26,6 +26,7 @@ import {
   getRememberedAccountSecretKey,
   isAccountSecretKeyRequired,
   isMasterPasswordSet,
+  isRememberSecretKeySupported,
   rememberAccountSecretKey,
   resetSystem,
   setupMasterPasswordWithSecretKey,
@@ -95,6 +96,11 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const isSetup = isMasterPasswordSet();
   const requiresSecretKey = isAccountSecretKeyRequired();
   const rememberedSecretKey = getRememberedAccountSecretKey();
+  // The only platform that can store the key is the one that injects the secure
+  // storage bridge. `isRememberSecretKeySupported` existed for exactly this
+  // question and was exported without a single caller, which is how the
+  // checkbox came to be offered everywhere.
+  const canRememberSecretKey = isRememberSecretKeySupported();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secretKey, setSecretKey] = useState(() => (
@@ -651,6 +657,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                     setSecretKey={setSecretKey}
                     isSetup={isSetup}
                     requiresSecretKey={requiresSecretKey}
+                    canRememberSecretKey={canRememberSecretKey}
                     rememberSecretKey={rememberSecretKey}
                     setRememberSecretKey={setRememberSecretKey}
                     onDownloadEmergencyKit={handleDownloadEmergencyKit}

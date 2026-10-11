@@ -449,6 +449,24 @@ export async function setupMasterPasswordWithSecretKey(
   secretKey: string,
   rememberSecretKeyOnThisDevice: boolean,
 ): Promise<void> {
+  // A second key is only worth offering where it can actually be kept. Off
+  // Android `rememberAccountSecretKey` fails closed and stores nothing, so
+  // sealing the vault with `master + secret` left the user unable to open it
+  // again without transcribing a 45-character key on every launch -- while the
+  // setup screen showed a "remember on this device" checkbox that promised the
+  // opposite. The profile was written unconditionally, so the key became
+  // mandatory on every later unlock regardless of what the user was told.
+  //
+  // Without a store to keep it in, the vault is set up on the master password
+  // alone. That is a deliberate reduction in what this platform protects, and
+  // it is why the checkbox is hidden there rather than merely disabled.
+  if (!isRememberSecretKeySupported()) {
+    await setupMasterPassword(password);
+    forgetRememberedAccountSecretKey();
+    removeIndexedDbItemSync(STORAGE_KEYS.SECRET_PROFILE);
+    return;
+  }
+
   const normalizedSecretKey = normalizeAccountSecretKey(secretKey);
   const credential = combineMasterPasswordAndSecretKey(password, normalizedSecretKey);
 
@@ -475,9 +493,14 @@ export async function setupMasterPasswordWithSecretKey(
     const vaultKeyBytes = new Uint8Array(result.vaultEncryptionKey);
     const repo = getVaultStorageRepository();
     if (repo.setupMasterWithHash) {
-      await repo.setupMasterWithHash(result.argonHash, result.salt, kdfParams);
+      // K-3: pass the derived key so the first persisted state is signed.
+      // Omitting it left the initial state unsigned; the very next write then
+      // saw a ledger-free, tag-less state and refused, and a rotation against
+      // it could not verify the stored tag. `setupMasterPassword` has always
+      // passed it here — the two setup paths simply disagreed.
+      await repo.setupMasterWithHash(result.argonHash, result.salt, kdfParams, vaultKeyBytes);
     } else {
-      await repo.setupMaster(credential);
+      await repo.setupMaster(credential, vaultKeyBytes);
     }
     
     openVaultSession(credential, password, vaultKeyBytes);

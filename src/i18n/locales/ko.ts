@@ -827,6 +827,7 @@ export const ko = {
   'lock.secret.label': '계정 비밀 키',
   'lock.secret.rememberThisDevice': '이 컴퓨터에 이 비밀 키를 기억하세요',
   'lock.secret.secureHardwareRequired': '(보안 하드웨어/데스크톱 브리지가 필요합니다)',
+  'lock.secret.noSecureStore': '이 플랫폼에는 보안 키 저장소가 없어 여기에서 키를 기억할 수 없습니다. 긴급 키트를 다운로드해 안전한 곳에 보관하세요. 잠금을 해제할 때마다 키를 입력해야 합니다.',
   'lock.secret.downloadEmergencyKit': '비상용 키트 다운로드',
   'lock.error.biometricUnsupported': '귀하의 기기나 브라우저에서는 생체 인식 잠금 해제(WebAuthn)가 지원되지 않습니다.',
   'lock.error.biometricIntegrity': '마스터 비밀번호 무결성 확인에 실패했습니다. 수동으로 로그인하세요.',

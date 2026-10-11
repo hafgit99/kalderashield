@@ -794,16 +794,24 @@ describe('SettingsPanel biometric controls', () => {
 });
 
 describe('SettingsPanel Emergency Kit controls', () => {
-  it('shows an error when Secret Key protection is not enabled', async () => {
-    vi.mocked(isAccountSecretKeyRequired).mockReturnValueOnce(false);
+  it('hands out the emergency kit even when the vault has no secret-key profile', async () => {
+    // The kit used to be refused unless `isAccountSecretKeyRequired()`. On
+    // desktop and web the vault is set up on the master password alone -- the
+    // key cannot be stored there -- so that check is false and the kit was
+    // withheld. It is the only copy of the key the user was shown during
+    // setup, and the only way to move a vault to a platform that can keep it.
+    // `isAccountSecretKeyRequired` already defaults to false in the mock.
+    vi.mocked(getRememberedAccountSecretKey).mockReturnValue(null);
     const { container } = renderSettingsWithLanguage('en');
-
+    fireEvent.change(screen.getByPlaceholderText('A3-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX'), {
+      target: { value: 'A3-ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-2673' },
+    });
     fireEvent.click(screen.getByText('Save Kit'));
 
     await waitFor(() => {
-      expect(container.textContent).toContain('Secret Key protection is not enabled for this vault.');
+      expect(saveEmergencyKit).toHaveBeenCalledWith('A3-ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-2673');
     });
-    expect(saveEmergencyKit).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain('Secret Key protection is not enabled');
   });
 
   it('requires a valid Secret Key before saving an emergency kit', async () => {

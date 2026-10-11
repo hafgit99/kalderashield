@@ -827,6 +827,7 @@ export const es = {
   'lock.secret.label': 'Clave secreta de cuenta',
   'lock.secret.rememberThisDevice': 'Recuerda esta clave secreta en esta computadora',
   'lock.secret.secureHardwareRequired': '(Requiere puente de hardware/escritorio seguro)',
+  'lock.secret.noSecureStore': 'Esta plataforma no tiene almacenamiento seguro de claves, así que la clave no puede recordarse aquí. Descarga el kit de emergencia y guárdalo en un lugar seguro: lo introducirás cada vez que desbloquees.',
   'lock.secret.downloadEmergencyKit': 'Descargar kit de emergencia',
   'lock.error.biometricUnsupported': 'El desbloqueo biométrico (WebAuthn) no es compatible con su dispositivo o navegador.',
   'lock.error.biometricIntegrity': 'Error en la verificación de la integridad de la contraseña maestra. Por favor inicia sesión manualmente.',

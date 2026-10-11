@@ -4,17 +4,16 @@ import { expect, type Page } from '@playwright/test';
  * The account secret key each setup produced, per page.
  *
  * The vault key is derived from the master password *and* the account secret
- * key (`resolveVaultCredential`, storage.ts), and setup marks the key as
- * required for every later unlock. The "remember on this device" checkbox
- * cannot help here: `rememberAccountSecretKey` stores the key through
- * `window.KalderaShieldAndroidSecureStorage`, which only the Android WebView
- * injects (MainActivity.kt:150). In a browser -- including this suite's --
- * that store is unavailable, so the checkbox is accepted and nothing is kept.
+ * key (`resolveVaultCredential`, storage.ts) wherever the platform can keep
+ * that key. Only the Android WebView injects the secure-storage bridge
+ * (`window.KalderaShieldAndroidSecureStorage`, MainActivity.kt:150), so on
+ * desktop and web `isRememberSecretKeySupported()` is false: the checkbox is
+ * not rendered, setup falls back to the master password alone, and nothing
+ * needs to be typed on later unlocks.
  *
- * So the user has to type the key again on every unlock, and the suite has to
- * as well. Keeping it per page is what a real user does with a printed
- * emergency kit; pretending the checkbox worked would make these tests cover a
- * flow no browser user ever gets.
+ * The key is still generated and shown during setup — it is the user's
+ * emergency-kit material — so it is read back here for the flows that
+ * legitimately need it (exporting the kit).
  */
 const accountSecretKeys = new WeakMap<Page, string>();
 
@@ -26,15 +25,16 @@ export async function setupVault(page: Page, masterPassword: string) {
   await expect(page.getByTestId('lock-secret-key-input')).toHaveValue(/^A3-/);
   accountSecretKeys.set(page, await page.getByTestId('lock-secret-key-input').inputValue());
   await page.getByTestId('lock-terms-checkbox').check();
-  await page.getByTestId('lock-remember-secret-key-checkbox').check();
   await page.getByTestId('lock-submit-button').click();
 
   await expect(page.getByTestId('new-vault-item-button')).toBeVisible();
 }
 
 export async function unlockVault(page: Page, masterPassword: string) {
+  // Outside Android nothing was stored, so the vault opens on the master
+  // password alone. Where the key IS retained (Android), it is still required.
   const accountSecretKey = accountSecretKeys.get(page);
-  if (accountSecretKey) {
+  if (accountSecretKey && await page.getByTestId('lock-secret-key-input').count() > 0) {
     await page.getByTestId('lock-secret-key-input').fill(accountSecretKey);
   }
   await page.getByTestId('lock-password-input').fill(masterPassword);
@@ -46,8 +46,8 @@ export async function unlockVault(page: Page, masterPassword: string) {
  *
  * Exported for the flows that need the key typed into a form rather than into
  * the lock screen — the emergency kit download, which reads
- * `getRememberedAccountSecretKey()` first and finds nothing outside Android for
- * the same reason `unlockVault` has to supply it.
+ * `getRememberedAccountSecretKey()` first and finds nothing on desktop and web
+ * for the same reason `unlockVault` does not need it either.
  */
 export function getAccountSecretKey(page: Page): string | undefined {
   return accountSecretKeys.get(page);

@@ -10,7 +10,7 @@ import { useState } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { saveEmergencyKit } from '../lib/emergencyKit';
-import { getRememberedAccountSecretKey, isAccountSecretKeyRequired } from '../lib/storage';
+import { getRememberedAccountSecretKey } from '../lib/storage';
 import { isAccountSecretKeyFormatValid } from '../lib/secretKey';
 
 export function useSettingsEmergencyKit() {
@@ -23,11 +23,13 @@ export function useSettingsEmergencyKit() {
     setEmergencyKitSuccess(null);
     setEmergencyKitError(null);
 
-    if (!isAccountSecretKeyRequired()) {
-      setEmergencyKitError(t('settings.emergencyKit.notEnabled'));
-      return;
-    }
-
+    // Deliberately no longer gated on `isAccountSecretKeyRequired()`. The
+    // vault only seals with an account secret key where the platform can keep
+    // it (see `setupMasterPasswordWithSecretKey`), so on desktop and web that
+    // check is false and this refused to hand out the key the user was shown
+    // during setup and never written anywhere else. The kit is exactly what
+    // makes the second key recoverable when the device is lost or the vault is
+    // moved, so refusing it there removed the only copy the user could have.
     const secretKey = getRememberedAccountSecretKey() ?? emergencySecretKey;
     if (!isAccountSecretKeyFormatValid(secretKey)) {
       setEmergencyKitError(t('settings.emergencyKit.invalidSecretKey'));
