@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VaultItem } from '../types';
 import { createEmptyVaultDatabaseState, type VersionedVaultDatabaseState } from './vaultDatabaseFormat';
+import { LEGACY_VAULT_ITEM_KDF_SALT } from './sqliteOpfsShared';
 
 const writeDesktopVaultDatabase = vi.hoisted(() => vi.fn(async () => false));
 const readDesktopVaultDatabase = vi.hoisted(() => vi.fn(async (): Promise<string | null> => null));
@@ -22,9 +23,13 @@ vi.mock('./desktopStorage', () => ({
 
 vi.mock('./argon2id', () => ({
   createArgon2idHash: vi.fn(async (password: string, salt: string) => `$argon2id$${salt}$${password}`),
-  deriveArgon2idKey: vi.fn(async (password: string) => {
-    const bytes = new TextEncoder().encode(password.padEnd(32, '#').slice(0, 32));
-    return new Uint8Array(bytes);
+  // The real Argon2id binds the salt into the key, so the mock has to as well.
+  // Deriving from the password alone made every salt-handling bug invisible here
+  // -- `changeMasterPassword` derived its "old" key from the *new* salt and this
+  // suite stayed green, because both salts produced the same key.
+  deriveArgon2idKey: vi.fn(async (password: string, salt?: string) => {
+    const bytes = new TextEncoder().encode(`${password}|${salt ?? ''}`);
+    return new Uint8Array(bytes.slice(0, 32));
   }),
   verifyArgon2idHash: vi.fn(async (password: string, encoded: string) => encoded.endsWith(`$${password}`)),
   MIN_ARGON2ID_MEMORY_KIB: 8192,
@@ -579,7 +584,14 @@ describe('SQLite OPFS persistence engine', () => {
   it('migrates existing static-salt vault rows to a persisted per-vault salt', async () => {
     const sqlite = await freshSqliteInstance();
     await sqlite.setupMaster('master-pass');
-    await sqlite.saveVaultItem(sampleItem({ id: 'static-salt-row' }), 'master-pass');
+
+    // A genuine pre-v2 database encrypted its rows under the shared static
+    // salt. Written from that salt on purpose: with the salt-blind derive mock
+    // this fixture could not be built honestly, and a salt-aware one has to
+    // place the rows exactly where the legacy code would have put them.
+    const legacyKey = await sqlite.deriveEncryptionKey('master-pass', LEGACY_VAULT_ITEM_KDF_SALT);
+    await sqlite.replaceAllVaultItemsWithKey([sampleItem({ id: 'static-salt-row' })], legacyKey);
+    legacyKey.fill(0);
 
     const persisted = JSON.parse(localStorage.getItem('kalderashield_fallback') ?? '{}');
     delete persisted.encryption_salt;
@@ -1294,6 +1306,45 @@ expect(saved[0]!.id).toHaveLength(9);
     expect(after.vault_items).toEqual([]);
     expect(after.versionCounter).toBe(sealed.versionCounter);
     expect(after.sealedAtVersionCounter).toBe(sealed.versionCounter);
+  });
+
+  it('rotates the master credential without losing records', async () => {
+    // The regression: `changeMasterPassword` reassigned
+    // `state.encryption_salt` and then derived `oldDerivedKey` from it, so the
+    // "old" key came from the NEW salt. Passkey re-wrapping decrypted nothing
+    // and the re-seal gate failed verification, aborting the whole rotation
+    // with `master-password-rotation-failed` — on every platform, for every
+    // user, with the UI reporting their current password as wrong.
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+    await sqlite.saveVaultItem(sampleItem({ id: 'rotate-1', title: 'Survives Rotation' }), 'master-pass');
+
+    await sqlite.changeMasterPassword('master-pass', 'new-master-pass');
+
+    // The old credential no longer verifies.
+    await expect(sqlite.verifyPassword('master-pass')).resolves.toBe(false);
+    await expect(sqlite.verifyPassword('new-master-pass')).resolves.toBe(true);
+
+    // And the records are still readable under the new credential.
+    const items = await sqlite.getVaultItems('new-master-pass');
+    expect(items.map((i) => i.id)).toContain('rotate-1');
+  });
+
+  it('rotates a credential that was combined with an account secret key', async () => {
+    // The rotation runs behind `verifyMasterPassword`, whose precheck could not
+    // reach the secret key outside Android, so the UI rejected the correct
+    // password before the rotation was ever attempted. With the session key
+    // now consulted, this is the shape the e2e suite exercises.
+    const sqlite = await freshSqliteInstance();
+    const combined = 'kalderashield:master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567';
+    await sqlite.setupMaster(combined);
+    await sqlite.saveVaultItem(sampleItem({ id: 'rotate-2' }), combined);
+
+    await sqlite.changeMasterPassword(combined, 'kalderashield:new-master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567');
+
+    await expect(sqlite.verifyPassword(combined)).resolves.toBe(false);
+    const items = await sqlite.getVaultItems('kalderashield:new-master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567');
+    expect(items.map((i) => i.id)).toContain('rotate-2');
   });
 
   it('rejects loading and logs security event when state is tampered (R-1 HMAC integrity)', async () => {

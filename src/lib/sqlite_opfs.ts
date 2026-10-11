@@ -561,6 +561,15 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
     const previousState = this.cloneState();
     const previousDecryptedItemsCache = this.cloneDecryptedItemsCache();
 
+    // The old key must be derived from the salt the stored rows were actually
+    // encrypted under, which is the one on the state *before* the rotation
+    // replaces it. Reading it after `this.state.encryption_salt` is reassigned
+    // derived the old password from the NEW salt, so the re-encryption gate
+    // (`reWrapPasskeysInVaultItems`) decrypted nothing and the re-seal gate
+    // then failed verification — the whole rotation reported
+    // `master-password-rotation-failed` and rolled back, on every platform.
+    const oldEncryptionSalt = this.getCurrentVaultEncryptionSalt();
+
     try {
       const argonHash = await createArgon2idHash(newPassword, createVaultEncryptionSalt());
       this.clearDerivedKeyCache();
@@ -571,7 +580,7 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
         argon_hash: argonHash,
       }];
 
-      const oldDerivedKey = await this.deriveEncryptionKey(oldPassword);
+      const oldDerivedKey = await this.deriveEncryptionKey(oldPassword, oldEncryptionSalt);
       const derivedKey = await this.deriveEncryptionKey(newPassword);
       const reWrappedItems = await reWrapPasskeysInVaultItems(items, oldDerivedKey, derivedKey);
 

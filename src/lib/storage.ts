@@ -302,8 +302,24 @@ async function openDerivedVaultSession(credential: string, backupPassword: strin
 
 export async function verifyMasterPassword(password: string, secretKey?: string | null): Promise<boolean> {
   await initializeStorage();
-  
-  const usableSecretKey = secretKey || getRememberedAccountSecretKey();
+
+  // Three sources, in order of specificity: the key this caller passed, the
+  // one in the active session, then the one persisted for this device.
+  //
+  // The session lookup is what makes settings work at all outside Android.
+  // The lock screen supplies the key explicitly (`LockScreen.tsx:293`), but
+  // `useSettingsPassword` does not — it is inside an unlocked session and has
+  // no field for the key. Reading it from storage alone returned null there,
+  // so the credential was built from the master password alone while the vault
+  // was sealed with `master + secret`. The correct password was compared
+  // against the wrong argon hash and reported as invalid: master-password
+  // rotation was impossible on desktop and web, with the UI telling the user
+  // their password was wrong.
+  //
+  // Falling back rather than replacing keeps the lock-screen path (which has
+  // no session yet) and the biometric path (which has its own key) unchanged.
+  const sessionSecretKey = await withActiveAccountSecretKey((activeKey) => activeKey);
+  const usableSecretKey = secretKey || sessionSecretKey || getRememberedAccountSecretKey();
   const credential = resolveVaultCredential(password, usableSecretKey);
 
   if (isDesktopRuntime()) {
