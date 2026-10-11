@@ -17,7 +17,7 @@ import {
 import { createArgon2idHash, verifyArgon2idHash, enforceMinimumKdfFloor, type Argon2idOptions } from './argon2id';
 import { deriveArgon2idKey as deriveVettedArgon2idKey } from './argon2id';
 import { reWrapPasskeysInVaultItems } from './passkey';
-import { webCryptoAesGcmEncrypt, generateSafeIv, derivePerItemKey } from './webcrypto';
+import { webCryptoAesGcmEncrypt, generateSafeIv } from './webcrypto';
 import {
   getNativeVaultStorageScope,
   resetDesktopVaultDatabase,
@@ -43,6 +43,8 @@ import {
   sanitizeQueryForLog,
 } from './sqliteOpfsShared';
 import { decryptVaultRows } from './sqliteOpfsRowDecryptor';
+import { rotateMasterEncryptedRows, rotationErrorFor, ROTATION_ERRORS } from './kdf/masterRotation';
+import { encryptVaultRow } from './rowCrypto/encryptVaultRow';
 import {
   LOCAL_FALLBACK_KEY,
   DB_FILENAME,
@@ -584,28 +586,15 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
       const derivedKey = await this.deriveEncryptionKey(newPassword);
       const reWrappedItems = await reWrapPasskeysInVaultItems(items, oldDerivedKey, derivedKey);
 
-      this.state.vault_items = await Promise.all(reWrappedItems.map(async (item) => {
-        const encrypted = await webCryptoAesGcmEncrypt(JSON.stringify(item), derivedKey, generateSafeIv());
-        const nowStr = new Date().toISOString();
-
-        return buildVaultItemRow({
-          id: item.id || secureRandomToken(9),
-          encrypted,
-          item,
-          createdAt: item.createdAt || nowStr,
-          updatedAt: nowStr,
-        });
-      }));
-
+      const rotation = await rotateMasterEncryptedRows({
+        items: reWrappedItems,
+        oldVaultKey: oldDerivedKey,
+        newVaultKey: derivedKey,
+      });
+      this.state.vault_items = rotation.rows;
       this.decryptedItemsCache.clear();
-      for (const item of items) {
-        const row = this.state.vault_items.find((candidate) => candidate.id === item.id);
-        if (row) {
-          this.decryptedItemsCache.set(row.id, {
-            enc_metadata: row.enc_metadata,
-            item,
-          });
-        }
+      for (const [id, entry] of rotation.cacheEntries) {
+        this.decryptedItemsCache.set(id, entry);
       }
 
       // K-3: the stored state carries a tag produced with the OLD key, so the
@@ -614,17 +603,14 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
       const persisted = await this.saveToPersistentStorage(derivedKey, oldDerivedKey);
       oldDerivedKey.fill(0);
       if (!persisted) {
-        throw new Error('master-password-rotation-persist-failed');
+        throw new Error(ROTATION_ERRORS.persistFailed);
       }
 
-      this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', items.length);
+      this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', rotation.affected);
     } catch (err) {
       this.restoreTransactionalState(previousState, previousDecryptedItemsCache);
       this.logQuery('UPDATE user_secrets SET argon_hash = "[rekey rolled back: persistence failed]"; REKEY vault_items;', 'ERROR', 0);
-      if (err instanceof Error && err.message === 'master-password-rotation-persist-failed') {
-        throw err;
-      }
-      throw new Error('master-password-rotation-failed');
+      throw rotationErrorFor(err);
     }
   }
 
@@ -649,41 +635,28 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
         argon_hash: newArgonHash,
       }];
 
-      this.state.vault_items = await Promise.all(items.map(async (item) => {
-        const encrypted = await webCryptoAesGcmEncrypt(JSON.stringify(item), newVaultKey, generateSafeIv());
-        const nowStr = new Date().toISOString();
-
-        return buildVaultItemRow({
-          id: item.id || secureRandomToken(9),
-          encrypted,
-          item,
-          createdAt: item.createdAt || nowStr,
-          updatedAt: nowStr,
-        });
-      }));
-
+      const rotation = await rotateMasterEncryptedRows({
+        items,
+        oldVaultKey,
+        newVaultKey,
+      });
+      this.state.vault_items = rotation.rows;
       this.decryptedItemsCache.clear();
-      for (const item of items) {
-        const row = this.state.vault_items.find((candidate) => candidate.id === item.id);
-        if (row) {
-          this.decryptedItemsCache.set(row.id, {
-            enc_metadata: row.enc_metadata,
-            item,
-          });
-        }
+      for (const [id, entry] of rotation.cacheEntries) {
+        this.decryptedItemsCache.set(id, entry);
       }
 
       // K-3: verify the stored tag with the OLD key, sign with the new one.
       const persisted = await this.saveToPersistentStorage(newVaultKey, oldVaultKey);
       if (!persisted) {
-        throw new Error('master-password-rotation-persist-failed');
+        throw new Error(ROTATION_ERRORS.persistFailed);
       }
 
-      this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', items.length);
+      this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', rotation.affected);
     } catch (err) {
       this.restoreTransactionalState(previousState, previousDecryptedItemsCache);
       this.logQuery('UPDATE user_secrets SET argon_hash = "[rekey rolled back: persistence failed]"; REKEY vault_items;', 'ERROR', 0);
-      throw err;
+      throw rotationErrorFor(err);
     }
   }
 
@@ -886,20 +859,13 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
         return this.getVaultItemsWithKey(derivedKey);
       }
 
-      const itemToSave = { ...item, id: itemId };
-      const rawSensitive = JSON.stringify(itemToSave);
-      const perItemKey = await derivePerItemKey(derivedKey, itemId);
-      const encrypted = await webCryptoAesGcmEncrypt(rawSensitive, perItemKey, generateSafeIv());
-      perItemKey.fill(0);
-
       const nowStr = new Date().toISOString();
-
-      const row: SQLiteRow = buildVaultItemRow({
-        id: itemId,
-        encrypted,
+      const { row, cacheEntry } = await encryptVaultRow({
+        derivedKey,
+        itemId,
         item,
-        createdAt: item.createdAt || nowStr,
-        updatedAt: nowStr,
+        existing: existingRow,
+        now: nowStr,
       });
 
       let query = '';
@@ -915,10 +881,7 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
       }
 
       // Cache the decrypted item so we don't have to decrypt it when returning getVaultItems
-      this.decryptedItemsCache.set(row.id, {
-        enc_metadata: row.enc_metadata,
-        item: { ...item, id: row.id }
-      });
+      this.decryptedItemsCache.set(row.id, cacheEntry);
 
       const persisted = await this.saveToPersistentStorage(derivedKey);
       if (!persisted) {
@@ -1269,7 +1232,6 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
         const itemId = item.id || secureRandomToken(9);
         const existing = existingById.get(itemId);
         if (existing) {
-          const rebuiltItem = { ...item, id: itemId };
           if (
             existing.enc_metadata
             && item.title === '[encrypted: aes-256-gcm]'
@@ -1280,46 +1242,21 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
             rebuilt.push(existing);
             continue;
           }
-          const perItemKey = await derivePerItemKey(derivedKey, itemId);
-          const encrypted = await webCryptoAesGcmEncrypt(
-            JSON.stringify(rebuiltItem),
-            perItemKey,
-            generateSafeIv(),
-          );
-          perItemKey.fill(0);
-          rebuilt.push(buildVaultItemRow({
-            id: itemId,
-            encrypted,
-            item: rebuiltItem,
-            createdAt: item.createdAt || existing.created_at || nowStr,
-            updatedAt: nowStr,
-          }));
-          this.decryptedItemsCache.set(itemId, {
-            enc_metadata: JSON.stringify(encrypted),
-            item: rebuiltItem,
-          });
-          continue;
         }
 
-        const freshItem = { ...item, id: itemId };
-        const perItemKey = await derivePerItemKey(derivedKey, itemId);
-        const encrypted = await webCryptoAesGcmEncrypt(
-          JSON.stringify(freshItem),
-          perItemKey,
-          generateSafeIv(),
-        );
-        perItemKey.fill(0);
-        rebuilt.push(buildVaultItemRow({
-          id: itemId,
-          encrypted,
-          item: freshItem,
-          createdAt: item.createdAt || nowStr,
-          updatedAt: nowStr,
-        }));
-        this.decryptedItemsCache.set(itemId, {
-          enc_metadata: JSON.stringify(encrypted),
-          item: freshItem,
+        // One call for both the surviving and the fresh case. They were two
+        // near-identical blocks differing only in whether `existing.created_at`
+        // was carried over, and a third of `saveVaultItem` was a third copy of
+        // the same six lines.
+        const { row, cacheEntry } = await encryptVaultRow({
+          derivedKey,
+          itemId,
+          item,
+          existing,
+          now: nowStr,
         });
+        rebuilt.push(row);
+        this.decryptedItemsCache.set(itemId, cacheEntry);
       }
 
       this.state.vault_items = rebuilt;
