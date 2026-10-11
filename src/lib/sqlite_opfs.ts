@@ -326,6 +326,11 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
 
       this.logQuery(result.logLabel, 'SUCCESS', 1);
       if (result.resaveAfterLoad) {
+        // A re-save is how a state that was normalized on load (schema defaults
+        // filled in, say) reaches storage in its current form. It runs before
+        // the user has unlocked, so no key is available to re-seal with — see
+        // `saveToPersistentStorage` on why a keyless write must not advance the
+        // version counter.
         await this.saveToPersistentStorage();
       }
       return;
@@ -418,8 +423,19 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
       }
     }
 
-    this.state.versionCounter = (this.state.versionCounter ?? 0) + 1;
     if (key) {
+      // K-3: the generation counter and the seal that covers it advance
+      // together. A version that was never sealed has no
+      // `sealedAtVersionCounter` matching it, and `evaluateIntegrityState`
+      // reads exactly that mismatch as tampering on the next load.
+      //
+      // The increment used to sit *above* this `if`, so a keyless write advanced
+      // the counter without sealing it. `loadFromPersistentStorage` performs
+      // exactly such a write (`resaveAfterLoad`), which made every page reload
+      // leave behind a state the next unlock rejected as
+      // `vault-database-integrity-corrupted` — the vault was intact on disk and
+      // permanently unreadable.
+      this.state.versionCounter = (this.state.versionCounter ?? 0) + 1;
       try {
         const hmacKey = await deriveVaultHmacKey(key);
         // K-3: bind the tag to the generation it covers, so a tag can never be

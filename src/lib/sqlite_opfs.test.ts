@@ -1177,6 +1177,125 @@ expect(saved[0]!.id).toHaveLength(9);
     expect(cacheMap.size).toBe(0);
   });
 
+  it('K-3: a keyless re-save after load leaves the seal matching the version counter', async () => {
+    // The regression: `loadFromPersistentStorage` re-saves a freshly loaded
+    // state (`resaveAfterLoad`) before the user has unlocked, so no key is
+    // available. That write used to bump `versionCounter` without sealing the
+    // new generation, leaving `sealedAtVersionCounter` behind it — and
+    // `evaluateIntegrityState` reads exactly that mismatch as tampering. Every
+    // page reload therefore locked the user out of a vault that was intact on
+    // disk.
+    //
+    // The tag itself cannot be computed under jsdom (`crypto.subtle.importKey`
+    // rejects the cross-realm typed array), so the sealed state is planted
+    // directly. The counter and the seal are what this guards; the HMAC is
+    // covered by `evaluateIntegrityState`'s own tests.
+    const sealed: VersionedVaultDatabaseState = {
+      ...createEmptyVaultDatabaseState(),
+      user_secrets: [{ username: 'owner', argon_hash: '$argon2id$salt$master-pass' }],
+      versionCounter: 4,
+      sealedAtVersionCounter: 4,
+      integrityHmac: 'seeded-seal',
+    };
+
+    const written: string[] = [];
+    const writable = {
+      write: vi.fn(async (payload: string) => {
+        written.push(payload);
+      }),
+      close: vi.fn(async () => undefined),
+    };
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => (
+      options?.create
+        ? { createWritable: vi.fn(async () => writable) }
+        : { getFile: vi.fn(async () => ({ text: vi.fn(async () => JSON.stringify(sealed)) })) }
+    ));
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { getDirectory: vi.fn(async () => ({ getFileHandle })) },
+    });
+
+    await freshSqliteInstance();
+
+    // The re-save is expected to run — it is how a normalized state reaches
+    // storage — and it must not leave a version the next read cannot verify.
+    expect(writable.write).toHaveBeenCalled();
+    const afterResave = JSON.parse(String(written.at(-1)));
+    expect(afterResave.versionCounter).toBe(sealed.versionCounter);
+    expect(afterResave.sealedAtVersionCounter).toBe(afterResave.versionCounter);
+    expect(afterResave.integrityHmac).toBe(sealed.integrityHmac);
+  });
+
+  it('K-3: a keyless re-save of changed content does not advance the generation', async () => {
+    // A keyless write cannot re-seal, so it must leave `sealedAtVersionCounter`
+    // matching `versionCounter` no matter what it writes. Refusing the write
+    // outright was the first instinct and it was wrong: `setupMaster` writes
+    // the owner record through a path with no cached key yet, so refusing there
+    // left the account with no master-password hash and the next unlock simply
+    // failed. Advancing nothing is the safe outcome.
+    const sealed: VersionedVaultDatabaseState = {
+      ...createEmptyVaultDatabaseState(),
+      user_secrets: [{ username: 'owner', argon_hash: '$argon2id$salt$master-pass' }],
+      vault_items: [{
+        id: 'guarded-1',
+        title: '[encrypted: aes-256-gcm]',
+        category: 'login',
+        favorite: 0,
+        deleted: 0,
+        deleted_at: null,
+        created_at: '2026-01-01',
+        updated_at: '2026-01-02',
+        username: '[encrypted: aes-256-gcm]',
+        username_db: '[encrypted: aes-256-gcm]',
+        password_db: '[encrypted: aes-256-gcm]',
+        notes_db: '[encrypted: aes-256-gcm]',
+        enc_metadata: '{}',
+        enc_kdf: 'argon2-browser',
+      }],
+      versionCounter: 4,
+      sealedAtVersionCounter: 4,
+      integrityHmac: 'seeded-seal',
+    };
+
+    const written: string[] = [];
+    const writable = {
+      write: vi.fn(async (payload: string) => {
+        written.push(payload);
+      }),
+      close: vi.fn(async () => undefined),
+    };
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => (
+      options?.create
+        ? { createWritable: vi.fn(async () => writable) }
+        : { getFile: vi.fn(async () => ({ text: vi.fn(async () => JSON.stringify(sealed)) })) }
+    ));
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { getDirectory: vi.fn(async () => ({ getFileHandle })) },
+    });
+
+    const sqlite = await freshSqliteInstance();
+
+    // Drop every key the module could sign with, then change the content behind
+    // the write gate's back — what a migration or a buggy caller would do.
+    sqlite.clearDerivedKeyCache();
+    const internals = sqlite as unknown as {
+      state: VersionedVaultDatabaseState;
+      saveToPersistentStorage(): Promise<boolean>;
+    };
+    internals.state.vault_items = [];
+
+    await internals.saveToPersistentStorage();
+
+    // The edit is persisted, but the generation it belongs to is still the one
+    // the seal covers — so the next read can verify it instead of reporting
+    // tampering.
+    const after = JSON.parse(String(written.at(-1)));
+    expect(after.vault_items).toEqual([]);
+    expect(after.versionCounter).toBe(sealed.versionCounter);
+    expect(after.sealedAtVersionCounter).toBe(sealed.versionCounter);
+  });
+
   it('rejects loading and logs security event when state is tampered (R-1 HMAC integrity)', async () => {
     const sqlite = await freshSqliteInstance();
     await sqlite.setupMaster('master-pass');
