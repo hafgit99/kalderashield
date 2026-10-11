@@ -69,425 +69,223 @@ jobs:
           REQUESTED_PLATFORMS: ${{ vars.RELEASE_DESKTOP_PLATFORMS }}
         run: node scripts/select-release-platforms.cjs
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # The three desktop builds below are now three thin calls into
+  # _reusable-desktop-build.yml.
+  #
+  # They were near-identical: checkout, toolchains, npm ci, typecheck, tests,
+  # extension build, tauri build, hardening gate, collect, updater copy,
+  # signature verification, signing report, release gate, upload. The shared
+  # sequence had to be edited in three places and the third is the one nobody
+  # edits. This workflow's own comment history is a list of what that produced,
+  # and none of it was a platform bug:
+  #
+  #   - v7.0.20 shipped KalderaShield-7.0.20-1.x86_64.rpm.sig with no .rpm beside
+  #     it, because the collect script had no "rpm" string in it.
+  #   - The desktop release gate wiped the artifacts it was meant to check: its
+  #     own collect step rm -rf'd release-local/<platform>. On Windows and macOS
+  #     that silently replaced the Developer ID / Authenticode signed builds
+  #     with the output of an unsigned rebuild, after the signing-report gate
+  #     had already verified the real ones.
+  #   - Windows had no signing step at all, and macOS built ad-hoc, so it could
+  #     never pass spctl.
+  #
+  # Job names are kept as build-linux / build-macos / build-windows rather than
+  # collapsed into one matrix. `publish` gates on those exact names
+  # (release-desktop.yml:795+), and `workflow_call` gives a called job no
+  # outputs back to the caller's `needs`, so a matrix would have broken that
+  # gating in exchange for saving the three declarations.
+  #
+  # Android is deliberately NOT included. It needs a JDK, an NDK, a keystore, a
+  # different build command, produces APKs rather than bundles, and runs no
+  # signing-report gate -- folding it in would mean parameterising away most of
+  # what the shared spine exists to guarantee.
+
   build-linux:
     name: Build Linux packages
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned)
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.1 (SHA-pinned)
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable (SHA-pinned)
-
-      - name: Cache Rust builds
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (SHA-pinned)
-        with:
-          workspaces: src-tauri -> target
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            curl \
-            file \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libwebkit2gtk-4.1-dev \
-            patchelf \
-            wget
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm run test:unit
-
-      - name: Build browser extensions
-        run: npm run build:extension
-
-      - name: Build Linux desktop packages
-        run: npx tauri build
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Release security hardening gate
-        run: npm run security:release-hardening
-
-      - name: Collect Linux release artifacts
-        run: npm run release:collect -- --platform linux --skip-extensions
-
-      - name: Collect Linux updater bundles and signatures
-        # `*.rpm` is collected here, not in collect-release-artifacts.cjs, because
-        # this step copies by suffix from the bundle tree while the script only
-        # knows about deb/appimage. The script's absence of any "rpm" string was
-        # the whole bug: v7.0.20 shipped KalderaShield-7.0.20-1.x86_64.rpm.sig
-        # with no .rpm beside it, so the only RPM artifact on the release was a
-        # signature verifying a file that did not exist.
-        #
-        # Tauri builds the RPM in-process via the `rpm` crate and does not shell
-        # out to rpmbuild, so bundle/rpm/<name>.rpm is present on ubuntu-22.04
-        # without the `rpm` system package installed.
-        #
-        # `cp` must not overwrite: a .rpm whose .sig is also copied is collected
-        # as a pair, and a bare .sig with no package is exactly what this fixes.
-        run: |
-          set -euo pipefail
-          bundle=src-tauri/target/release/bundle
-          find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ \;
-          find "$bundle" -type f \( \
-            -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
-            -exec cp {} release-local/linux/ \;
-          ls -la release-local/linux/
-          node scripts/verify-signature-payloads.cjs --dir release-local/linux
-
-      - name: 'Signing report gate — block unsigned releases (Y-19)'
-        run: npm run desktop:release:signing:report -- --platform linux --dir release-local/linux --require-signed
-
-      - name: Desktop release gate
-        # Verify, do not rebuild.
-        #
-        # This gate also runs a Tauri desktop build and
-        # collect-release-artifacts.cjs, and the collect script begins with
-        # ensureCleanDir(), which is an rm -rf of its output directory. Run after
-        # the workflow's own collect steps, it therefore deleted what those steps
-        # had just staged:
-        #
-        #   - Linux: the Tauri minisign "*.sig" updater artifacts. This step's
-        #     build has no TAURI_SIGNING_PRIVATE_KEY in its environment, so tauri
-        #     skips updater artifact generation, and the collect step does not
-        #     copy signatures itself. `publish` then found no signed bundle and the
-        #     manifest generator refused to publish an updater offering nothing.
-        #   - Windows/macOS: worse, and quieter. The signing-report gate above had
-        #     already verified the *signed* artifacts; this step then replaced them
-        #     with the output of an unsigned rebuild, and the upload sent those.
-        #
-        # Building, collecting and reporting signatures are this workflow's job
-        # and all three already ran above, so the gate is only asked to check the
-        # tree. Locally the gate still does the full sequence, which is what a
-        # developer running a release from their own machine wants.
-        run: npm run desktop:release:gate -- --platform linux --skip-desktop-build --skip-collect --skip-signing-report
-      - name: Upload Linux release artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
-        with:
-          name: kalderashield-linux
-          if-no-files-found: error
-          retention-days: 14
-          path: release-local/linux/**
+    uses: ./.github/workflows/_reusable-desktop-build.yml
+    with:
+      platform: linux
+      runner: ubuntu-22.04
+      timeout-minutes: 90
+      system-deps: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          curl \
+          file \
+          libayatana-appindicator3-dev \
+          librsvg2-dev \
+          libssl-dev \
+          libwebkit2gtk-4.1-dev \
+          patchelf \
+          wget
+      build-command: npx tauri build
+      # `cp -n` must not overwrite: a .rpm whose .sig is also copied is
+      # collected as a pair, and a bare .sig with no package beside it is
+      # exactly the v7.0.20 bug above. Tauri builds the RPM in-process via the
+      # `rpm` crate and does not shell out to rpmbuild, so the bundle exists on
+      # ubuntu-22.04 without the rpm system package installed.
+      updater-copy: |
+        set -euo pipefail
+        bundle=src-tauri/target/release/bundle
+        find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ ;
+        find "$bundle" -type f \( \
+          -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
+          -exec cp {} release-local/linux/ ;
+        ls -la release-local/linux/
+        node scripts/verify-signature-payloads.cjs --dir release-local/linux
+    secrets: inherit
 
   build-macos:
     name: Build macOS packages
     needs: [plan]
     if: needs.plan.outputs.macos == 'true'
-    runs-on: macos-14
-    timeout-minutes: 90
+    uses: ./.github/workflows/_reusable-desktop-build.yml
+    with:
+      platform: macos
+      runner: macos-14
+      timeout-minutes: 90
+      rust-targets: x86_64-apple-darwin,aarch64-apple-darwin
+      build-command: npx tauri build --target universal-apple-darwin
+      # Y-19: real Developer ID signing. This previously always built with
+      # APPLE_SIGNING_IDENTITY resolved to "-", i.e. ad-hoc, and an ad-hoc
+      # signature cannot pass spctl --assess -- so the signing-report gate
+      # correctly failed and the job produced a build that was never publishable.
+      # Signing happens when the documented secrets exist; the gate still fails
+      # the build when they do not. That is deliberate: an unsigned public
+      # release must not be possible.
+      prep-steps: |
+        set -euo pipefail
+        CERT_PATH="$RUNNER_TEMP/developer-id.p12"
+        KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned)
+        # Never let a failure leave the certificate or keychain behind.
+        cleanup() {
+          security delete-keychain "$KEYCHAIN" 2>/dev/null || true
+          rm -f "$CERT_PATH"
+        }
+        trap cleanup EXIT
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.1 (SHA-pinned)
-        with:
-          node-version: 22
-          cache: npm
+        echo "$APPLE_SIGNING_CERT_P12" | base64 --decode > "$CERT_PATH"
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+        security import "$CERT_PATH" -k "$KEYCHAIN" \
+          -P "$APPLE_SIGNING_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+        security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+        security set-key-partition-list -S apple-tool:,apple: \
+          -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
 
-      # ── Y-19: real Developer ID signing ─────────────────────────────────────
-      # This job previously always built with `APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || '-' }}`,
-      # i.e. ad-hoc. An ad-hoc signature cannot pass `spctl --assess`, so the
-      # signing-report gate below correctly failed — the job produced a build
-      # that was never publishable. Signing now happens when the documented
-      # secrets exist, and the build still fails at the gate when they do not.
-      # That is deliberate: an unsigned public release must not be possible.
-      - name: 'Import Developer ID certificate (Y-19)'
-        if: ${{ env.APPLE_SIGNING_CERT_P12 != '' }}
-        env:
-          APPLE_SIGNING_CERT_P12: ${{ secrets.APPLE_SIGNING_CERT_P12 }}
-          APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          CERT_PATH="$RUNNER_TEMP/developer-id.p12"
-          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+        # Record the identity so the build step can use it instead of "-".
+        IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+          | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n1)
+        if [ -z "$IDENTITY" ]; then
+          echo "::error::No Developer ID Application identity found in the imported certificate."
+          exit 1
+        fi
+        echo "APPLE_SIGNING_IDENTITY_RESOLVED=$IDENTITY" >> "$GITHUB_ENV"
+        echo "Resolved Developer ID identity."
 
-          # Never let a failure leave the certificate or keychain behind.
-          cleanup() {
-            security delete-keychain "$KEYCHAIN" 2>/dev/null || true
-            rm -f "$CERT_PATH"
-          }
-          trap cleanup EXIT
+        # Notarization credentials are stored in the same ceremony so the
+        # temporary keychain exists when they are needed.
+        if [ -z "${APPLE_ID:-}" ] || [ -z "${APPLE_TEAM_ID:-}" ] || [ -z "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]; then
+          echo "::error::APPLE_ID, APPLE_TEAM_ID and APPLE_APP_SPECIFIC_PASSWORD are all required for notarization."
+          exit 1
+        fi
+        xcrun notarytool store-credentials "AC_NOTARY" \
+          --apple-id "$APPLE_ID" \
+          --team-id "$APPLE_TEAM_ID" \
+          --password "$APPLE_APP_SPECIFIC_PASSWORD"
+      # Sign the bundle explicitly as well, so the signature covers the
+      # notarized contents rather than depending on the bundler's timing.
+      post-steps: |
+        set -euo pipefail
+        APP_PATH=$(find src-tauri/target -type d -name '*.app' -path '*release/bundle/macos*' | head -n1)
+        DMG_PATH=$(find src-tauri/target -type f -name '*.dmg' -path '*release/bundle/macos*' | head -n1)
+        if [ -z "$APP_PATH" ] || [ -z "$DMG_PATH" ]; then
+          echo "::error::Could not locate the macOS .app/.dmg to notarize."
+          exit 1
+        fi
 
-          echo "$APPLE_SIGNING_CERT_P12" | base64 --decode > "$CERT_PATH"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-          security import "$CERT_PATH" -k "$KEYCHAIN" \
-            -P "$APPLE_SIGNING_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
-          security set-key-partition-list -S apple-tool:,apple: \
-            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+        codesign --force --deep --options runtime --timestamp \
+          --sign "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
+        codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
-          # Record the identity so the build step can use it instead of "-".
-          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
-            | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n1)
-          if [ -z "$IDENTITY" ]; then
-            echo "::error::No Developer ID Application identity found in the imported certificate."
-            exit 1
-          fi
-          echo "APPLE_SIGNING_IDENTITY_RESOLVED=$IDENTITY" >> "$GITHUB_ENV"
-          echo "Resolved Developer ID identity."
+        xcrun notarytool submit "$DMG_PATH" --keychain-profile "AC_NOTARY" --wait
+        xcrun stapler staple "$DMG_PATH"
+        xcrun stapler validate "$DMG_PATH"
 
-      - name: 'Store notarization credentials (Y-19)'
-        if: ${{ env.APPLE_SIGNING_CERT_P12 != '' }}
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [ -z "${APPLE_ID:-}" ] || [ -z "${APPLE_TEAM_ID:-}" ] || [ -z "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]; then
-            echo "::error::APPLE_ID, APPLE_TEAM_ID and APPLE_APP_SPECIFIC_PASSWORD are all required for notarization."
-            exit 1
-          fi
-          xcrun notarytool store-credentials "AC_NOTARY" \
-            --apple-id "$APPLE_ID" \
-            --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD"
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable (SHA-pinned)
-        with:
-          targets: x86_64-apple-darwin,aarch64-apple-darwin
-
-      - name: Cache Rust builds
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (SHA-pinned)
-        with:
-          workspaces: src-tauri -> target
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm run test:unit
-
-      - name: Build browser extensions
-        run: npm run build:extension
-
-      - name: Build macOS universal desktop packages
-        run: npx tauri build --target universal-apple-darwin
-        env:
-          # Y-19: the real Developer ID identity when a certificate was imported,
-          # otherwise ad-hoc. Either way the signing-report gate below decides
-          # whether the result may be published.
-          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || '-' }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: 'Notarize and staple macOS build (Y-19)'
-        if: ${{ env.APPLE_SIGNING_CERT_P12 != '' }}
-        run: |
-          set -euo pipefail
-          APP_PATH=$(find src-tauri/target -type d -name '*.app' -path '*release/bundle/macos*' | head -n1)
-          DMG_PATH=$(find src-tauri/target -type f -name '*.dmg' -path '*release/bundle/macos*' | head -n1)
-          if [ -z "$APP_PATH" ] || [ -z "$DMG_PATH" ]; then
-            echo "::error::Could not locate the macOS .app/.dmg to notarize."
-            exit 1
-          fi
-
-          # Sign the bundle explicitly as well, so the signature covers the
-          # notarized contents rather than depending on the bundler's timing.
-          codesign --force --deep --options runtime --timestamp \
-            --sign "$APPLE_SIGNING_IDENTITY" "$APP_PATH"
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-
-          xcrun notarytool submit "$DMG_PATH" --keychain-profile "AC_NOTARY" --wait
-          xcrun stapler staple "$DMG_PATH"
-          xcrun stapler validate "$DMG_PATH"
-
-          # A successful staple is necessary but not sufficient: the gate below
-          # independently re-verifies with spctl.
-          echo "Notarized and stapled: $DMG_PATH"
-
-      - name: Release security hardening gate
-        run: npm run security:release-hardening
-
-      - name: Collect macOS release artifacts
-        run: npm run release:collect -- --platform macos --skip-extensions
-
-      - name: Collect macOS updater bundles and signatures
-        run: |
-          find src-tauri/target -path '*release/bundle*' -type f \( \
-            -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
-            -exec cp {} release-local/macos/ \;
-          # GitHub normalizes spaces in release asset names to dots. Rename locally so that
-          # artifact filename == release asset name == latest.json updater URL (exact match).
-          for f in release-local/macos/*; do
-            case "$f" in
-              *' '*) mv "$f" "release-local/macos/$(basename "$f" | tr ' ' '.')" ;;
-            esac
-          done
-          ls -la release-local/macos/
-          node scripts/verify-signature-payloads.cjs --dir release-local/macos
-
-      - name: 'Signing report gate — block unsigned releases (Y-19)'
-        run: npm run desktop:release:signing:report -- --platform macos --dir release-local/macos --require-signed
-
-      - name: Desktop release gate
-        # Verify, do not rebuild. See the note on the same step in build-linux:
-        # this gate's collect step starts with an rm -rf of release-local/macos,
-        # so running it here would replace the Developer ID signed and notarized
-        # artifacts with the output of an unsigned rebuild, after the
-        # signing-report gate had already verified the real ones.
-        run: npm run desktop:release:gate -- --platform macos --skip-desktop-build --skip-collect --skip-signing-report
-      - name: Upload macOS release artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
-        with:
-          name: kalderashield-macos
-          if-no-files-found: error
-          retention-days: 14
-          path: release-local/macos/**
+        # A successful staple is necessary but not sufficient: the signing
+        # report gate re-verifies with spctl independently.
+        echo "Notarized and stapled: $DMG_PATH"
+      # GitHub normalizes spaces in release asset names to dots. Renaming locally
+      # makes artifact filename == release asset name == latest.json updater URL.
+      normalize-spaces: true
+      updater-copy: |
+        set -euo pipefail
+        find src-tauri/target -path '*release/bundle*' -type f \( \
+          -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
+          -exec cp {} release-local/macos/ ;
+        ls -la release-local/macos/
+        node scripts/verify-signature-payloads.cjs --dir release-local/macos
+    secrets: inherit
 
   build-windows:
     name: Build Windows packages
     needs: [plan]
     if: needs.plan.outputs.windows == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 90
+    uses: ./.github/workflows/_reusable-desktop-build.yml
+    with:
+      platform: windows
+      runner: windows-latest
+      timeout-minutes: 90
+      build-command: npx tauri build
+      updater-shell: pwsh
+      # Y-19: Authenticode. There was previously no signing step at all here, so
+      # every published .exe/.msi reached users unsigned. Secret names match
+      # docs/RELEASE_PLAN.md.
+      prep-steps: |
+        $ErrorActionPreference = 'Stop'
+        $pfxPath = Join-Path $env:RUNNER_TEMP 'KalderaShield-signing.pfx'
+        [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERT_BASE64))
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned)
+        $secure = ConvertTo-SecureString -String $env:WINDOWS_SIGNING_CERT_PASSWORD -AsPlainText -Force
+        Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation 'Cert:\CurrentUser\My' -Password $secure | Out-Null
+        Remove-Item -Force $pfxPath
 
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.1 (SHA-pinned)
-        with:
-          node-version: 22
-          cache: npm
+        $cert = Get-ChildItem 'Cert:\CurrentUser\My' |
+          Where-Object { $_.HasPrivateKey -and $_.EnhancedKeyUsageList.ObjectId -contains '1.3.6.1.5.5.7.3.3' } |
+          Select-Object -First 1
+        if (-not $cert) { throw 'No code-signing certificate with a private key was imported.' }
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable (SHA-pinned)
+        "WINDOWS_SIGNING_THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Host "Imported code-signing certificate $($cert.Thumbprint)"
+      # Runs after the build, because the artifacts must exist to be signed.
+      post-steps: |
+        $ErrorActionPreference = 'Stop'
+        $timestamp = if ($env:WINDOWS_SIGNING_TIMESTAMP_URL) { $env:WINDOWS_SIGNING_TIMESTAMP_URL } else { 'http://timestamp.digicert.com' }
 
-      - name: Cache Rust builds
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (SHA-pinned)
-        with:
-          workspaces: src-tauri -> target
+        $targets = Get-ChildItem 'src-tauri\target\release\bundle' -Recurse -File |
+          Where-Object { $_.Extension -in '.exe', '.msi' }
+        if (-not $targets) { throw 'No .exe or .msi artifacts found to sign.' }
 
-      - name: Install frontend dependencies
-        run: npm ci
+        foreach ($target in $targets) {
+          # Timestamped so the signature outlives the certificate's expiry.
+          & signtool sign /tr $timestamp /td sha256 /fd sha256 `
+            /sha1 $env:WINDOWS_SIGNING_THUMBPRINT $target.FullName
+          if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($target.FullName)" }
+          Write-Host "Signed $($target.Name)"
+        }
+      updater-copy: |
+        New-Item -ItemType Directory -Force -Path release-local/windows | Out-Null
+        Get-ChildItem src-tauri/target/release/bundle -Recurse -File |
+          Where-Object { $_.Name -match '\.sig$|\.tar\.gz$|\.nsis\.zip$' } |
+          Copy-Item -Destination release-local/windows
+        Get-ChildItem release-local/windows | Select-Object -ExpandProperty Name
+        node scripts/verify-signature-payloads.cjs --dir release-local/windows
+    secrets: inherit
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm run test:unit
-
-      - name: Build browser extensions
-        run: npm run build:extension
-
-      # ── Y-19: Authenticode signing ─────────────────────────────────────────
-      # There was previously no signing step at all on Windows, so every
-      # published `.exe`/`.msi` reached users unsigned and the signing-report
-      # gate failed. Secret names match `docs/RELEASE_PLAN.md`.
-      - name: 'Import Authenticode certificate (Y-19)'
-        if: ${{ env.WINDOWS_SIGNING_CERT_BASE64 != '' }}
-        shell: pwsh
-        env:
-          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
-          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $pfxPath = Join-Path $env:RUNNER_TEMP 'KalderaShield-signing.pfx'
-          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERT_BASE64))
-
-          $secure = ConvertTo-SecureString -String $env:WINDOWS_SIGNING_CERT_PASSWORD -AsPlainText -Force
-          Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation 'Cert:\CurrentUser\My' -Password $secure | Out-Null
-          Remove-Item -Force $pfxPath
-
-          $cert = Get-ChildItem 'Cert:\CurrentUser\My' |
-            Where-Object { $_.HasPrivateKey -and $_.EnhancedKeyUsageList.ObjectId -contains '1.3.6.1.5.5.7.3.3' } |
-            Select-Object -First 1
-          if (-not $cert) { throw 'No code-signing certificate with a private key was imported.' }
-
-          "WINDOWS_SIGNING_THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Host "Imported code-signing certificate $($cert.Thumbprint)"
-
-      - name: Build Windows desktop packages
-        run: npx tauri build
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: 'Sign Windows packages (Y-19)'
-        if: ${{ env.WINDOWS_SIGNING_CERT_BASE64 != '' }}
-        shell: pwsh
-        env:
-          WINDOWS_SIGNING_TIMESTAMP_URL: ${{ secrets.WINDOWS_SIGNING_TIMESTAMP_URL }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $timestamp = if ($env:WINDOWS_SIGNING_TIMESTAMP_URL) { $env:WINDOWS_SIGNING_TIMESTAMP_URL } else { 'http://timestamp.digicert.com' }
-
-          # Runs after the build, because the artifacts must exist to be signed.
-          $targets = Get-ChildItem 'src-tauri\target\release\bundle' -Recurse -File |
-            Where-Object { $_.Extension -in '.exe', '.msi' }
-          if (-not $targets) { throw 'No .exe or .msi artifacts found to sign.' }
-
-          foreach ($target in $targets) {
-            # Timestamped so the signature outlives the certificate's expiry.
-            & signtool sign /tr $timestamp /td sha256 /fd sha256 `
-              /sha1 $env:WINDOWS_SIGNING_THUMBPRINT $target.FullName
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($target.FullName)" }
-            Write-Host "Signed $($target.Name)"
-          }
-
-      - name: 'Release security hardening gate'
-        run: npm run security:release-hardening
-
-      - name: Collect Windows release artifacts
-        run: npm run release:collect -- --platform windows --skip-extensions
-
-      - name: Collect Windows updater bundles and signatures
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path release-local/windows | Out-Null
-          Get-ChildItem src-tauri/target/release/bundle -Recurse -File |
-            Where-Object { $_.Name -match '\.sig$|\.tar\.gz$|\.nsis\.zip$' } |
-            Copy-Item -Destination release-local/windows
-          Get-ChildItem release-local/windows | Select-Object -ExpandProperty Name
-          node scripts/verify-signature-payloads.cjs --dir release-local/windows
-
-      - name: 'Signing report gate — block unsigned releases (Y-19)'
-        run: npm run desktop:release:signing:report -- --platform windows --dir release-local/windows --require-signed
-
-      - name: Desktop release gate
-        # Verify, do not rebuild. See the note on the same step in build-linux:
-        # this gate's collect step starts with an rm -rf of release-local/windows,
-        # so running it here would replace the Authenticode-signed artifacts with
-        # the output of an unsigned rebuild, after the signing-report gate had
-        # already verified the real ones.
-        run: npm run desktop:release:gate -- --platform windows --skip-desktop-build --skip-collect --skip-signing-report
-      - name: Upload Windows release artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
-        with:
-          name: kalderashield-windows
-          if-no-files-found: error
-          retention-days: 14
-          path: release-local/windows/**
 
   build-android:
     name: Build signed Android APKs
@@ -814,6 +612,10 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      # attestations: write lets attest-build-provenance record the provenance
+      # statement below. id-token: write is already required by cosign keyless,
+      # so the attestation step needed no new credential -- only this scope.
+      attestations: write
 
     steps:
       - name: Checkout repository
@@ -1219,6 +1021,23 @@ jobs:
             release-local/updater/latest.json
             release-local/SHA256SUMS.txt
             ${{ steps.alias.outputs.staged }}
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2 (SHA-pinned)
+        with:
+          # The same set the release step uploads, so a digest in the attestation
+          # store is a digest a user can fetch. Attesting a narrower set would
+          # leave an artifact shipped without a statement; a wider one would
+          # attest files nobody can download.
+          subject-path: |
+            release-local/linux/**
+            release-local/macos/**
+            release-local/windows/**
+            release-local/android/**
+            release-local/extensions/**
+            release-local/sbom/**
+            release-local/updater/latest.json
+            release-local/SHA256SUMS.txt
 
       - name: Publish updater manifest to backup endpoint (update.KalderaShield.xyz)
         continue-on-error: true

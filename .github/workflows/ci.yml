@@ -53,8 +53,102 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests
-        run: npm run test:unit
+      # Coverage, not test:unit -- same 253 files and 2243 tests, plus the
+      # thresholds in vitest.config.ts actually enforced.
+      #
+      # The thresholds were configured and never run. `vitest run` alone does not
+      # enable coverage, so lines 90 / statements 88 / functions 85 / branches 80
+      # only applied when someone ran test:coverage by hand, which meant the
+      # homepage's "90% lines" claim rested on a person remembering to look. A
+      # threshold nothing enforces is a comment, not a gate.
+      #
+      # This replaces test:unit rather than following it: running both would
+      # execute the same suite twice for one extra number. The measured figures
+      # sit close to the floor on purpose -- lines 91.1 against 90, statements
+      # 89.6 against 88 -- so a regression shows up as a red build instead of a
+      # number nobody reads.
+      - name: Unit tests with coverage thresholds enforced
+        run: npm run test:coverage
+
+      # The report is uploaded so a failing threshold can be read rather than
+      # guessed at. Without it the log says which number missed and nothing
+      # about which lines moved, which is the difference between fixing a
+      # regression and guessing at one. Seven days matches the Scorecard SARIF
+      # retention in scorecard.yml.
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: unit-coverage
+          path: coverage/
+          retention-days: 7
+
+  # P1-2b. This job existed as an open finding for five weeks, and the reason is
+  # the point of adding it: the suite was broken (6 of 34 passing) and nothing
+  # noticed, because nothing ran it. The README claimed "34 scenarios x 3
+  # browsers = 102/102" from a measurement old enough that the suite had since
+  # regressed past it. Every bug fixed this session -- the reload that bricked
+  # the vault, the share prompt that never rendered, both password-rotation
+  # faults, the untestable secret-key promise -- was invisible to CI, because
+  # CI had no e2e step.
+  #
+  # Chromium only. The suite is written against one browser and running all
+  # three would triple the wall clock to prove a claim this job does not make;
+  # cross-browser coverage belongs to a release checklist, not to a PR gate.
+  # `--workers=1` for the same reason `fullyParallel: false` is already set in
+  # playwright.config.ts: the vault writes to OPFS and a second tab racing the
+  # first is the failure mode the config comment already describes.
+  e2e-smoke:
+    name: E2E smoke (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts starts `npm run build && npm run preview` itself,
+      # so the job does not build separately. Measured locally at 34/34 in
+      # 1.9 minutes; 20 minutes leaves room for a cold runner without turning a
+      # genuine hang into an overnight wait.
+      - name: Run the suite
+        run: npx playwright test --project=chromium --workers=1 --reporter=line
+
+      # Uploaded on failure as well as success. The Playwright HTML report is
+      # the only place the `error-context.md` snapshot lives, and a snapshot
+      # nobody can open is the same as no snapshot: the previous rounds of this
+      # investigation each started by reading a saved page snapshot to find out
+      # which dialog was on screen.
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # Only the failure traces. Traces are recorded on the first retry and
+      # `retries: 2` under CI, so these exist exactly when something broke.
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
   website-gates:
     name: Website quality gates
@@ -123,6 +217,18 @@ jobs:
         working-directory: kalderashield-website
         run: node scripts/sync-claims.cjs --check
 
+      # The homepage also publishes two claims that are statements about the
+      # product rather than about the repository: which KDF derives the recovery
+      # key, and whether an independent audit has happened. Both had parted
+      # ways with reality -- the recovery copy named PBKDF2 while
+      # src/lib/recoveryKey.ts derives with Argon2id, and the audit badge said
+      # "in progress" while the audit page said no audit had taken place. The
+      # first is read out of the source, so changing RECOVERY_KDF_PROFILE fails
+      # here instead of leaving twelve dictionaries publishing the old numbers.
+      - name: Cryptographic and audit claims match the code
+        working-directory: kalderashield-website
+        run: node scripts/sync-security-claims.cjs --check
+
       # theme-color as a prefers-color-scheme pair, and the rel="sitemap" link,
       # on every page. The colours are read from site.css by the script, so a
       # palette change cannot leave the browser chrome behind it.
@@ -143,6 +249,26 @@ jobs:
       - name: Every locale is complete enough to publish
         working-directory: kalderashield-website
         run: node scripts/measure-locale-coverage.cjs
+
+      # Every other gate here runs dictionary-ward: "does this page say what its
+      # dictionary says", "does every locale have this key". None of them look at
+      # a key no page asks for, and that gap held two false claims -- a recovery
+      # KDF named PBKDF2 and a testimonial asserting that independent audits
+      # exist -- in all twelve dictionaries, shipped to every visitor, invisible
+      # on every page. The legacy orphans are recorded in a committed baseline so
+      # this fails only on new ones; the debt stops growing here and pruning it
+      # stays ordinary work.
+      - name: No dictionary key is left unrendered
+        working-directory: kalderashield-website
+        run: node scripts/audit-orphan-keys.cjs
+
+      # "kurulum särasında" for "sırasında". Turkish has no ä and no û, so those
+      # two characters are a corrupted character rather than a word, and no
+      # spellchecker flags them. Scoped to the Turkish copy because the same
+      # test is 340 false positives in German.
+      - name: Turkish copy has no corrupted characters
+        working-directory: kalderashield-website
+        run: node scripts/audit-turkish-copy.cjs
 
       # The committed locale pages must be what generate-locales.cjs produces
       # now. Regenerating and diffing is the check: the generator is the only
@@ -193,6 +319,7 @@ jobs:
           node scripts/fix-faq-path-placeholder.cjs
           node scripts/rewrite-comparison-table.cjs
           node scripts/sync-claims.cjs
+          node scripts/sync-security-claims.cjs
           node scripts/sync-head-meta.cjs
           node scripts/sync-script-tags.cjs
           node scripts/generate-locales.cjs

@@ -48,6 +48,7 @@ describe('LockScreen Modular Subcomponents', () => {
         setSecretKey={setSecretKey}
         isSetup={false}
         requiresSecretKey={true}
+        canRememberSecretKey={true}
         rememberSecretKey={false}
         setRememberSecretKey={setRememberSecretKey}
         onDownloadEmergencyKit={onDownloadKit}

@@ -3,6 +3,7 @@ import ConfirmModal from './ConfirmModal';
 import ProfileModal from './ProfileModal';
 import VaultFormModal from './VaultFormModal';
 import ShareModal from './ShareModal';
+import SharePasswordPrompt from './SharePasswordPrompt';
 import ReceiveShareModal from './ReceiveShareModal';
 import type { DecryptedSharePayload } from '../lib/share';
 
@@ -29,6 +30,10 @@ interface AppModalsProps {
   receivedPayload: DecryptedSharePayload | null;
   onCloseReceive: () => void;
   onImportShare: (item: Partial<VaultItem>) => void | Promise<void>;
+  isSharePasswordPromptOpen: boolean;
+  shareReceiveError: string | null;
+  onSubmitSharePassword: (password: string) => void | Promise<void>;
+  onCancelSharePasswordPrompt: () => void;
 }
 
 export default function AppModals({
@@ -53,6 +58,10 @@ export default function AppModals({
   receivedPayload,
   onCloseReceive,
   onImportShare,
+  isSharePasswordPromptOpen,
+  shareReceiveError,
+  onSubmitSharePassword,
+  onCancelSharePasswordPrompt,
 }: AppModalsProps) {
   return (
     <>
@@ -70,6 +79,13 @@ export default function AppModals({
         isOpen={isShareOpen}
         onClose={onCloseShare}
         item={sharingItem}
+      />
+
+      <SharePasswordPrompt
+        isOpen={isSharePasswordPromptOpen}
+        error={shareReceiveError}
+        onSubmit={onSubmitSharePassword}
+        onCancel={onCancelSharePasswordPrompt}
       />
 
       <ReceiveShareModal

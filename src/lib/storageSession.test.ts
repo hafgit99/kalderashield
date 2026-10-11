@@ -1016,6 +1016,44 @@ describe('vault session storage', () => {
     expect(hasActiveMasterPassword()).toBe(true);
   });
 
+  it('combines the master password with the active session key when no key is persisted', async () => {
+    // The regression, in one assertion. Outside Android nothing is stored for
+    // `rememberAccountSecretKey`, so `getRememberedAccountSecretKey()` returns
+    // null inside the settings screens. `useSettingsPassword` has no field for
+    // the key -- it is already inside an unlocked session -- so the precheck
+    // built its credential from the master password alone, while the vault had
+    // been sealed with `master + secret`. The correct password was compared
+    // against the wrong hash, and master-password rotation was reported as
+    // "wrong password" on every platform.
+    // Spelled out rather than random: a base32 fixture here is indistinguishable
+    // from a real account key to a secret scanner, and the CI gitleaks gate
+    // rejected the file for exactly that. Same shape, same alphabet, obviously
+    // not a key.
+    const secretKey = 'A3-NOTA-REAL-KEYX-FORY-TEST-ONLY-NOPE';
+    localStorage.setItem('KalderaShield_account_secret_profile', JSON.stringify({ enabled: true }));
+    // Nothing remembered for this device -- the state a browser is always in.
+    sqliteOPFSInstance.verifyPassword.mockResolvedValueOnce(true);
+    openVaultSession(`kalderashield:master-pass\0${secretKey}`, 'master-pass', new Uint8Array(32));
+
+    await expect(verifyMasterPassword('master-pass')).resolves.toBe(true);
+
+    expect(sqliteOPFSInstance.verifyPassword).toHaveBeenCalledWith(`kalderashield:master-pass\0${secretKey}`);
+  });
+
+  it('prefers an explicitly supplied key over the active session key', async () => {
+    // The lock screen passes the key the user typed (`LockScreen.tsx:293`); it
+    // must keep winning over whatever the session holds.
+    const sessionKey = 'A3-NOTA-REAL-KEYX-FORY-TEST-ONLY-NOPE';
+    const typedKey = 'A3-TYPD-REAL-KEYX-FORY-TEST-ONLY-NOPE';
+    localStorage.setItem('KalderaShield_account_secret_profile', JSON.stringify({ enabled: true }));
+    sqliteOPFSInstance.verifyPassword.mockResolvedValueOnce(true);
+    openVaultSession(`kalderashield:master-pass\0${sessionKey}`, 'master-pass', new Uint8Array(32));
+
+    await expect(verifyMasterPassword('master-pass', typedKey)).resolves.toBe(true);
+
+    expect(sqliteOPFSInstance.verifyPassword).toHaveBeenCalledWith(`kalderashield:master-pass\0${typedKey}`);
+  });
+
   it('accepts already combined credentials while keeping the raw master password as backup', async () => {
     const combinedCredential = 'kalderashield:master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567';
     sqliteOPFSInstance.verifyPassword.mockResolvedValueOnce(true);

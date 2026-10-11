@@ -9,11 +9,20 @@ on:
     # Mondays 06:00 UTC — weekly scan
     - cron: "0 6 * * 1"
 
+# Weekly and push triggers can overlap on the same commit, and two CodeQL runs
+# uploading SARIF for one commit race each other's upload and one of them fails
+# with a confusing "already exists" rather than saying what happened. Serialising
+# per ref is the standard remedy; cancelling an in-progress push run would be
+# wrong here because the older ref is the one that finished compiling.
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
 jobs:
-  analyze:
+  analyze-js:
     name: Analyze (javascript-typescript)
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -36,3 +45,38 @@ jobs:
         uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           category: "/language:javascript-typescript"
+
+  # src-tauri/src is ~14,200 lines of Rust and was outside every SAST scan:
+  # cargo deny checks the dependency advisories, but nothing read the code for
+  # the pattern bugs it can contain. credential_handler.rs is the Tauri IPC
+  # boundary, which is where an unauthenticated command or a secret crossing the
+  # process edge would live.
+  #
+  # Rust is analysed with build-mode: none -- CodeQL parses the sources directly
+  # for Rust rather than instrumenting a cargo build, which is what keeps this
+  # job at minutes instead of the ~30 the desktop build takes. It runs as its
+  # own job because each language needs its own analyze category, and a single
+  # job with two languages silently merges the two result sets.
+  analyze-rust:
+    name: Analyze (rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          languages: rust
+          build-mode: none
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          category: "/language:rust"

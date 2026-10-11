@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VaultItem } from '../types';
 import { createEmptyVaultDatabaseState, type VersionedVaultDatabaseState } from './vaultDatabaseFormat';
+import { LEGACY_VAULT_ITEM_KDF_SALT } from './sqliteOpfsShared';
+import { derivePerItemKey, webCryptoAesGcmDecrypt } from './webcrypto';
 
 const writeDesktopVaultDatabase = vi.hoisted(() => vi.fn(async () => false));
 const readDesktopVaultDatabase = vi.hoisted(() => vi.fn(async (): Promise<string | null> => null));
@@ -22,9 +24,13 @@ vi.mock('./desktopStorage', () => ({
 
 vi.mock('./argon2id', () => ({
   createArgon2idHash: vi.fn(async (password: string, salt: string) => `$argon2id$${salt}$${password}`),
-  deriveArgon2idKey: vi.fn(async (password: string) => {
-    const bytes = new TextEncoder().encode(password.padEnd(32, '#').slice(0, 32));
-    return new Uint8Array(bytes);
+  // The real Argon2id binds the salt into the key, so the mock has to as well.
+  // Deriving from the password alone made every salt-handling bug invisible here
+  // -- `changeMasterPassword` derived its "old" key from the *new* salt and this
+  // suite stayed green, because both salts produced the same key.
+  deriveArgon2idKey: vi.fn(async (password: string, salt?: string) => {
+    const bytes = new TextEncoder().encode(`${password}|${salt ?? ''}`);
+    return new Uint8Array(bytes.slice(0, 32));
   }),
   verifyArgon2idHash: vi.fn(async (password: string, encoded: string) => encoded.endsWith(`$${password}`)),
   MIN_ARGON2ID_MEMORY_KIB: 8192,
@@ -307,6 +313,21 @@ describe('SQLite OPFS persistence engine', () => {
 
     expect(reseeded.map((item) => item.id)).toEqual(['active-item', 'trash-item']);
 
+    // P2-2: demo seeding used to seal rows with the raw vault key, same as the
+    // bulk path. A demo vault is a real vault, so it gets the same per-item seal.
+    const demoVaultKey = await sqlite.deriveEncryptionKey('master-pass');
+    const demoRow = (sqlite as any).state.vault_items.find(
+      (row: { id: string }) => row.id === 'active-item',
+    ) as { enc_metadata: string };
+    const demoKey = await derivePerItemKey(demoVaultKey, 'active-item');
+    try {
+      const opened = await webCryptoAesGcmDecrypt(JSON.parse(demoRow.enc_metadata), demoKey);
+      expect(JSON.parse(opened).title).toBe('Active Item');
+    } finally {
+      demoKey.fill(0);
+      demoVaultKey.fill(0);
+    }
+
     const trashRows = sqlite.executeCustomSQL('SELECT id, title, deleted FROM vault_items WHERE deleted = 1', 'master-pass');
     expect(trashRows.rows).toEqual([['trash-item', '[encrypted: aes-256-gcm]', 1]]);
 
@@ -579,7 +600,14 @@ describe('SQLite OPFS persistence engine', () => {
   it('migrates existing static-salt vault rows to a persisted per-vault salt', async () => {
     const sqlite = await freshSqliteInstance();
     await sqlite.setupMaster('master-pass');
-    await sqlite.saveVaultItem(sampleItem({ id: 'static-salt-row' }), 'master-pass');
+
+    // A genuine pre-v2 database encrypted its rows under the shared static
+    // salt. Written from that salt on purpose: with the salt-blind derive mock
+    // this fixture could not be built honestly, and a salt-aware one has to
+    // place the rows exactly where the legacy code would have put them.
+    const legacyKey = await sqlite.deriveEncryptionKey('master-pass', LEGACY_VAULT_ITEM_KDF_SALT);
+    await sqlite.replaceAllVaultItemsWithKey([sampleItem({ id: 'static-salt-row' })], legacyKey);
+    legacyKey.fill(0);
 
     const persisted = JSON.parse(localStorage.getItem('kalderashield_fallback') ?? '{}');
     delete persisted.encryption_salt;
@@ -1149,6 +1177,69 @@ expect(saved[0]!.id).toHaveLength(9);
     expect(mockedDerive).toHaveBeenCalledTimes(2);
   });
 
+  // P2-2: `saveVaultItemsWithKey` never received the per-item-key change that
+  // `aab7077` applied to the single-item write, so every bulk/imported row was
+  // sealed with the raw vault key. The reader's legacy fallback hid that: it
+  // re-encrypted on first read, so a user saw no symptom while each import paid
+  // one failed decrypt, one extra encrypt and a security warning per row.
+  // These assertions look at the ciphertext itself instead of the warning,
+  // because the warning is exactly what made the regression invisible.
+  it('P2-2: seals bulk-saved rows under a per-item key, not the raw vault key', async () => {
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+
+    const bulkItems = [
+      sampleItem({ id: 'bulk-row-1', title: 'Bulk One' }),
+      sampleItem({ id: 'bulk-row-2', title: 'Bulk Two' }),
+    ];
+    await sqlite.saveVaultItems(bulkItems, 'master-pass');
+
+    const vaultKey = await sqlite.deriveEncryptionKey('master-pass');
+    const rows = (sqlite as any).state.vault_items as Array<{ id: string; enc_metadata: string }>;
+
+    for (const row of rows) {
+      const payload = JSON.parse(row.enc_metadata) as Parameters<typeof webCryptoAesGcmDecrypt>[0];
+
+      // The raw vault key must no longer open the row.
+      await expect(webCryptoAesGcmDecrypt(payload, vaultKey)).rejects.toBeTruthy();
+
+      // The per-item key must.
+      const itemKey = await derivePerItemKey(vaultKey, row.id);
+      try {
+        const plaintext = await webCryptoAesGcmDecrypt(payload, itemKey);
+        expect(JSON.parse(plaintext).title).toBe(row.id === 'bulk-row-1' ? 'Bulk One' : 'Bulk Two');
+      } finally {
+        itemKey.fill(0);
+      }
+    }
+    vaultKey.fill(0);
+  });
+
+  it('P2-2: bulk-saves a row whose id is generated, without losing the id', async () => {
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+
+    // The bulk path generates an id when the caller omits one, but the id has to
+    // end up *inside* the ciphertext: the reader rebuilds items from the decrypted
+    // JSON, not from the row column.
+    const saved = await sqlite.saveVaultItems(
+      [sampleItem({ id: '', title: 'Generated Id Record' })],
+      'master-pass',
+    );
+
+    expect(saved).toHaveLength(1);
+    const generatedId = saved[0]!.id;
+    expect(generatedId).toBeTruthy();
+
+    // Cold read: drop the plaintext cache so the ciphertext is actually decrypted.
+    (sqlite as any).decryptedItemsCache.clear();
+    const reread = await sqlite.getVaultItems('master-pass');
+
+    expect(reread).toHaveLength(1);
+    expect(reread[0]!.id).toBe(generatedId);
+    expect(reread[0]!.title).toBe('Generated Id Record');
+  });
+
   it('caches decrypted vault items without retaining legacy crypto keys', async () => {
     const sqlite = await freshSqliteInstance();
     await sqlite.setupMaster('master-pass');
@@ -1175,6 +1266,164 @@ expect(saved[0]!.id).toHaveLength(9);
     // clearDerivedKeyCache should wipe both caches
     sqlite.clearDerivedKeyCache();
     expect(cacheMap.size).toBe(0);
+  });
+
+  it('K-3: a keyless re-save after load leaves the seal matching the version counter', async () => {
+    // The regression: `loadFromPersistentStorage` re-saves a freshly loaded
+    // state (`resaveAfterLoad`) before the user has unlocked, so no key is
+    // available. That write used to bump `versionCounter` without sealing the
+    // new generation, leaving `sealedAtVersionCounter` behind it — and
+    // `evaluateIntegrityState` reads exactly that mismatch as tampering. Every
+    // page reload therefore locked the user out of a vault that was intact on
+    // disk.
+    //
+    // The tag itself cannot be computed under jsdom (`crypto.subtle.importKey`
+    // rejects the cross-realm typed array), so the sealed state is planted
+    // directly. The counter and the seal are what this guards; the HMAC is
+    // covered by `evaluateIntegrityState`'s own tests.
+    const sealed: VersionedVaultDatabaseState = {
+      ...createEmptyVaultDatabaseState(),
+      user_secrets: [{ username: 'owner', argon_hash: '$argon2id$salt$master-pass' }],
+      versionCounter: 4,
+      sealedAtVersionCounter: 4,
+      integrityHmac: 'seeded-seal',
+    };
+
+    const written: string[] = [];
+    const writable = {
+      write: vi.fn(async (payload: string) => {
+        written.push(payload);
+      }),
+      close: vi.fn(async () => undefined),
+    };
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => (
+      options?.create
+        ? { createWritable: vi.fn(async () => writable) }
+        : { getFile: vi.fn(async () => ({ text: vi.fn(async () => JSON.stringify(sealed)) })) }
+    ));
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { getDirectory: vi.fn(async () => ({ getFileHandle })) },
+    });
+
+    await freshSqliteInstance();
+
+    // The re-save is expected to run — it is how a normalized state reaches
+    // storage — and it must not leave a version the next read cannot verify.
+    expect(writable.write).toHaveBeenCalled();
+    const afterResave = JSON.parse(String(written.at(-1)));
+    expect(afterResave.versionCounter).toBe(sealed.versionCounter);
+    expect(afterResave.sealedAtVersionCounter).toBe(afterResave.versionCounter);
+    expect(afterResave.integrityHmac).toBe(sealed.integrityHmac);
+  });
+
+  it('K-3: a keyless re-save of changed content does not advance the generation', async () => {
+    // A keyless write cannot re-seal, so it must leave `sealedAtVersionCounter`
+    // matching `versionCounter` no matter what it writes. Refusing the write
+    // outright was the first instinct and it was wrong: `setupMaster` writes
+    // the owner record through a path with no cached key yet, so refusing there
+    // left the account with no master-password hash and the next unlock simply
+    // failed. Advancing nothing is the safe outcome.
+    const sealed: VersionedVaultDatabaseState = {
+      ...createEmptyVaultDatabaseState(),
+      user_secrets: [{ username: 'owner', argon_hash: '$argon2id$salt$master-pass' }],
+      vault_items: [{
+        id: 'guarded-1',
+        title: '[encrypted: aes-256-gcm]',
+        category: 'login',
+        favorite: 0,
+        deleted: 0,
+        deleted_at: null,
+        created_at: '2026-01-01',
+        updated_at: '2026-01-02',
+        username: '[encrypted: aes-256-gcm]',
+        username_db: '[encrypted: aes-256-gcm]',
+        password_db: '[encrypted: aes-256-gcm]',
+        notes_db: '[encrypted: aes-256-gcm]',
+        enc_metadata: '{}',
+        enc_kdf: 'argon2-browser',
+      }],
+      versionCounter: 4,
+      sealedAtVersionCounter: 4,
+      integrityHmac: 'seeded-seal',
+    };
+
+    const written: string[] = [];
+    const writable = {
+      write: vi.fn(async (payload: string) => {
+        written.push(payload);
+      }),
+      close: vi.fn(async () => undefined),
+    };
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => (
+      options?.create
+        ? { createWritable: vi.fn(async () => writable) }
+        : { getFile: vi.fn(async () => ({ text: vi.fn(async () => JSON.stringify(sealed)) })) }
+    ));
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { getDirectory: vi.fn(async () => ({ getFileHandle })) },
+    });
+
+    const sqlite = await freshSqliteInstance();
+
+    // Drop every key the module could sign with, then change the content behind
+    // the write gate's back — what a migration or a buggy caller would do.
+    sqlite.clearDerivedKeyCache();
+    const internals = sqlite as unknown as {
+      state: VersionedVaultDatabaseState;
+      saveToPersistentStorage(): Promise<boolean>;
+    };
+    internals.state.vault_items = [];
+
+    await internals.saveToPersistentStorage();
+
+    // The edit is persisted, but the generation it belongs to is still the one
+    // the seal covers — so the next read can verify it instead of reporting
+    // tampering.
+    const after = JSON.parse(String(written.at(-1)));
+    expect(after.vault_items).toEqual([]);
+    expect(after.versionCounter).toBe(sealed.versionCounter);
+    expect(after.sealedAtVersionCounter).toBe(sealed.versionCounter);
+  });
+
+  it('rotates the master credential without losing records', async () => {
+    // The regression: `changeMasterPassword` reassigned
+    // `state.encryption_salt` and then derived `oldDerivedKey` from it, so the
+    // "old" key came from the NEW salt. Passkey re-wrapping decrypted nothing
+    // and the re-seal gate failed verification, aborting the whole rotation
+    // with `master-password-rotation-failed` — on every platform, for every
+    // user, with the UI reporting their current password as wrong.
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+    await sqlite.saveVaultItem(sampleItem({ id: 'rotate-1', title: 'Survives Rotation' }), 'master-pass');
+
+    await sqlite.changeMasterPassword('master-pass', 'new-master-pass');
+
+    // The old credential no longer verifies.
+    await expect(sqlite.verifyPassword('master-pass')).resolves.toBe(false);
+    await expect(sqlite.verifyPassword('new-master-pass')).resolves.toBe(true);
+
+    // And the records are still readable under the new credential.
+    const items = await sqlite.getVaultItems('new-master-pass');
+    expect(items.map((i) => i.id)).toContain('rotate-1');
+  });
+
+  it('rotates a credential that was combined with an account secret key', async () => {
+    // The rotation runs behind `verifyMasterPassword`, whose precheck could not
+    // reach the secret key outside Android, so the UI rejected the correct
+    // password before the rotation was ever attempted. With the session key
+    // now consulted, this is the shape the e2e suite exercises.
+    const sqlite = await freshSqliteInstance();
+    const combined = 'kalderashield:master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567';
+    await sqlite.setupMaster(combined);
+    await sqlite.saveVaultItem(sampleItem({ id: 'rotate-2' }), combined);
+
+    await sqlite.changeMasterPassword(combined, 'kalderashield:new-master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567');
+
+    await expect(sqlite.verifyPassword(combined)).resolves.toBe(false);
+    const items = await sqlite.getVaultItems('kalderashield:new-master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567');
+    expect(items.map((i) => i.id)).toContain('rotate-2');
   });
 
   it('rejects loading and logs security event when state is tampered (R-1 HMAC integrity)', async () => {

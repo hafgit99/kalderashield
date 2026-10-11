@@ -1,7 +1,11 @@
-import { expect, test } from '@playwright/test';
-import { setupVault } from './helpers';
+import { expect, test } from './fixtures';
+import { setupVault, unlockVault } from './helpers';
 
 const masterPassword = 'master-pass-features-e2e';
+
+// Share links derive their key from this (share.ts:MIN_SHARE_PASSWORD_LENGTH
+// is 12), so the sender chooses it and the recipient types it.
+const sharePassword = 'E2E-Share-Password!42';
 
 test.describe('KalderaShield Features & Workflows E2E', () => {
   test('creates, masks, reveals, and persists a payment card item', async ({ page }) => {
@@ -41,8 +45,7 @@ test.describe('KalderaShield Features & Workflows E2E', () => {
     await page.reload();
     await expect(page.getByTestId('lock-password-input')).toBeVisible();
     await expect(page.getByTestId('lock-confirm-password-input')).toBeHidden();
-    await page.getByTestId('lock-password-input').fill(masterPassword);
-    await page.getByTestId('lock-submit-button').click();
+    await unlockVault(page, masterPassword);
 
     const restoredCard = page.getByTestId('vault-list-item').filter({ hasText: 'E2E Visa Platinum' });
     await expect(restoredCard).toBeVisible();
@@ -87,18 +90,33 @@ test.describe('KalderaShield Features & Workflows E2E', () => {
 
     // 2. Open Secure Share Modal
     await page.getByTestId('secure-share-button').click();
+
+    // The link is encrypted with a password the sender picks, so it has to be
+    // typed before the URL exists. Measured: the URL field only renders after
+    // generation, and MIN_SHARE_PASSWORD_LENGTH is 12 (share.ts:28).
+    await page.getByTestId('share-modal-password-input').fill(sharePassword);
+    await page.getByTestId('share-modal-generate-button').click();
     await expect(page.getByTestId('share-modal-url-input')).toBeVisible();
 
     const shareUrl = await page.getByTestId('share-modal-url-input').inputValue();
     expect(shareUrl).toContain('#share=');
-    expect(shareUrl).toContain('&k=');
+    // The key is derived from the share password and never appears in the URL —
+    // only the ciphertext bundle and the salt it is bound to as AEAD associated
+    // data (share.ts:115-136).
+    expect(shareUrl).toContain('&s=');
+    expect(shareUrl).not.toContain('&k=');
 
     await page.getByTestId('share-modal-close-button').click();
 
     // 3. Navigate directly to the client share URL hash
     await page.goto(shareUrl);
 
-    // 4. Decrypted payload modal should display the credentials
+    // 4. The recipient is prompted for the share password, and only then can
+    // the credential be decrypted.
+    await expect(page.getByTestId('receive-share-password-input')).toBeVisible();
+    await page.getByTestId('receive-share-password-input').fill(sharePassword);
+    await page.getByTestId('receive-share-unlock-button').click();
+
     await expect(page.getByTestId('receive-share-save-button')).toBeVisible();
     await expect(page.getByTestId('receive-share-username-value')).toHaveText('shared-user');
 
@@ -139,8 +157,7 @@ test.describe('KalderaShield Features & Workflows E2E', () => {
     if (await oceanPalette.isVisible()) {
       await oceanPalette.click();
       await page.reload();
-      await page.getByTestId('lock-password-input').fill(masterPassword);
-      await page.getByTestId('lock-submit-button').click();
+      await unlockVault(page, masterPassword);
 
       await page.getByTestId('nav-settings-button').click();
       await expect(page.getByTestId('theme-settings-card')).toBeVisible();

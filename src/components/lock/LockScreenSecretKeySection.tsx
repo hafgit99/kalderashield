@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { KeyRound, Download } from 'lucide-react';
+import { AlertTriangle, KeyRound, Download } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 interface LockScreenSecretKeySectionProps {
@@ -12,6 +12,12 @@ interface LockScreenSecretKeySectionProps {
   setSecretKey: (val: string) => void;
   isSetup: boolean;
   requiresSecretKey: boolean;
+  /**
+   * Whether this platform can actually store the key. `rememberAccountSecretKey`
+   * writes through `window.KalderaShieldAndroidSecureStorage`, which only the
+   * Android WebView injects; everywhere else it fails closed and returns false.
+   */
+  canRememberSecretKey: boolean;
   rememberSecretKey: boolean;
   setRememberSecretKey: (val: boolean) => void;
   onDownloadEmergencyKit: () => void | Promise<void>;
@@ -22,6 +28,7 @@ export function LockScreenSecretKeySection({
   setSecretKey,
   isSetup,
   requiresSecretKey,
+  canRememberSecretKey,
   rememberSecretKey,
   setRememberSecretKey,
   onDownloadEmergencyKit,
@@ -67,18 +74,36 @@ export function LockScreenSecretKeySection({
         />
       </label>
 
-      <label className="flex items-start gap-2 text-left text-[11px] text-on-surface-variant cursor-pointer">
-        <input
-          data-testid="lock-remember-secret-key-checkbox"
-          type="checkbox"
-          checked={rememberSecretKey}
-          onChange={(e) => setRememberSecretKey(e.target.checked)}
-          className="mt-0.5 accent-brand-primary cursor-pointer"
-        />
-        <span>
-          {t('lock.secret.rememberThisDevice')}
-        </span>
-      </label>
+      {/* The checkbox is not rendered where the key cannot actually be
+          stored. It used to appear on every platform, and accepting it stored
+          nothing: `rememberAccountSecretKey` failed closed outside Android, so
+          the profile was written anyway and the key became mandatory on every
+          later unlock while the UI promised it would be remembered. Offering a
+          promise the platform cannot keep is worse than not offering it. */}
+      {canRememberSecretKey ? (
+        <label className="flex items-start gap-2 text-left text-[11px] text-on-surface-variant cursor-pointer">
+          <input
+            data-testid="lock-remember-secret-key-checkbox"
+            type="checkbox"
+            checked={rememberSecretKey}
+            onChange={(e) => setRememberSecretKey(e.target.checked)}
+            className="mt-0.5 accent-brand-primary cursor-pointer"
+          />
+          <span>
+            {t('lock.secret.rememberThisDevice')}
+          </span>
+        </label>
+      ) : (
+        <div
+          data-testid="lock-secret-key-no-secure-store"
+          className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2 text-left"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-amber-400/90 leading-relaxed">
+            {t('lock.secret.noSecureStore')}
+          </p>
+        </div>
+      )}
 
       {!isSetup && (
         <button

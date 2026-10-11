@@ -23,7 +23,26 @@ const fs = require('fs');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
-const workflowPath = path.join(rootDir, '.github', 'workflows', 'release-desktop.yml');
+/**
+ * The release pipeline is two files.
+ *
+ * `release-desktop.yml` owns the trigger, the platform selection and the
+ * per-platform signing scripts; `_reusable-desktop-build.yml` owns the sequence
+ * those scripts run inside. Every check below used to read the first file only,
+ * because until P2-6 that was the whole pipeline. It is not any more, and the
+ * gate reported the extraction as thirteen failures -- including "missing
+ * signing step" for steps that were still present, now as script bodies in a
+ * `with:` block.
+ *
+ * So the subject of these checks is the pair. That is a widening of what is
+ * scanned and a narrowing of nothing: each assertion below is about the pipeline
+ * shipping a signed, gated build, and a fact split across two files is still a
+ * fact about the pipeline.
+ */
+const workflowsDir = path.join(rootDir, '.github', 'workflows');
+const workflowPath = path.join(workflowsDir, 'release-desktop.yml');
+const spineName = '_reusable-desktop-build.yml';
+const spinePath = path.join(workflowsDir, spineName);
 const guidePath = path.join(rootDir, 'docs', 'CODE_SIGNING_GUIDE_2026.md');
 
 const failures = [];
@@ -73,23 +92,41 @@ function stripYamlComments(source) {
 
 function main() {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
+  const spine = fs.readFileSync(spinePath, 'utf8');
   const guide = fs.readFileSync(guidePath, 'utf8');
 
-  // --- 1. Every desktop job must keep the blocking signing gate. -------------
+  // Anything that may live in either file. Order is not meaningful here; §4
+  // checks ordering within a single file on purpose.
+  const pipeline = `${workflow}\n${spine}`;
+
+  // --- 1. Every desktop platform must keep the blocking signing gates. -------
+  //
+  // The gates are parameterised by platform and run once in the shared spine,
+  // so "linux, macos and windows each block" is now expressed as: the spine
+  // blocks, and all three callers reach it. Checking that the literal string
+  // `--platform linux` exists somewhere would be satisfied by a comment.
+  check(
+    /desktop:release:signing:report[^\n]*--require-signed/.test(spine) &&
+      /desktop:release:signing:report[^\n]*--platform \$\{\{ inputs\.platform \}\}/.test(spine),
+    `${spineName}: the shared build must run the signing report gate with --require-signed for every platform`
+  );
+  check(
+    /desktop:release:gate[^\n]*--platform \$\{\{ inputs\.platform \}\}/.test(spine),
+    `${spineName}: the shared build must run the desktop release gate for every platform`
+  );
+  const callers = ['build-linux', 'build-macos', 'build-windows'].filter((job) =>
+    new RegExp(`^  ${job}:\\n(?:.*\\n)*?    uses: \\./\\.github/workflows/${spineName}`, 'm').test(workflow)
+  );
+  check(
+    callers.length === 3,
+    `release-desktop.yml: linux, macos and windows must all build through ${spineName} (found: ${callers.join(', ') || 'none'})`
+  );
   for (const platform of ['linux', 'macos', 'windows']) {
     check(
-      workflow.includes(`desktop:release:signing:report -- --platform ${platform}`),
-      `release-desktop.yml: the ${platform} job must run the signing report gate`
-    );
-    check(
-      workflow.includes(`desktop:release:gate -- --platform ${platform}`),
-      `release-desktop.yml: the ${platform} job must run the desktop release gate`
+      new RegExp(`^      platform: ${platform}$`, 'm').test(workflow),
+      `release-desktop.yml: the ${platform} caller must pass platform: ${platform}`
     );
   }
-  check(
-    (workflow.match(/--require-signed/g) || []).length >= 3,
-    'release-desktop.yml: every signing report invocation must pass --require-signed'
-  );
 
   // --- 2. macOS must not be pinned to an ad-hoc identity. --------------------
   // `APPLE_SIGNING_IDENTITY: "-"` alone means every build is ad-hoc signed and
@@ -100,37 +137,42 @@ function main() {
   // produced a false failure; a gate that cries wolf gets ignored.
   const hardcodedAdHoc = /^\s*APPLE_SIGNING_IDENTITY:\s*["']-["']\s*$/m;
   check(
-    !hardcodedAdHoc.test(workflow),
+    !hardcodedAdHoc.test(pipeline),
     'release-desktop.yml: APPLE_SIGNING_IDENTITY must not be hardcoded to "-" (ad-hoc signing)'
   );
   check(
-    workflow.includes('APPLE_SIGNING_IDENTITY_RESOLVED'),
+    pipeline.includes('APPLE_SIGNING_IDENTITY_RESOLVED'),
     'release-desktop.yml: the macOS build must use a resolved Developer ID identity when one was imported'
   );
   check(
-    workflow.includes('xcrun notarytool submit'),
+    pipeline.includes('xcrun notarytool submit'),
     'release-desktop.yml: the macOS job must submit the build for notarization'
   );
   check(
-    workflow.includes('xcrun stapler staple'),
+    pipeline.includes('xcrun stapler staple'),
     'release-desktop.yml: the macOS job must staple the notarization ticket'
   );
 
   // --- 3. Windows must actually sign. ----------------------------------------
   check(
-    workflow.includes('Import-PfxCertificate'),
+    pipeline.includes('Import-PfxCertificate'),
     'release-desktop.yml: the Windows job must import the Authenticode certificate'
   );
   check(
-    workflow.includes('signtool sign'),
+    pipeline.includes('signtool sign'),
     'release-desktop.yml: the Windows job must sign its artifacts with signtool'
   );
   check(
-    /\/tr\s+\$timestamp|\/tr\s+\S+timestamp/i.test(workflow),
+    /\/tr\s+\$timestamp|\/tr\s+\S+timestamp/i.test(pipeline),
     'release-desktop.yml: Authenticode signatures must be timestamped so they outlive certificate expiry'
   );
 
   // --- 4. Signing must happen after the build, not before. -------------------
+  //
+  // Two orderings are asserted because there are two. Within one caller the
+  // signing script sits after the build command that produces its artifacts;
+  // within the spine the step that runs that script sits after the build step.
+  // Either alone would be satisfiable while the other was wrong.
   const buildIndex = workflow.indexOf('npx tauri build');
   const windowsSignIndex = workflow.indexOf('signtool sign');
   check(
@@ -145,57 +187,93 @@ function main() {
     'release-desktop.yml: macOS notarization must run after the macOS build'
   );
 
-  // --- 5. Signing steps must be conditional on secrets, never unconditional. --
-  // An unconditional step referencing an empty secret fails confusingly; a
-  // conditional one lets the gate produce the real, actionable error.
-  for (const marker of [
-    'Import Developer ID certificate',
-    'Store notarization credentials',
-    'Notarize and staple macOS build',
-    'Import Authenticode certificate',
-    'Sign Windows packages',
-  ]) {
-    const index = workflow.indexOf(marker);
-    check(index !== -1, `release-desktop.yml: missing signing step "${marker}"`);
-    if (index === -1) continue;
-    const stepWindow = workflow.slice(index, index + 400);
+  const spineBuildIndex = spine.indexOf('run: ${{ inputs.build-command }}');
+  const spineSignIndex = spine.indexOf('run: ${{ inputs.post-steps }}');
+  check(
+    spineBuildIndex !== -1 && spineSignIndex !== -1 && spineSignIndex > spineBuildIndex,
+    `${spineName}: the signing script must run after the build step, or the artifacts it signs do not exist yet`
+  );
+
+  // --- 5. Signing must be conditional on the caller supplying it. ------------
+  // An unconditional script step referencing an empty secret fails confusingly;
+  // a guarded one lets the gate produce the real, actionable error. Since P2-6
+  // the signing work is a script the caller passes in, so "conditional" means
+  // two things: the spine runs it only when the caller sent something, and the
+  // platforms that need signing actually send it.
+  for (const phase of ['prep-steps', 'post-steps']) {
     check(
-      stepWindow.includes('if: ${{ env.'),
-      `release-desktop.yml: "${marker}" must be conditional on its secret being present`
+      new RegExp(`if: \\$\\{\\{ inputs\\.${phase} != '' \\}\\}`, 'm').test(spine),
+      `${spineName}: ${phase} must be guarded by an if: so a platform that sends no script cannot run one`
+    );
+  }
+  for (const job of ['build-macos', 'build-windows']) {
+    const jobStart = workflow.indexOf(`\n  ${job}:`);
+    // The next line at job-id indentation ends this job. Searching from
+    // character 1 skips the header we just matched.
+    const rest = workflow.slice(jobStart + 1);
+    const nextOffset = rest.slice(1).search(/^ {2}\S[\w-]*:$/m);
+    const body = nextOffset === -1 ? rest : rest.slice(0, nextOffset + 1);
+    for (const phase of ['prep-steps', 'post-steps']) {
+      check(
+        new RegExp(`^ {6}${phase}: \\|`, 'm').test(body),
+        `release-desktop.yml: ${job} must pass a ${phase} script; without one it publishes unsigned`
+      );
+    }
+  }
+  // The secrets have to reach the script's environment. `secrets: inherit` on
+  // the caller makes them visible to the called workflow; it does not bind them
+  // to a step. Omitting the binding fails the script at an unbound variable,
+  // which reads like a missing secret rather than a missing env entry.
+  //
+  // Matched as a `env:`-mapping entry rather than by secret name, because the
+  // env name need not equal the secret name -- APPLE_KEYCHAIN_PASSWORD is bound
+  // as KEYCHAIN_PASSWORD, which is what the macOS script reads.
+  for (const secret of [
+    'APPLE_SIGNING_CERT_P12',
+    'APPLE_KEYCHAIN_PASSWORD',
+    'APPLE_ID',
+    'APPLE_TEAM_ID',
+    'APPLE_APP_SPECIFIC_PASSWORD',
+    'WINDOWS_SIGNING_CERT_BASE64',
+    'WINDOWS_SIGNING_CERT_PASSWORD',
+  ]) {
+    check(
+      new RegExp(`^ +\\w+: \\$\\{\\{ secrets\\.${secret} \\}\\} *$`, 'm').test(spine),
+      `${spineName}: ${secret} must be bound into the signing script's env`
     );
   }
 
   // --- 6. The certificate must not be left lying around. ---------------------
   check(
-    workflow.includes('rm -f "$CERT_PATH"') && workflow.includes('trap cleanup EXIT'),
+    pipeline.includes('rm -f "$CERT_PATH"') && pipeline.includes('trap cleanup EXIT'),
     'release-desktop.yml: the macOS signing keychain and certificate file must be cleaned up'
   );
   check(
-    workflow.includes('Remove-Item -Force $pfxPath'),
+    pipeline.includes('Remove-Item -Force $pfxPath'),
     'release-desktop.yml: the Windows .pfx must be deleted after import'
   );
 
-  // --- 7. Every *signing* secret the workflow reads must be documented. ------
-  // Scoped to signing-related secrets on purpose: the same workflow also reads
+  // --- 7. Every *signing* secret the pipeline reads must be documented. ------
+  // Scoped to signing-related secrets on purpose: the pipeline also reads
   // updater, extension and release-endpoint secrets which belong in other
   // documents, and demanding they appear here would be noise.
   const SIGNING_SECRET_PATTERN =
     /(APPLE_[A-Z0-9_]+|WINDOWS_SIGNING_[A-Z0-9_]+|ANDROID_KEYSTORE_BASE64|KALDERASHIELD_ANDROID_[A-Z0-9_]+|TAURI_SIGNING_[A-Z0-9_]+)/;
   const referenced = new Set();
-  for (const match of workflow.matchAll(/secrets\.([A-Z0-9_]+)/g)) {
+  for (const match of pipeline.matchAll(/secrets\.([A-Z0-9_]+)/g)) {
     if (SIGNING_SECRET_PATTERN.test(match[1])) referenced.add(match[1]);
   }
   for (const secret of referenced) {
     check(
       guide.includes(secret),
-      `docs/CODE_SIGNING_GUIDE_2026.md: signing secret ${secret} is used by the workflow but not documented`
+      `docs/CODE_SIGNING_GUIDE_2026.md: signing secret ${secret} is used by the pipeline but not documented`
     );
   }
   notes.push(`signing secrets checked: ${[...referenced].sort().join(', ')}`);
 
   // --- 8. The gate must be the thing that blocks, not a warning. ------------
   check(
-    !/continue-on-error:\s*true[\s\S]{0,200}signing:report/.test(workflow),
+    !/continue-on-error:\s*true[\s\S]{0,200}signing:report/.test(pipeline),
     'release-desktop.yml: the signing gate must not be marked continue-on-error'
   );
 
@@ -213,7 +291,12 @@ function main() {
   // being re-added. Any *other* workflow that packages a desktop build is a
   // second pipeline, and it will not be covered by the checks above, which all
   // read `release-desktop.yml` only. So the duplication itself is the invariant.
-  const workflowsDir = path.join(rootDir, '.github', 'workflows');
+  //
+  // The shared spine is the one file that legitimately packages a build without
+  // being a pipeline: it has no trigger of its own, no publish permission, and
+  // exists only because release-desktop.yml calls it. That is verified below
+  // rather than assumed, so naming it here cannot by itself widen what the gate
+  // tolerates.
   const otherWorkflows = fs
     .readdirSync(workflowsDir)
     .filter((name) => name.endsWith('.yml') && name !== 'release-desktop.yml');
@@ -253,13 +336,55 @@ function main() {
       'manual-only unsigned Windows build; uploads a CI artifact and publishes no release',
   };
 
+  /**
+   * Files allowed to package a build because they are part of the signed
+   * pipeline rather than a second one. Same rule as above: an entry is a claim,
+   * and the claim is checked below rather than trusted.
+   */
+  const PIPELINE_COMPONENTS = {
+    [spineName]: 'shared build spine; has no trigger and is called only by release-desktop.yml',
+  };
+
   for (const name of otherWorkflows) {
     const contents = fs.readFileSync(path.join(workflowsDir, name), 'utf8');
     const effective = stripYamlComments(contents);
     const packages = packagingRoutes.some((route) => route.test(effective));
     const exception = UNSIGNED_BUILD_EXCEPTIONS[name];
+    const component = PIPELINE_COMPONENTS[name];
 
-    if (packages && !exception) {
+    if (packages && component) {
+      // It must not be reachable on its own: `workflow_call` only, and no
+      // `workflow_dispatch` or `push`/`schedule` that would let a version push
+      // drive it directly.
+      check(
+        /workflow_call/.test(effective) && !/workflow_dispatch|^\s*(push|schedule):/m.test(effective),
+        `${name}: is a pipeline component but must stay workflow_call only, never triggerable on its own`
+      );
+      // It must not be able to publish, or become a release pipeline the moment
+      // someone widens its permissions.
+      check(
+        !/softprops\/action-gh-release|gh\s+release|gh\s+--?create/.test(effective),
+        `${name}: is a pipeline component but must not create a GitHub Release`
+      );
+      check(
+        !/contents:\s*write/.test(effective),
+        `${name}: is a pipeline component but must not request contents: write`
+      );
+      // Whatever else happens to it, it inherits the blocking gate. If a future
+      // edit removes --require-signed, the caller would ship unsigned artifacts
+      // through a pipeline whose gates all live in this file.
+      check(
+        /--require-signed/.test(effective),
+        `${name}: is a pipeline component but must keep --require-signed; it is the only place the gate runs`
+      );
+      // ...and it has to still be wired to the pipeline, or it is dead code
+      // that happens to package a build.
+      check(
+        workflow.includes(`uses: ./.github/workflows/${name}`),
+        `release-desktop.yml: ${name} is treated as a pipeline component but nothing calls it`
+      );
+      notes.push(`pipeline component accepted: ${name} (${component})`);
+    } else if (packages && !exception) {
       check(
         false,
         `${name}: must not package a desktop build; release-desktop.yml is the only release pipeline`
