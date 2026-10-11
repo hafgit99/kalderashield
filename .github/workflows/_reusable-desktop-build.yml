@@ -176,8 +176,19 @@ jobs:
       - name: Collect ${{ inputs.platform }} release artifacts
         run: npm run release:collect -- --platform ${{ inputs.platform }} --skip-extensions
 
-      - name: Collect ${{ inputs.platform }} updater bundles and signatures
-        shell: ${{ inputs.updater-shell }}
+      # Two steps rather than `shell: ${{ inputs.updater-shell }}`. `shell:` is
+      # resolved before any step runs and the `inputs` context is not available
+      # there, so the expression is rejected at workflow-load time -- the whole
+      # file stops existing, not just this step. `if:` does get `inputs`, and the
+      # scripts are supplied whole by the caller, so selecting the shell by
+      # condition needs no change to the script bodies.
+      - name: Collect ${{ inputs.platform }} updater bundles and signatures (bash)
+        if: ${{ inputs.updater-shell != 'pwsh' }}
+        shell: bash
+        run: ${{ inputs.updater-copy }}
+      - name: Collect ${{ inputs.platform }} updater bundles and signatures (pwsh)
+        if: ${{ inputs.updater-shell == 'pwsh' }}
+        shell: pwsh
         run: ${{ inputs.updater-copy }}
 
       - name: Normalize asset names

@@ -15,7 +15,7 @@
  * structural diff. This test enforces the rule for every caller in the repo so
  * the next refactor cannot reintroduce it.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -154,6 +154,29 @@ describe('reusable workflow callers', () => {
       expect(block[1], `${job.jobId} must pass timeout-minutes:`).toMatch(
         /^\s{6}timeout-minutes:\s*\S/m,
       );
+    }
+  });
+
+  it('never reads an input into `shell:`, which GitHub rejects at load time', () => {
+    // `shell:` is resolved before any step runs, and the `inputs` context is not
+    // available there. The expression is not a runtime failure -- GitHub refuses
+    // to load the file, so the run appears as an instant failure with zero jobs
+    // and no log to explain it. That is how this file was found broken.
+    //
+    // The two conditional steps carrying the bash and pwsh variants are the
+    // supported way to pick a shell from an input; `if:` does get `inputs`.
+    for (const file of readdirSync(WORKFLOW_DIR).filter((f) => f.endsWith('.yml'))) {
+      const source = readFileSync(path.join(WORKFLOW_DIR, file), 'utf8');
+      const offenders = source
+        .split(/\r?\n/)
+        .map((line, index) => ({ line: index + 1, text: line }))
+        .filter(({ text }) => /^\s*shell:\s*\$\{\{/.test(text));
+
+      expect(
+        offenders,
+        `${file}: \`shell:\` must be a literal. Use two steps with ` +
+          '`if:` conditions to choose between shells.',
+      ).toEqual([]);
     }
   });
 });
