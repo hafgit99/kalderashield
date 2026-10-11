@@ -83,6 +83,73 @@ jobs:
           path: coverage/
           retention-days: 7
 
+  # P1-2b. This job existed as an open finding for five weeks, and the reason is
+  # the point of adding it: the suite was broken (6 of 34 passing) and nothing
+  # noticed, because nothing ran it. The README claimed "34 scenarios x 3
+  # browsers = 102/102" from a measurement old enough that the suite had since
+  # regressed past it. Every bug fixed this session -- the reload that bricked
+  # the vault, the share prompt that never rendered, both password-rotation
+  # faults, the untestable secret-key promise -- was invisible to CI, because
+  # CI had no e2e step.
+  #
+  # Chromium only. The suite is written against one browser and running all
+  # three would triple the wall clock to prove a claim this job does not make;
+  # cross-browser coverage belongs to a release checklist, not to a PR gate.
+  # `--workers=1` for the same reason `fullyParallel: false` is already set in
+  # playwright.config.ts: the vault writes to OPFS and a second tab racing the
+  # first is the failure mode the config comment already describes.
+  e2e-smoke:
+    name: E2E smoke (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts starts `npm run build && npm run preview` itself,
+      # so the job does not build separately. Measured locally at 34/34 in
+      # 1.9 minutes; 20 minutes leaves room for a cold runner without turning a
+      # genuine hang into an overnight wait.
+      - name: Run the suite
+        run: npx playwright test --project=chromium --workers=1 --reporter=line
+
+      # Uploaded on failure as well as success. The Playwright HTML report is
+      # the only place the `error-context.md` snapshot lives, and a snapshot
+      # nobody can open is the same as no snapshot: the previous rounds of this
+      # investigation each started by reading a saved page snapshot to find out
+      # which dialog was on screen.
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # Only the failure traces. Traces are recorded on the first retry and
+      # `retries: 2` under CI, so these exist exactly when something broke.
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v5.0.0 (SHA-pinned)
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   website-gates:
     name: Website quality gates
     runs-on: ubuntu-latest
