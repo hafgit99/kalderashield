@@ -45,6 +45,7 @@ import {
 import { decryptVaultRows } from './sqliteOpfsRowDecryptor';
 import { rotateMasterEncryptedRows, rotationErrorFor, ROTATION_ERRORS } from './kdf/masterRotation';
 import { encryptVaultRow } from './rowCrypto/encryptVaultRow';
+import { executeCustomSql } from './sqliteOpfsCustomSql';
 import {
   LOCAL_FALLBACK_KEY,
   DB_FILENAME,
@@ -1049,89 +1050,14 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
    * Useful for the Interactive SQL Command Terminal inside Settings/Audit!
    */
   public executeCustomSQL(sql: string, _masterPasswordPlain: string): VaultStorageQueryResult {
-    const sanitized = sql.trim().replace(/;$/, '');
-    const tokens = sanitized.split(/\s+/);
-
-    if (tokens.length === 0) {
-      return { columns: [], rows: [] };
-    }
-
-    const command = tokens[0]!.toUpperCase();
-
-    if (command === 'SELECT') {
-      // 1. SELECT * FROM user_secrets
-      if (sanitized.toUpperCase().includes('USER_SECRETS')) {
-        this.logQuery(sql, 'SUCCESS', this.state.user_secrets.length);
-        return {
-          columns: ['username', 'argon_hash'],
-          rows: this.state.user_secrets.map(s => [s.username, s.argon_hash])
-        };
-      }
-
-      // 2. SELECT * FROM vault_items
-      if (sanitized.toUpperCase().includes('VAULT_ITEMS')) {
-        let itemsToUse = this.state.vault_items;
-
-        // Handle filter WHERE deleted = 0
-        if (sanitized.toUpperCase().includes('WHERE DELETED = 0')) {
-          itemsToUse = itemsToUse.filter(i => i.deleted === 0);
-        } else if (sanitized.toUpperCase().includes('WHERE DELETED = 1')) {
-          itemsToUse = itemsToUse.filter(i => i.deleted === 1);
-        }
-
-        const isAsterisk = tokens[1] === '*';
-
-        this.logQuery(sql, 'SUCCESS', itemsToUse.length);
-
-        if (isAsterisk) {
-          return {
-            columns: ['id', 'title', 'category', 'favorite', 'deleted', 'username_db', 'password_db', 'notes_db', 'enc_metadata'],
-            rows: itemsToUse.map(i => [
-              i.id,
-              i.title,
-              i.category,
-              i.favorite,
-              i.deleted,
-              i.username_db,
-              i.password_db,
-              i.notes_db ? i.notes_db : 'NULL',
-              i.enc_metadata.substring(0, 32) + '...'
-            ])
-          };
-        } else {
-          // Parse columns e.g. SELECT id, title, category FROM
-          const selectPart = sanitized.toUpperCase().split('FROM')[0] ?? '';
-          const cols = selectPart.replace('SELECT', '').split(',').map(c => c.trim().toLowerCase());
-
-          return {
-            columns: cols,
-            rows: itemsToUse.map(i => {
-              return cols.map(c => {
-                if (c === 'id') return i.id;
-                if (c === 'title') return i.title;
-                if (c === 'category') return i.category;
-                if (c === 'favorite') return i.favorite;
-                if (c === 'deleted') return i.deleted;
-                if (c === 'username_db' || c === 'username') return i.username_db;
-                if (c === 'password_db' || c === 'password') return i.password_db;
-                if (c === 'enc_metadata') return i.enc_metadata.substring(0, 32) + '...';
-                return 'NULL';
-              });
-            })
-          };
-        }
-      }
-
-      return { columns: [], rows: [], error: "Only the 'user_secrets' and 'vault_items' tables are supported." };
-    }
-
-    if (command === 'UPDATE' || command === 'DELETE' || command === 'INSERT') {
-      this.logQuery(sql, 'ERROR', 0);
-      return { columns: [], rows: [], error: "Direct writes (INSERT/UPDATE/DELETE) are disabled in the SQLite terminal for security. Please use the main interface." };
-    }
-
-    this.logQuery(sql, 'ERROR', 0);
-    return { columns: [], rows: [], error: `Unrecognized SQL command: "${command}". Only SELECT queries are supported.` };
+    // Wrapped in an arrow so `this.logQuery` keeps its receiver. Passing the
+    // method reference directly would detach it from the instance and every
+    // query-log write would read `undefined.logs`.
+    return executeCustomSql(
+      sql,
+      this.state,
+      (query, status, rowsAffected) => this.logQuery(query, status, rowsAffected),
+    );
   }
 
   /**
