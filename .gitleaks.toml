@@ -9,6 +9,27 @@ useDefault = true
 
 [allowlist]
 description = "Deliberate test fixtures and documentation identifiers"
+# One commit, not a path.
+#
+# c6812ad added three account-key fixtures to storageSession.test.ts written as
+# random base32 in the real `A3-XXXX-...` shape. generic-api-key flagged all
+# three, and correctly so: nothing in the string says whether it is real. It was
+# not -- they are test inputs for a session-key regression -- but a secret scan
+# cannot tell a fake from a genuine one, and that is the property that makes it
+# worth running.
+#
+# The fixtures are now spelled out (`A3-NOTA-REAL-KEYX-FORY-TEST-ONLY-NOPE`),
+# which keeps the shape and alphabet the code under test needs while making the
+# intent obvious, so no future fixture looks like a credential. That leaves the
+# commit itself, which is in this branch's history and cannot be edited without
+# rewriting commits that have already been pushed and reviewed.
+#
+# Scoped to the commit rather than to the file on purpose: the file stays under
+# the generic-api-key rule from here on, so a real secret pasted into it is still
+# caught.
+commits = [
+  '''c6812ad41b53bd534ee4023183029518d3f6cc20''',
+]
 paths = [
   '''(^|/)src/lib/otp\.test\.ts$''',
   '''(^|/)src/lib/emergencyKit\.test\.ts$''',
