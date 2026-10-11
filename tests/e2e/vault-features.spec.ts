@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { setupVault } from './helpers';
+import { setupVault, unlockVault } from './helpers';
 
 const masterPassword = 'master-pass-features-e2e';
 
@@ -41,8 +41,7 @@ test.describe('KalderaShield Features & Workflows E2E', () => {
     await page.reload();
     await expect(page.getByTestId('lock-password-input')).toBeVisible();
     await expect(page.getByTestId('lock-confirm-password-input')).toBeHidden();
-    await page.getByTestId('lock-password-input').fill(masterPassword);
-    await page.getByTestId('lock-submit-button').click();
+    await unlockVault(page, masterPassword);
 
     const restoredCard = page.getByTestId('vault-list-item').filter({ hasText: 'E2E Visa Platinum' });
     await expect(restoredCard).toBeVisible();
@@ -139,8 +138,7 @@ test.describe('KalderaShield Features & Workflows E2E', () => {
     if (await oceanPalette.isVisible()) {
       await oceanPalette.click();
       await page.reload();
-      await page.getByTestId('lock-password-input').fill(masterPassword);
-      await page.getByTestId('lock-submit-button').click();
+      await unlockVault(page, masterPassword);
 
       await page.getByTestId('nav-settings-button').click();
       await expect(page.getByTestId('theme-settings-card')).toBeVisible();

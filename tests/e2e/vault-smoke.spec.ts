@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { expect, test } from './fixtures';
-import { createLoginItem, exportEncryptedBackup, openSettings, setupVault, unlockVault } from './helpers';
+import { createLoginItem, exportEncryptedBackup, getAccountSecretKey, openSettings, setupVault, unlockVault } from './helpers';
 
 const masterPassword = 'master-pass-e2e';
 
@@ -430,6 +430,12 @@ test('downloads an emergency kit from settings after unlock', async ({ page }) =
 
   await expect(page.getByTestId('settings-emergency-kit-card')).toBeVisible();
   await expect(page.getByTestId('settings-emergency-secret-key-input')).toBeVisible();
+
+  // Outside Android nothing was stored for this vault, so the hook falls back
+  // to whatever is typed into the field — the same secret key the lock screen
+  // needs. Without it the download path exits at the format check and no
+  // `download` event ever fires.
+  await page.getByTestId('settings-emergency-secret-key-input').fill(getAccountSecretKey(page)!);
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByTestId('settings-emergency-kit-download-button').click();

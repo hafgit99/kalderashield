@@ -41,6 +41,18 @@ export async function unlockVault(page: Page, masterPassword: string) {
   await page.getByTestId('lock-submit-button').click();
 }
 
+/**
+ * The account secret key this page's setup produced.
+ *
+ * Exported for the flows that need the key typed into a form rather than into
+ * the lock screen — the emergency kit download, which reads
+ * `getRememberedAccountSecretKey()` first and finds nothing outside Android for
+ * the same reason `unlockVault` has to supply it.
+ */
+export function getAccountSecretKey(page: Page): string | undefined {
+  return accountSecretKeys.get(page);
+}
+
 export async function createLoginItem(
   page: Page,
   title: string,
