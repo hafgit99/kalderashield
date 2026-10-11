@@ -103,11 +103,11 @@ jobs:
 
   build-linux:
     name: Build Linux packages
-    runs-on: ubuntu-22.04
-    timeout-minutes: 90
     uses: ./.github/workflows/_reusable-desktop-build.yml
     with:
       platform: linux
+      runner: ubuntu-22.04
+      timeout-minutes: 90
       system-deps: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -141,11 +141,11 @@ jobs:
     name: Build macOS packages
     needs: [plan]
     if: needs.plan.outputs.macos == 'true'
-    runs-on: macos-14
-    timeout-minutes: 90
     uses: ./.github/workflows/_reusable-desktop-build.yml
     with:
       platform: macos
+      runner: macos-14
+      timeout-minutes: 90
       rust-targets: x86_64-apple-darwin,aarch64-apple-darwin
       build-command: npx tauri build --target universal-apple-darwin
       # Y-19: real Developer ID signing. This previously always built with
@@ -235,11 +235,11 @@ jobs:
     name: Build Windows packages
     needs: [plan]
     if: needs.plan.outputs.windows == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 90
     uses: ./.github/workflows/_reusable-desktop-build.yml
     with:
       platform: windows
+      runner: windows-latest
+      timeout-minutes: 90
       build-command: npx tauri build
       updater-shell: pwsh
       # Y-19: Authenticode. There was previously no signing step at all here, so
