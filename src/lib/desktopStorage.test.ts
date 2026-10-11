@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import 'fake-indexeddb/auto';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -172,7 +174,7 @@ describe('desktopStorage', () => {
   it('runs desktop setupMasterPassword, verifyMasterPassword and changeMasterPassword', async () => {
     window.__TAURI_INTERNALS__ = {};
     const {
-      setupMasterPasswordWithSecretKey,
+      setupMasterPassword,
       verifyMasterPassword,
       changeMasterPassword,
     } = await import('./storage');
@@ -181,7 +183,21 @@ describe('desktopStorage', () => {
       closeVaultSession,
     } = await import('./vaultSession');
 
-    invoke.mockImplementation(async (cmd: string) => {
+    // The native side owns the vault file on desktop, so these two have to
+    // round-trip real bytes. Without them `write_vault_database` silently
+    // discarded every payload, the repository held a state that was never
+    // persisted, and the rotation's re-seal gate refused with
+    // `vault-database-integrity-tampered` -- a failure of the fixture, not of
+    // the code under test.
+    let nativeVaultPayload: string | null = null;
+    invoke.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'write_vault_database') {
+        nativeVaultPayload = String(args?.contents ?? '');
+        return true;
+      }
+      if (cmd === 'read_vault_database') {
+        return nativeVaultPayload;
+      }
       if (cmd === 'setup_rust_session') {
         return {
           vaultEncryptionKey: Array.from(new Uint8Array(32).fill(5)),
@@ -201,18 +217,18 @@ describe('desktopStorage', () => {
       return undefined;
     });
 
-    // 1. Setup
-    const secretKey = 'A3-TEST1-TEST2-TEST3-TEST4-TEST5-TEST6';
-    await setupMasterPasswordWithSecretKey('desktop-master-pass', secretKey, true);
+    // 1. Setup. No secure-storage bridge exists on desktop, so the secret key is
+    // not retained and the vault is sealed on the master password alone.
+    await setupMasterPassword('desktop-master-pass');
     expect(hasActiveMasterPassword()).toBe(true);
 
     // 2. Change password
     await changeMasterPassword('desktop-master-pass', 'desktop-new-master-1234');
     expect(hasActiveMasterPassword()).toBe(true);
 
-    // 3. Verify
+    // 3. Verify under the new credential
     closeVaultSession();
-    const verified = await verifyMasterPassword('desktop-new-master-1234', secretKey);
+    const verified = await verifyMasterPassword('desktop-new-master-1234');
     expect(verified).toBe(true);
     expect(hasActiveMasterPassword()).toBe(true);
 
