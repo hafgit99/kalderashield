@@ -17,7 +17,6 @@ import {
 import { createArgon2idHash, verifyArgon2idHash, enforceMinimumKdfFloor, type Argon2idOptions } from './argon2id';
 import { deriveArgon2idKey as deriveVettedArgon2idKey } from './argon2id';
 import { reWrapPasskeysInVaultItems } from './passkey';
-import { webCryptoAesGcmEncrypt, generateSafeIv } from './webcrypto';
 import {
   getNativeVaultStorageScope,
   resetDesktopVaultDatabase,
@@ -33,7 +32,6 @@ import type {
 } from './vaultStorageRepository';
 import {
   areByteArraysEqual,
-  buildVaultItemRow,
   createVaultEncryptionSalt,
   LEGACY_VAULT_ITEM_KDF_PARAMS,
   LEGACY_VAULT_ITEM_KDF_SALT,
@@ -951,21 +949,15 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
                 return { __failed: false, row: existingRow };
               }
 
-              const rawSensitive = JSON.stringify(item);
-              const encrypted = await webCryptoAesGcmEncrypt(rawSensitive, derivedKey, generateSafeIv());
-
-              const row: SQLiteRow = buildVaultItemRow({
-                id: itemId,
-                encrypted,
+              const { row, cacheEntry } = await encryptVaultRow({
+                derivedKey,
+                itemId,
                 item,
-                createdAt: item.createdAt || nowStr,
-                updatedAt: nowStr,
+                existing: existingRow,
+                now: nowStr,
               });
 
-              this.decryptedItemsCache.set(row.id, {
-                enc_metadata: row.enc_metadata,
-                item: { ...item, id: row.id }
-              });
+              this.decryptedItemsCache.set(row.id, cacheEntry);
 
               return { __failed: false, row };
             } catch (e) {
@@ -1319,22 +1311,15 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
       this.decryptedItemsCache.clear();
 
       this.state.vault_items = await Promise.all(demoItems.map(async (item) => {
-        const sensitivePayload = JSON.stringify(item);
-        const encrypted = await webCryptoAesGcmEncrypt(sensitivePayload, derivedKey, generateSafeIv());
         const nowStr = new Date().toISOString();
-
-        const row = buildVaultItemRow({
-          id: item.id || secureRandomToken(9),
-          encrypted,
+        const { row, cacheEntry } = await encryptVaultRow({
+          derivedKey,
+          itemId: item.id || secureRandomToken(9),
           item,
-          createdAt: nowStr,
-          updatedAt: nowStr,
+          now: nowStr,
         });
 
-        this.decryptedItemsCache.set(row.id, {
-          enc_metadata: row.enc_metadata,
-          item: { ...item, id: row.id }
-        });
+        this.decryptedItemsCache.set(row.id, cacheEntry);
 
         return row;
       }));

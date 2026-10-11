@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VaultItem } from '../types';
 import { createEmptyVaultDatabaseState, type VersionedVaultDatabaseState } from './vaultDatabaseFormat';
 import { LEGACY_VAULT_ITEM_KDF_SALT } from './sqliteOpfsShared';
+import { derivePerItemKey, webCryptoAesGcmDecrypt } from './webcrypto';
 
 const writeDesktopVaultDatabase = vi.hoisted(() => vi.fn(async () => false));
 const readDesktopVaultDatabase = vi.hoisted(() => vi.fn(async (): Promise<string | null> => null));
@@ -311,6 +312,21 @@ describe('SQLite OPFS persistence engine', () => {
     ]);
 
     expect(reseeded.map((item) => item.id)).toEqual(['active-item', 'trash-item']);
+
+    // P2-2: demo seeding used to seal rows with the raw vault key, same as the
+    // bulk path. A demo vault is a real vault, so it gets the same per-item seal.
+    const demoVaultKey = await sqlite.deriveEncryptionKey('master-pass');
+    const demoRow = (sqlite as any).state.vault_items.find(
+      (row: { id: string }) => row.id === 'active-item',
+    ) as { enc_metadata: string };
+    const demoKey = await derivePerItemKey(demoVaultKey, 'active-item');
+    try {
+      const opened = await webCryptoAesGcmDecrypt(JSON.parse(demoRow.enc_metadata), demoKey);
+      expect(JSON.parse(opened).title).toBe('Active Item');
+    } finally {
+      demoKey.fill(0);
+      demoVaultKey.fill(0);
+    }
 
     const trashRows = sqlite.executeCustomSQL('SELECT id, title, deleted FROM vault_items WHERE deleted = 1', 'master-pass');
     expect(trashRows.rows).toEqual([['trash-item', '[encrypted: aes-256-gcm]', 1]]);
@@ -1159,6 +1175,69 @@ expect(saved[0]!.id).toHaveLength(9);
     sqlite.clearDerivedKeyCache();
     await sqlite.saveVaultItem(sampleItem({ id: 'cache-3' }), 'master-pass');
     expect(mockedDerive).toHaveBeenCalledTimes(2);
+  });
+
+  // P2-2: `saveVaultItemsWithKey` never received the per-item-key change that
+  // `aab7077` applied to the single-item write, so every bulk/imported row was
+  // sealed with the raw vault key. The reader's legacy fallback hid that: it
+  // re-encrypted on first read, so a user saw no symptom while each import paid
+  // one failed decrypt, one extra encrypt and a security warning per row.
+  // These assertions look at the ciphertext itself instead of the warning,
+  // because the warning is exactly what made the regression invisible.
+  it('P2-2: seals bulk-saved rows under a per-item key, not the raw vault key', async () => {
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+
+    const bulkItems = [
+      sampleItem({ id: 'bulk-row-1', title: 'Bulk One' }),
+      sampleItem({ id: 'bulk-row-2', title: 'Bulk Two' }),
+    ];
+    await sqlite.saveVaultItems(bulkItems, 'master-pass');
+
+    const vaultKey = await sqlite.deriveEncryptionKey('master-pass');
+    const rows = (sqlite as any).state.vault_items as Array<{ id: string; enc_metadata: string }>;
+
+    for (const row of rows) {
+      const payload = JSON.parse(row.enc_metadata) as Parameters<typeof webCryptoAesGcmDecrypt>[0];
+
+      // The raw vault key must no longer open the row.
+      await expect(webCryptoAesGcmDecrypt(payload, vaultKey)).rejects.toBeTruthy();
+
+      // The per-item key must.
+      const itemKey = await derivePerItemKey(vaultKey, row.id);
+      try {
+        const plaintext = await webCryptoAesGcmDecrypt(payload, itemKey);
+        expect(JSON.parse(plaintext).title).toBe(row.id === 'bulk-row-1' ? 'Bulk One' : 'Bulk Two');
+      } finally {
+        itemKey.fill(0);
+      }
+    }
+    vaultKey.fill(0);
+  });
+
+  it('P2-2: bulk-saves a row whose id is generated, without losing the id', async () => {
+    const sqlite = await freshSqliteInstance();
+    await sqlite.setupMaster('master-pass');
+
+    // The bulk path generates an id when the caller omits one, but the id has to
+    // end up *inside* the ciphertext: the reader rebuilds items from the decrypted
+    // JSON, not from the row column.
+    const saved = await sqlite.saveVaultItems(
+      [sampleItem({ id: '', title: 'Generated Id Record' })],
+      'master-pass',
+    );
+
+    expect(saved).toHaveLength(1);
+    const generatedId = saved[0]!.id;
+    expect(generatedId).toBeTruthy();
+
+    // Cold read: drop the plaintext cache so the ciphertext is actually decrypted.
+    (sqlite as any).decryptedItemsCache.clear();
+    const reread = await sqlite.getVaultItems('master-pass');
+
+    expect(reread).toHaveLength(1);
+    expect(reread[0]!.id).toBe(generatedId);
+    expect(reread[0]!.title).toBe('Generated Id Record');
   });
 
   it('caches decrypted vault items without retaining legacy crypto keys', async () => {
