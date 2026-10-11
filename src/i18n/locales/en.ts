@@ -1076,12 +1076,17 @@ export const en = {
   'settings.updates.error': 'Could not check for updates',
   'settings.updates.errorNotFound': 'No published release found or server unreachable (404 Not Found). "latest.json" manifest may not be uploaded to GitHub Releases yet.',
   'settings.updates.desktopOnly': 'Automatic updates are active on desktop',
-  'share.passwordTooShort': 'Password must be at least 8 characters.',
+  'share.passwordTooShort': 'Password must be at least 12 characters.',
   'share.passwordLabel': 'Share Password',
   'share.passwordPlaceholder': 'Enter password to protect share link',
   'share.passwordHelp': 'The recipient will need this password to open the link.',
   'share.generateButton': 'Generate Share Link',
   'share.passwordShareWarning': 'Share this password through a separate secure channel.',
+  'share.passwordPromptTitle': 'Password Required',
+  'share.passwordPromptSubtitle': 'Enter the password you received to open this link.',
+  'share.receivePasswordPlaceholder': 'Enter the share password',
+  'share.receivePasswordHelp': 'This link is encrypted with a password the sender chose. It never left the link you were sent.',
+  'share.unlockButton': 'Unlock Link',
   'share.error.wrongPassword': 'Incorrect password or corrupted link.',
 
   // ── Free Tier Enhancement v7.0.7 ──

@@ -132,6 +132,10 @@ function renderAppModals(overrides: Partial<ComponentProps<typeof AppModals>> = 
     receivedPayload: null,
     onCloseReceive: vi.fn(),
     onImportShare: vi.fn(),
+    isSharePasswordPromptOpen: false,
+    shareReceiveError: null,
+    onSubmitSharePassword: vi.fn(),
+    onCancelSharePasswordPrompt: vi.fn(),
     ...overrides,
   };
 

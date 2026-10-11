@@ -1071,12 +1071,17 @@ export const ja = {
   'settings.updates.error': '更新を確認できませんでした',
   'settings.updates.errorNotFound': '公開されたリリースが見つからないか、サーバーにアクセスできません (404 Not Found)。GitHub Releases に "latest.json" マニフェストがまだアップロードされていない可能性があります。',
   'settings.updates.desktopOnly': '自動更新はデスクトップ版で有効です',
-  'share.passwordTooShort': 'パスワードは8文字以上である必要があります。',
+  'share.passwordTooShort': 'パスワードは12文字以上である必要があります。',
   'share.passwordLabel': '共有パスワード',
   'share.passwordPlaceholder': 'リンクを保護するためのパスワードを入力',
   'share.passwordHelp': '受信者がリンクを開くにはこのパスワードが必要です。',
   'share.generateButton': '共有リンクを生成',
   'share.passwordShareWarning': 'このパスワードは別の安全なチャネルで共有してください。',
+  'share.passwordPromptTitle': 'パスワードが必要です',
+  'share.passwordPromptSubtitle': 'このリンクを開くために受け取ったパスワードを入力してください。',
+  'share.receivePasswordPlaceholder': '共有パスワードを入力',
+  'share.receivePasswordHelp': 'このリンクは送信者が選んだパスワードで暗号化されています。パスワードがリンクの外に出ることはありません。',
+  'share.unlockButton': 'リンクのロック解除',
   'share.error.wrongPassword': 'パスワードが正しくないか、リンクが破損しています。',
 
   // ── Free Tier Enhancement v7.0.7 ──

@@ -1073,12 +1073,17 @@ export const fr = {
   'settings.updates.error': 'Impossible de vérifier les mises à jour',
   'settings.updates.errorNotFound': 'Aucune version publiée trouvée ou serveur inaccessible (404 Not Found). Le manifeste "latest.json" n\'est peut-être pas encore téléversé sur GitHub Releases.',
   'settings.updates.desktopOnly': 'Les mises à jour automatiques sont actives sur le bureau',
-  'share.passwordTooShort': 'Le mot de passe doit comporter au moins 8 caractères.',
+  'share.passwordTooShort': 'Le mot de passe doit comporter au moins 12 caractères.',
   'share.passwordLabel': 'Mot de passe de partage',
   'share.passwordPlaceholder': 'Entrez le mot de passe pour protéger le lien',
   'share.passwordHelp': 'Le destinataire aura besoin de ce mot de passe pour ouvrir le lien.',
   'share.generateButton': 'Générer le lien de partage',
   'share.passwordShareWarning': 'Partagez ce mot de passe via un canal sécurisé séparé.',
+  'share.passwordPromptTitle': 'Mot de passe requis',
+  'share.passwordPromptSubtitle': 'Saisissez le mot de passe reçu pour ouvrir ce lien.',
+  'share.receivePasswordPlaceholder': 'Saisissez le mot de passe de partage',
+  'share.receivePasswordHelp': 'Ce lien est chiffré avec un mot de passe choisi par l\'expéditeur. Il ne quitte jamais le lien.',
+  'share.unlockButton': 'Déverrouiller le lien',
   'share.error.wrongPassword': 'Mot de passe incorrect ou lien corrompu.',
 
   // ── Free Tier Enhancement v7.0.7 ──

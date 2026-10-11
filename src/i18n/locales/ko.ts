@@ -1071,12 +1071,17 @@ export const ko = {
   'settings.updates.error': '업데이트를 확인할 수 없습니다',
   'settings.updates.errorNotFound': '게시된 릴리스를 찾을 수 없거나 서버에 연결할 수 없습니다 (404 Not Found). GitHub Releases에 "latest.json" 매니페스트가 아직 업로드되지 않았을 수 있습니다.',
   'settings.updates.desktopOnly': '자동 업데이트는 데스크톱에서 활성화됩니다',
-  'share.passwordTooShort': '비밀번호는 8자 이상이어야 합니다.',
+  'share.passwordTooShort': '비밀번호는 12자 이상이어야 합니다.',
   'share.passwordLabel': '공유 비밀번호',
   'share.passwordPlaceholder': '공유 링크를 보호할 비밀번호 입력',
   'share.passwordHelp': '수신자가 링크를 열려면 이 비밀번호가 필요합니다.',
   'share.generateButton': '공유 링크 생성',
   'share.passwordShareWarning': '이 비밀번호는 별도의 안전한 채널을 통해 공유하세요.',
+  'share.passwordPromptTitle': '비밀번호 필요',
+  'share.passwordPromptSubtitle': '이 링크를 여려면 받은 비밀번호를 입력하세요.',
+  'share.receivePasswordPlaceholder': '공유 비밀번호 입력',
+  'share.receivePasswordHelp': '이 링크는 보낸이가 선택한 비밀번호로 암호화됩니다. 비밀번호는 링크 밖으로 나가지 않습니다.',
+  'share.unlockButton': '링크 잠금 해제',
   'share.error.wrongPassword': '잘못된 비밀번호이거나 손상된 링크입니다.',
 
   // ── Free Tier Enhancement v7.0.7 ──

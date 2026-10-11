@@ -253,6 +253,10 @@ export default function UnlockedApp({
     closeShare: handleCloseShare,
     closeReceive: handleCloseReceive,
     importShare: handleImportShare,
+    isSharePasswordPromptOpen: handleIsSharePasswordPromptOpen,
+    shareReceiveError: handleShareReceiveError,
+    submitSharePassword: handleSubmitSharePassword,
+    cancelSharePasswordPrompt: handleCancelSharePasswordPrompt,
   } = useShareReceive({
     onSaveItem: handleSaveItem,
     onNotify: showNotification,
@@ -564,6 +568,10 @@ export default function UnlockedApp({
           receivedPayload={receivedPayload}
           onCloseReceive={handleCloseReceive}
           onImportShare={handleImportShare}
+          isSharePasswordPromptOpen={handleIsSharePasswordPromptOpen}
+          shareReceiveError={handleShareReceiveError}
+          onSubmitSharePassword={handleSubmitSharePassword}
+          onCancelSharePasswordPrompt={handleCancelSharePasswordPrompt}
         />
 
         <CopiedToastNotification copiedField={copiedField} />

@@ -1071,12 +1071,17 @@ export const it = {
   'settings.updates.error': 'Impossibile verificare gli aggiornamenti',
   'settings.updates.errorNotFound': 'Nessuna versione pubblicata trovata o server non raggiungibile (404 Not Found). Il manifesto "latest.json" potrebbe non essere ancora caricato su GitHub Releases.',
   'settings.updates.desktopOnly': 'Gli aggiornamenti automatici sono attivi su desktop',
-  'share.passwordTooShort': 'La password deve contenere almeno 8 caratteri.',
+  'share.passwordTooShort': 'La password deve contenere almeno 12 caratteri.',
   'share.passwordLabel': 'Password di condivisione',
   'share.passwordPlaceholder': 'Inserisci la password per proteggere il link',
   'share.passwordHelp': 'Il destinatario avrà bisogno di questa password per aprire il link.',
   'share.generateButton': 'Genera link di condivisione',
   'share.passwordShareWarning': 'Condividi questa password tramite un canale sicuro separato.',
+  'share.passwordPromptTitle': 'Password richiesta',
+  'share.passwordPromptSubtitle': 'Inserisci la password ricevuta per aprire questo link.',
+  'share.receivePasswordPlaceholder': 'Inserisci la password di condivisione',
+  'share.receivePasswordHelp': 'Questo link è cifrato con una password scelta dal mittente. Non lascia mai il link.',
+  'share.unlockButton': 'Sblocca link',
   'share.error.wrongPassword': 'Password errata o link danneggiato.',
 
   // ── Free Tier Enhancement v7.0.7 ──

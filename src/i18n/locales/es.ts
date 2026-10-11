@@ -1071,12 +1071,17 @@ export const es = {
   'settings.updates.error': 'No se pudieron comprobar las actualizaciones',
   'settings.updates.errorNotFound': 'No se encontró ninguna versión publicada o no se puede acceder al servidor (404 Not Found). Es posible que el manifiesto "latest.json" aún no esté subido a GitHub Releases.',
   'settings.updates.desktopOnly': 'Las actualizaciones automáticas están activas en el escritorio',
-  'share.passwordTooShort': 'La contraseña debe tener al menos 8 caracteres.',
+  'share.passwordTooShort': 'La contraseña debe tener al menos 12 caracteres.',
   'share.passwordLabel': 'Contraseña para compartir',
   'share.passwordPlaceholder': 'Ingrese contraseña para proteger el enlace',
   'share.passwordHelp': 'El destinatario necesitará esta contraseña para abrir el enlace.',
   'share.generateButton': 'Generar enlace para compartir',
   'share.passwordShareWarning': 'Comparta esta contraseña a través de un canal seguro independiente.',
+  'share.passwordPromptTitle': 'Contraseña requerida',
+  'share.passwordPromptSubtitle': 'Introduce la contraseña que recibiste para abrir este enlace.',
+  'share.receivePasswordPlaceholder': 'Introduce la contraseña de compartir',
+  'share.receivePasswordHelp': 'Este enlace está cifrado con una contraseña elegida por el remitente. Nunca sale del enlace.',
+  'share.unlockButton': 'Desbloquear enlace',
   'share.error.wrongPassword': 'Contraseña incorrecta o enlace dañado.',
 
   // ── Free Tier Enhancement v7.0.7 ──

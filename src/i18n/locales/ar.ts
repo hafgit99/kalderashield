@@ -1071,12 +1071,17 @@ export const ar = {
   'settings.updates.error': 'تعذر التحقق من التحديثات',
   'settings.updates.errorNotFound': 'لم يتم العثور على إصدار منشور أو يتعذر الوصول إلى الخادم (404 Not Found). قد لا يكون بيان "latest.json" قد تم تحميله إلى GitHub Releases بعد.',
   'settings.updates.desktopOnly': 'التحديثات التلقائية نشطة على سطح المكتب',
-  'share.passwordTooShort': 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+  'share.passwordTooShort': 'يجب أن تتكون كلمة المرور من 12 أحرف على الأقل.',
   'share.passwordLabel': 'كلمة مرور المشاركة',
   'share.passwordPlaceholder': 'أدخل كلمة مرور لحماية رابط المشاركة',
   'share.passwordHelp': 'سيحتاج المستلم إلى كلمة المرور هذه لفتح الرابط.',
   'share.generateButton': 'إنشاء رابط المشاركة',
   'share.passwordShareWarning': 'شارك كلمة المرور هذه عبر قناة آمنة منفصلة.',
+  'share.passwordPromptTitle': 'كلمة المرور مطلوبة',
+  'share.passwordPromptSubtitle': 'أدخل كلمة المرور التي استلمتها لفتح هذا الرابط.',
+  'share.receivePasswordPlaceholder': 'أدخل كلمة مرور المشاركة',
+  'share.receivePasswordHelp': 'هذا الرابط مشفّر بكلمة مرور يختارها المرسل. لا تغادر كلمة المرور الرابط أبدًا.',
+  'share.unlockButton': 'فتح الرابط',
   'share.error.wrongPassword': 'كلمة المرور غير صحيحة أو الرابط تالف.',
 
   // ── Free Tier Enhancement v7.0.7 ──

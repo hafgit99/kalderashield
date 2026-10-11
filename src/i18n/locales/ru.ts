@@ -1071,12 +1071,17 @@ export const ru = {
   'settings.updates.error': 'Не удалось проверить обновления',
   'settings.updates.errorNotFound': 'Опубликованный релиз не найден или сервер недоступен (404 Not Found). Манифест "latest.json", возможно, еще не загружен в GitHub Releases.',
   'settings.updates.desktopOnly': 'Автоматические обновления активны на ПК',
-  'share.passwordTooShort': 'Пароль должен содержать не менее 8 символов.',
+  'share.passwordTooShort': 'Пароль должен содержать не менее 12 символов.',
   'share.passwordLabel': 'Пароль для общего доступа',
   'share.passwordPlaceholder': 'Введите пароль для защиты ссылки',
   'share.passwordHelp': 'Получателю понадобится этот пароль для открытия ссылки.',
   'share.generateButton': 'Создать ссылку для доступа',
   'share.passwordShareWarning': 'Передайте этот пароль по отдельному безопасному каналу.',
+  'share.passwordPromptTitle': 'Требуется пароль',
+  'share.passwordPromptSubtitle': 'Введите полученный пароль, чтобы открыть эту ссылку.',
+  'share.receivePasswordPlaceholder': 'Введите пароль для общего доступа',
+  'share.receivePasswordHelp': 'Эта ссылка зашифрована паролем, выбранным отправителем. Он никогда не покидает ссылку.',
+  'share.unlockButton': 'Открыть ссылку',
   'share.error.wrongPassword': 'Неверный пароль или поврежденная ссылка.',
 
   // ── Free Tier Enhancement v7.0.7 ──

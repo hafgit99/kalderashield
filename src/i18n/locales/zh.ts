@@ -1076,12 +1076,17 @@ export const zh = {
   'settings.updates.error': '无法检查更新',
   'settings.updates.errorNotFound': '未找到已发布的版本或无法访问服务器（404 Not Found）。"latest.json" 清单可能尚未上传到 GitHub Releases。',
   'settings.updates.desktopOnly': '自动更新仅在桌面端可用',
-  'share.passwordTooShort': '密码必须至少包含 8 个字符。',
+  'share.passwordTooShort': '密码必须至少包含 12 个字符。',
   'share.passwordLabel': '共享密码',
   'share.passwordPlaceholder': '输入密码以保护共享链接',
   'share.passwordHelp': '接收者需要此密码才能打开链接。',
   'share.generateButton': '生成共享链接',
   'share.passwordShareWarning': '请通过单独的安全渠道共享此密码。',
+  'share.passwordPromptTitle': '需要密码',
+  'share.passwordPromptSubtitle': '请输入收到的密码以打开此链接。',
+  'share.receivePasswordPlaceholder': '输入共享密码',
+  'share.receivePasswordHelp': '此链接使用发送方选择的密码加密。密码不会离开链接。',
+  'share.unlockButton': '解锁链接',
   'share.error.wrongPassword': '密码错误或链接已损坏。',
 
   // ── Free Tier Enhancement v7.0.7 ──

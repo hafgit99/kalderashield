@@ -1076,12 +1076,17 @@ export const tr = {
   'settings.updates.error': 'Güncellemeler denetlenemedi',
   'settings.updates.errorNotFound': 'Henüz yayınlanmış bir sürüm bulunamadı veya sunucuya erişilemiyor (404 Not Found). GitHub Releases üzerinde henüz "latest.json" manifesti yüklenmemiş olabilir.',
   'settings.updates.desktopOnly': 'Otomatik güncellemeler masaüstü sürümünde aktiftir',
-  'share.passwordTooShort': 'Şifre en az 8 karakter olmalıdır.',
+  'share.passwordTooShort': 'Şifre en az 12 karakter olmalıdır.',
   'share.passwordLabel': 'Paylaşım Şifresi',
   'share.passwordPlaceholder': 'Paylaşım bağlantısını korumak için şifre girin',
   'share.passwordHelp': 'Alıcının bağlantıyı açmak için bu şifreye ihtiyacı olacaktır.',
   'share.generateButton': 'Paylaşım Bağlantısı Oluştur',
   'share.passwordShareWarning': 'Bu şifreyi ayrı bir güvenli kanal üzerinden paylaşın.',
+  'share.passwordPromptTitle': 'Şifre Gerekli',
+  'share.passwordPromptSubtitle': 'Bu bağlantıyı açmak için aldığınız şifreyi girin.',
+  'share.receivePasswordPlaceholder': 'Paylaşım şifresini girin',
+  'share.receivePasswordHelp': 'Bu bağlantı, gönderenin seçtiği bir şifreyle şifrelenmiştir. Şifre bağlantıdan hiç ayrılmaz.',
+  'share.unlockButton': 'Bağlantıyı Aç',
   'share.error.wrongPassword': 'Hatalı şifre veya bozuk bağlantı.',
 
   // ── Free Tier Enhancement v7.0.7 ──

@@ -1071,12 +1071,17 @@ export const pt = {
   'settings.updates.error': 'Não foi possível verificar atualizações',
   'settings.updates.errorNotFound': 'Nenhuma versão publicada encontrada ou servidor inacessível (404 Not Found). O manifesto "latest.json" pode ainda não ter sido enviado para o GitHub Releases.',
   'settings.updates.desktopOnly': 'Atualizações automáticas estão ativas no desktop',
-  'share.passwordTooShort': 'A senha deve ter pelo menos 8 caracteres.',
+  'share.passwordTooShort': 'A senha deve ter pelo menos 12 caracteres.',
   'share.passwordLabel': 'Senha de Compartilhamento',
   'share.passwordPlaceholder': 'Digite a senha para proteger o link',
   'share.passwordHelp': 'O destinatário precisará desta senha para abrir o link.',
   'share.generateButton': 'Gerar Link de Compartilhamento',
   'share.passwordShareWarning': 'Compartilhe esta senha por um canal seguro separado.',
+  'share.passwordPromptTitle': 'Senha necessária',
+  'share.passwordPromptSubtitle': 'Digite a senha que você recebeu para abrir este link.',
+  'share.receivePasswordPlaceholder': 'Digite a senha de compartilhamento',
+  'share.receivePasswordHelp': 'Este link é criptografado com uma senha escolhida pelo remetente. Ela nunca sai do link.',
+  'share.unlockButton': 'Desbloquear link',
   'share.error.wrongPassword': 'Senha incorreta ou link corrompido.',
 
   // ── Free Tier Enhancement v7.0.7 ──
