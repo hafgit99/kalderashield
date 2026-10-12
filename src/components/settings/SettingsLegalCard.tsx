@@ -76,4 +76,3 @@ export function SettingsLegalCard({ onOpenLegal }: SettingsLegalCardProps) {
   );
 }
 
-export default SettingsLegalCard;

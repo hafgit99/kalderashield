@@ -161,4 +161,3 @@ export function LegalRichText({ children, className }: LegalRichTextProps) {
   );
 }
 
-export default LegalRichText;

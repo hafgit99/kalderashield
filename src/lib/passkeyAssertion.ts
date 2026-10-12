@@ -38,10 +38,6 @@
  * for this credential*, which is what a relying party actually needs.
  */
 
-const COSE_ALG_ES256 = -7;
-const COSE_ALG_EDDSA = -8;
-const COSE_ALG_RS256 = -257;
-
 import { base64ToBytes, bytesToBase64 } from './common/bytes';
 
 /** Flags byte offsets inside authenticator data (WebAuthn §6.1). */
@@ -335,14 +331,4 @@ export async function verifyPasskeyAssertion(
   }
 
   return { verified: true, signCount };
-}
-
-/** Maps a COSE algorithm id to the passkey algorithm label, for logging. */
-export function describeCoseAlgorithm(coseAlg: number | undefined): string {
-  switch (coseAlg) {
-    case COSE_ALG_ES256: return 'ES256';
-    case COSE_ALG_EDDSA: return 'EdDSA';
-    case COSE_ALG_RS256: return 'RS256';
-    default: return 'unknown';
-  }
 }

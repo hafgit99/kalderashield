@@ -77,7 +77,7 @@ interface VaultPageProps {
   onApproveAutofill?: (item: VaultItem) => void;
 }
 
-export function VaultPage({
+function VaultPage({
   selectedItem,
   mobileActiveView,
   filteredItems,

@@ -66,9 +66,14 @@ function patchedList(
 
 /* ---------------------------------------------------------------- *
  * Individual actions
+ *
+ * P2-5: these ten were exported and imported by nobody. `applyBulkAction`
+ * is the only entry point, and it dispatches to all ten, so they stay
+ * module-private -- an export is a promise that someone outside this file
+ * can call it, and there was no such someone. Knip now enforces it.
  * ---------------------------------------------------------------- */
 
-export function bulkSoftDelete(items: VaultItem[], ids: Set<string>): BulkActionResult {
+function bulkSoftDelete(items: VaultItem[], ids: Set<string>): BulkActionResult {
   return patchedList(items, ids, (item) => ({
     ...item,
     deleted: true,
@@ -76,19 +81,19 @@ export function bulkSoftDelete(items: VaultItem[], ids: Set<string>): BulkAction
   }));
 }
 
-export function bulkRestore(items: VaultItem[], ids: Set<string>): BulkActionResult {
+function bulkRestore(items: VaultItem[], ids: Set<string>): BulkActionResult {
   return patchedList(items, ids, (item) => {
     const { deleted: _deleted, deletedAt: _deletedAt, ...rest } = item;
     return { ...rest } as VaultItem;
   });
 }
 
-export function bulkPermanentDelete(items: VaultItem[], ids: Set<string>): BulkActionResult {
+function bulkPermanentDelete(items: VaultItem[], ids: Set<string>): BulkActionResult {
   const next = items.filter((item) => !isPicked(ids, item.id));
   return { items: next, affected: items.length - next.length };
 }
 
-export function bulkMoveToFolder(
+function bulkMoveToFolder(
   items: VaultItem[],
   ids: Set<string>,
   folderId: string | null,
@@ -100,14 +105,14 @@ export function bulkMoveToFolder(
   }));
 }
 
-export function bulkRemoveFromFolder(items: VaultItem[], ids: Set<string>): BulkActionResult {
+function bulkRemoveFromFolder(items: VaultItem[], ids: Set<string>): BulkActionResult {
   return patchedList(items, ids, (item) => {
     const { folderId: _folderId, ...rest } = item;
     return { ...rest, updatedAt: nowIso() } as VaultItem;
   });
 }
 
-export function bulkAddTag(
+function bulkAddTag(
   items: VaultItem[],
   ids: Set<string>,
   tag: string,
@@ -123,7 +128,7 @@ export function bulkAddTag(
   });
 }
 
-export function bulkRemoveTag(
+function bulkRemoveTag(
   items: VaultItem[],
   ids: Set<string>,
   tag: string,
@@ -137,7 +142,7 @@ export function bulkRemoveTag(
   });
 }
 
-export function bulkToggleTag(
+function bulkToggleTag(
   items: VaultItem[],
   ids: Set<string>,
   tag: string,
@@ -159,7 +164,7 @@ export function bulkToggleTag(
   });
 }
 
-export function bulkSetFavorite(
+function bulkSetFavorite(
   items: VaultItem[],
   ids: Set<string>,
   favorite: boolean,
@@ -169,7 +174,7 @@ export function bulkSetFavorite(
   );
 }
 
-export function bulkToggleFavorite(items: VaultItem[], ids: Set<string>): BulkActionResult {
+function bulkToggleFavorite(items: VaultItem[], ids: Set<string>): BulkActionResult {
   return patchedList(items, ids, (item) => ({
     ...item,
     favorite: !item.favorite,

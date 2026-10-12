@@ -1,0 +1,11 @@
+{
+  "generatedBy": "scripts/audit-dead-code.cjs",
+  "notes": {
+    "test-only:src/lib/legacyCrypto.ts": "Deliberate fail-closed tombstone, not an oversight. The module header says DO NOT USE and every export throws LegacyCryptoError; it exists so that an import of the removed pure-JS crypto primitives fails loudly instead of silently falling back. Keeping it and keeping its tests is the point -- deleting it would restore nothing and remove the marker. Revisit only if a migration build no longer needs the import to resolve.",
+    "test-only:src/lib/notes.ts": "NOT DECIDED -- this is a finding, not accepted debt. sanitizeNoteText strips C0 control characters, normalizes NFC and caps notes at 100_000 chars. Nothing in src/ calls it: every note reaches storage through VaultFormModal.tsx:353 with nothing but a .trim(), and the importer, share-receive and backup-import paths do not touch it either. 47 tests pass over a function with no production caller. Wiring it changes what users can save, and deleting it removes the only record that the hardening was intended, so this belongs to the owner rather than to a dead-code sweep."
+  },
+  "entries": [
+    "test-only:src/lib/legacyCrypto.ts:",
+    "test-only:src/lib/notes.ts:"
+  ]
+}

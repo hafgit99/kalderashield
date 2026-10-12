@@ -10,7 +10,6 @@ import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
 import {
   getPalette,
-  slugifyTagName,
   TAG_COLOR_KEYS,
   TAG_PALETTE,
 } from '../lib/tags';
@@ -218,6 +217,4 @@ function ColorSwatchRow({ active, onSelect }: ColorSwatchRowProps) {
     </div>
   );
 }
-
-export { slugifyTagName };
 

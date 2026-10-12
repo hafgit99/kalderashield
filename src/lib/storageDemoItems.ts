@@ -59,9 +59,3 @@ export function createDemoItems(): VaultItem[] {
     },
   ];
 }
-
-/**
- * @deprecated Use createDemoItems() instead — generates unique passwords per invocation.
- * Kept for backward compatibility with existing test mocks.
- */
-export const INITIAL_DEMO_ITEMS: VaultItem[] = createDemoItems();

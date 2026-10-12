@@ -2,29 +2,22 @@ import { WebDavSyncProvider } from './webdavProvider';
 import { S3SyncProvider } from './s3Provider';
 import type { SyncConfig, SyncProvider } from './syncTypes';
 
-export { SyncError, syncErrorCodes } from './syncTypes';
-export type {
-  SyncProvider,
-  SyncConfig,
-  WebDavSyncConfig,
-  S3SyncConfig,
-  SyncStatus,
-  SyncResult,
-  SyncMetadata,
-  SyncConflictItem,
-  SyncErrorCode,
-  SyncProviderType,
-} from './syncTypes';
+/**
+ * The sync barrel.
+ *
+ * P2-5: this re-exported 24 names and 11 imported 13 of them. A barrel that
+ * promises the whole module surface is a barrel nobody can delete from --
+ * `buildSyncEnvelope` and `resolveLWWConflicts` were reachable from here, so
+ * the only way to ask "who calls conflict resolution?" was to grep every file.
+ * They are still exported from `syncEngine.ts`, where they are defined and
+ * where their tests import them; what is gone is the second, wider door.
+ */
+export type { SyncProvider, SyncConfig, SyncProviderType } from './syncTypes';
 
 export { WebDavSyncProvider } from './webdavProvider';
 export { S3SyncProvider } from './s3Provider';
 
-export {
-  performSync,
-  buildSyncEnvelope,
-  parseSyncEnvelope,
-  resolveLWWConflicts,
-} from './syncEngine';
+export { performSync } from './syncEngine';
 
 export {
   saveSyncConfig,

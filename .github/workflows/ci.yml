@@ -484,6 +484,20 @@ jobs:
       - name: Fuzz tests
         run: npm run test:fuzz
 
+      # P2-5: the audit report counted unused exports by hand and got 164,
+      # which is a number nobody can maintain by reading. This runs knip plus a
+      # check knip cannot do -- a module imported only by its own test looks
+      # alive to knip, and that is exactly the shape the report's two "dead"
+      # modules had.
+      #
+      # Delta-gated against scripts/dead-code-baseline.json for the same reason
+      # audit-orphan-keys.cjs is: failing on today's pile would be a false
+      # signal on day one. The gate fails only on dead code the baseline does
+      # not already contain, so the debt stops growing rather than being paid
+      # off inside an unrelated commit.
+      - name: 'Dead code audit (P2-5)'
+        run: npm run deadcode:audit
+
       - name: Gitleaks (secret scan)
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
