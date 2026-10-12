@@ -1,4 +1,19 @@
 {
   "generatedBy": "scripts/audit-local-assets.cjs",
-  "refs": []
+  "refs": [
+    "/assets/video/kalderashield-promo.mp4",
+    "/assets/video/subs/ar.vtt",
+    "/assets/video/subs/de.vtt",
+    "/assets/video/subs/en.vtt",
+    "/assets/video/subs/es.vtt",
+    "/assets/video/subs/fr.vtt",
+    "/assets/video/subs/it.vtt",
+    "/assets/video/subs/ja.vtt",
+    "/assets/video/subs/ko.vtt",
+    "/assets/video/subs/pt.vtt",
+    "/assets/video/subs/ru.vtt",
+    "/assets/video/subs/tr.vtt",
+    "/assets/video/subs/zh.vtt",
+    "/assets/video/thumbnail.png"
+  ]
 }
