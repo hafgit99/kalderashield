@@ -270,6 +270,26 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
     return this.ensureVaultEncryptionSalt();
   }
 
+  /**
+   * P2-2: this deliberately declares three parameters, not the interface's four.
+   *
+   * `storage.ts:415` branches on `if (repo.setupMasterWithHash)` and passes a
+   * fourth argument — the vault encryption key — so that the first persisted
+   * state is signed (K-3). That guard is true here, so storage.ts believes the
+   * key was delivered. It was not: this backend has no integrity-HMAC machinery
+   * at all, so there is nothing for a fourth parameter to do.
+   *
+   * Not a live bug today. The call site is inside `if (isDesktopRuntime())`,
+   * and `vaultStorageProvider.ts:203` keeps OPFS on every desktop and Android
+   * runtime, so the repository that actually receives the key is always
+   * `SQLiteOPFS`, which does sign.
+   *
+   * It becomes one the moment wa-sqlite is promoted to a platform that holds a
+   * real vault, which is why `vaultStorageBackendAuthority.test.ts` asserts both
+   * the platform mapping and this arity. Closing the gap properly means adding
+   * sealed-at-version and integrity-HMAC columns to this backend's schema and
+   * writing them on the first persist — a migration, not a signature.
+   */
   public async setupMasterWithHash(argonHash: string, salt: string, kdfParams: unknown): Promise<void> {
     await this.hydrate();
     await this.runTransaction(async () => {

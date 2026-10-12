@@ -427,6 +427,62 @@ function main() {
       : 'no other workflows present'
   );
 
+  // --- 8. The updater mirror must be pinned, never discovered (P3-2). ---------
+  //
+  // The backup updater endpoint used to fall back to `ssh-keyscan` when
+  // UPDATE_ENDPOINT_KNOWN_HOSTS was unset, which is trust-on-first-use on a
+  // step that re-runs on every tag. The files it publishes are public and
+  // signed, so the exposure is small -- but "small" is not "none", and the fix
+  // (refuse the mirror rather than learn its key) costs nothing, because
+  // GitHub Releases is the primary updater source and this step is
+  // continue-on-error.
+  //
+  // Two separate regressions are possible and both are checked: re-introducing
+  // a keyscan, and weakening StrictHostKeyChecking back to accept-new (which
+  // would silently learn a replacement key even for hosts already pinned).
+  const mirrorStep = /- name: [^\n]*[Pp]ublish updater manifest to backup endpoint[\s\S]*?(?=\n      - name:|\n  [a-z]|\Z)/.exec(
+    pipeline
+  );
+  check(
+    mirrorStep !== null,
+    'release-desktop.yml: the backup updater mirror publish step was not found; if it was removed, remove the secret requirement with it'
+  );
+  if (mirrorStep) {
+    const step = mirrorStep[0];
+    // `echo` statements are removed before scanning. The operator instruction
+    // for fixing this very step is "Set the secret to the output of:
+    // ssh-keyscan -H update.KalderaShield.xyz" -- and an earlier version of this
+    // check failed the workflow for printing that line, which is the
+    // false-alarm failure mode the ad-hoc signing check above already documents:
+    // a gate that cries wolf gets ignored, and then it protects nothing. What is
+    // being asked is whether any command here *runs* ssh-keyscan, not whether the
+    // string appears in a message asking the operator to configure a pin.
+    const commandsOnly = stripYamlComments(step)
+      .split('\n')
+      .filter((line) => !/^\s*echo\s/.test(line))
+      .join('\n');
+    check(
+      !/ssh-keyscan/.test(commandsOnly),
+      'release-desktop.yml: the updater mirror step must not run ssh-keyscan on the host (P3-2 TOFU)'
+    );
+    check(
+      /StrictHostKeyChecking=yes/.test(step),
+      'release-desktop.yml: the updater mirror upload must use StrictHostKeyChecking=yes, not accept-new (P3-2)'
+    );
+    check(
+      /if \[ -z "\$\{UPDATE_KNOWN_HOSTS:-\}" \]/.test(step),
+      'release-desktop.yml: the updater mirror step must refuse to publish when UPDATE_ENDPOINT_KNOWN_HOSTS is unset (P3-2)'
+    );
+    check(
+      /continue-on-error: true/.test(step),
+      'release-desktop.yml: the updater mirror step must stay continue-on-error, so an unpinned or unreachable mirror degrades to "no backup mirror" instead of failing the release'
+    );
+    check(
+      /UPDATE_ENDPOINT_KNOWN_HOSTS/.test(pipeline),
+      'release-desktop.yml: the updater mirror step must still reference UPDATE_ENDPOINT_KNOWN_HOSTS'
+    );
+  }
+
   for (const note of notes) console.log(`  note: ${note}`);
 
   if (failures.length > 0) {
