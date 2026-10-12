@@ -698,6 +698,55 @@ a:hover {
   animation: hero-in 0.6s ease-out 0.18s both;
 }
 
+/* The promo video. Same window treatment as .hero-shot so the video reads as
+ * the product running, not as an embedded marketing asset. */
+.promo-video {
+  margin-top: 40px;
+  animation: hero-in 0.6s ease-out 0.26s both;
+}
+
+.promo-video-el {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #06060a;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 32px 80px rgb(0 0 0 / 0.34),
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* The text inside <video> is fallback content: a browser paints it only when it
+   cannot play the file at all. It is wrapped in a <p> for two reasons.
+
+   First, .promo-video-el pins background #06060a in every theme. In the light
+   palettes --text is #16120e, so the fallback inherited a near-black colour on
+   a near-black background and audit-contrast measured 1.09:1 against a 4.5
+   requirement. Stating the colour outright makes the fallback readable in the
+   one situation it exists for.
+
+   Second, an element of its own is what lets the block mark the copy with
+   data-i18n. Written straight into the twelve locale files it survived only
+   until generate-locales.cjs rebuilt every /<locale>/ page from the
+   unprefixed Turkish source, which left Turkish fallback text on all twelve
+   homepages -- undetectable by audit-static-i18n, because a node with no
+   data-i18n is not one it compares. */
+.promo-video-fallback {
+  color: #e9edf4;
+  margin: 0;
+  padding: 16px;
+}
+
+.promo-video-fallback a {
+  color: #e9edf4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-video { animation: none; }
+}
+
 /* The hero screenshot in an application window frame: a title bar with three
    window dots, then the image flush inside it.
  *

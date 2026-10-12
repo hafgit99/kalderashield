@@ -412,9 +412,51 @@
     return new URL('assets/js/i18n/chrome/' + locale + '.json', siteRoot()).href;
   }
 
+  /* The promo video's narration is English, so its subtitle tracks are for
+   * reading along in another language. Picking the track to match the page is
+   * the one thing the browser will not do on its own: it only honours the
+   * `default` attribute and the viewer's own preferences, so a Turkish page
+   * would otherwise start in English.
+   *
+   * Text tracks can only be toggled once they have loaded, so the language
+   * change is re-applied from the track's load event too. Without that, a visitor
+   * who switches language before the .vtt has arrived keeps the old captions. */
+  function syncPromoSubtitles(locale) {
+    var video = document.getElementById('promo-video');
+    if (!video || !video.textTracks) return;
+
+    var tracks = video.textTracks;
+    var matched = false;
+
+    for (var i = 0; i < tracks.length; i++) {
+      var track = tracks[i];
+      if (track.language === locale) matched = true;
+      track.mode = track.language === locale ? 'showing' : 'disabled';
+    }
+
+    // The site has locales the subtitle set does not; English is the narration
+    // language, so it is the correct fallback rather than no captions at all.
+    if (!matched) {
+      for (var j = 0; j < tracks.length; j++) {
+        if (tracks[j].language === 'en') tracks[j].mode = 'showing';
+      }
+    }
+  }
+
+  function bindPromoSubtitles(locale) {
+    var video = document.getElementById('promo-video');
+    if (!video || !video.textTracks) return;
+    syncPromoSubtitles(locale);
+    video.addEventListener('loadedmetadata', function () { syncPromoSubtitles(current); });
+    for (var i = 0; i < video.textTracks.length; i++) {
+      video.textTracks[i].addEventListener('load', function () { syncPromoSubtitles(current); });
+    }
+  }
+
   function setLanguage(locale) {
     if (!isKnown(locale)) locale = DEFAULT_LANG;
     current = locale;
+    bindPromoSubtitles(current);
 
     // One request, six keys. It resolves in a fraction of what two 130-165 KB
     // fetches did, and translate(document) now has nothing to do to the page

@@ -82,6 +82,7 @@
   "hero-tagline-1": "Sunucu yok.",
   "hero-tagline-2": "Hesap yok.",
   "hero-tagline-3": "Yerel kontrol.",
+  "promo-video-label": "KalderaShield tanıtım videosu",
   "dlhub-eyebrow": "İndirme Merkezi",
   "dlhub-title": "KalderaShield'i İndirin",
   "dlhub-desc": "Tüm platformlar için resmi kurulum paketleri. Her indirme SHA-256 özeti ve imzayla doğrulanabilir.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "Kullanıcıları etkileyen üçüncü taraf bileşenlerin davranışı LICENSE-3RD-PARTY.md ile kapsanır.",
   "win-preview-link": "İmzasız önizlemeyi GitHub Releases'dan indirin",
   "win-preview-assets": "NSIS kurucusu (.exe), MSI paketi ve taşınabilir EXE — hepsi imzasız.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "Tarayıcınız video etiketini desteklemiyor.",
+  "promo-video-fallback-link": "Videoyu indirin"
 }

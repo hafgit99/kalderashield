@@ -20,6 +20,7 @@
   "snap-img1-alt": "KalderaShield バージョン管理されたスナップショット履歴画面",
   "snap-img2-alt": "KalderaShield 自動スナップショット設定および実行周期画面",
   "snap-img-hint": "クリックして拡大",
+  "promo-video-label": "KalderaShield プロモビジョン",
   "dlhub-eyebrow": "ダウンロードセンター",
   "dlhub-title": "KalderaShield をダウンロード",
   "dlhub-desc": "各プラットフォーム向けの公式インストールパッケージ。すべてのダウンロードはSHA-256ダイジェストと署名によって検証可能です。",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "利用者に影響する第三者コンポーネントの挙動は LICENSE-3RD-PARTY.md に記載されています。",
   "win-preview-link": "GitHub Releases から未署名プレビューをダウンロード",
   "win-preview-assets": "NSIS インストーラー (.exe)、MSI パッケージ、ポータブル EXE — いずれも未署名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "このブラウザは video タグに対応していません。",
+  "promo-video-fallback-link": "ビデオをダウンロード"
 }

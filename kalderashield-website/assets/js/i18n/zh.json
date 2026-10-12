@@ -20,6 +20,7 @@
   "snap-img1-alt": "KalderaShield 带版本控制的加密快照历史记录界面",
   "snap-img2-alt": "KalderaShield 自动快照配置与触发周期设置界面",
   "snap-img-hint": "点击放大查看截屏",
+  "promo-video-label": "KalderaShield 宣传视频",
   "dlhub-eyebrow": "下载中心",
   "dlhub-title": "下载 KalderaShield",
   "dlhub-desc": "适用于各主流平台的官方安装包。所有下载均可通过 SHA-256 摘要与数字签名进行完整性校验。",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。",
   "win-preview-link": "从 GitHub Releases 下载未签名预览版",
   "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "您的浏览器不支持 video 标签。",
+  "promo-video-fallback-link": "下载视频"
 }

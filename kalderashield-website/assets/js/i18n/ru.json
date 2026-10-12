@@ -20,6 +20,7 @@
   "snap-img1-alt": "Экран версионных резервных копий и снимков хранилища KalderaShield",
   "snap-img2-alt": "Настройка автоматических снимков и периодичности в KalderaShield",
   "snap-img-hint": "Нажмите, чтобы увеличить",
+  "promo-video-label": "Промо-видео KalderaShield",
   "dlhub-eyebrow": "Центр загрузок",
   "dlhub-title": "Скачать KalderaShield",
   "dlhub-desc": "Официальные установочные пакеты для всех платформ. Каждая загрузка проверяется контрольными суммами SHA-256 и цифровыми подписями.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "Поведение сторонних компонентов, затрагивающее пользователей, описано в LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Скачать неподписанную предварительную сборку с GitHub Releases",
   "win-preview-assets": "Установщик NSIS (.exe), пакет MSI и переносимый EXE — все без подписи.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "Ваш браузер не поддерживает video-тег.",
+  "promo-video-fallback-link": "Скачать видео"
 }

@@ -262,6 +262,21 @@ jobs:
         working-directory: kalderashield-website
         run: node scripts/audit-orphan-keys.cjs
 
+      # Every other gate in this job reads markup that has already been checked
+      # for language, dictionaries and contrast, and none of them asks whether
+      # the file a <source> or <img> points at exists. That is what let the
+      # homepages be published from a working tree git never saw: the 12 MB
+      # promo video and its twelve subtitle tracks are still served from
+      # kalderashield.com while the block referencing them sat only in a stash.
+      # Nothing here would have noticed either half.
+      #
+      # The ignore rules in .gitignore keep those bytes out of git; this is what
+      # makes them safe -- it keeps the reference from becoming a 404 that only
+      # a visitor could see. 11,426 local references, currently all resolving.
+      - name: Every local src and href resolves to a file in the tree
+        working-directory: kalderashield-website
+        run: node scripts/audit-local-assets.cjs
+
       # "kurulum särasında" for "sırasında". Turkish has no ä and no û, so those
       # two characters are a corrupted character rather than a word, and no
       # spellchecker flags them. Scoped to the Turkish copy because the same

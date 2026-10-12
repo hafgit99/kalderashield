@@ -20,6 +20,7 @@
   "snap-img1-alt": "KalderaShield 버전 관리 암호화 스냅샷 기록 화면",
   "snap-img2-alt": "KalderaShield 자동 스냅샷 구성 및 실행 주기 설정 화면",
   "snap-img-hint": "클릭하여 확대",
+  "promo-video-label": "KalderaShield 프로모션 영상",
   "dlhub-eyebrow": "다운로드 센터",
   "dlhub-title": "KalderaShield 다운로드",
   "dlhub-desc": "모든 플랫폼을 위한 공식 설치 패키지입니다. 모든 다운로드는 SHA-256 다이제스트 및 디지털 서명을 통해 무결성을 검증할 수 있습니다.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "사용자에게 영향을 미치는 타사 구성요소의 동작은 LICENSE-3RD-PARTY.md에 정리되어 있습니다.",
   "win-preview-link": "GitHub Releases에서 서명 없는 미리보기 다운로드",
   "win-preview-assets": "NSIS 설치 관리자(.exe), MSI 패키지, 휴대형 EXE — 모두 서명 없음.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "이 브라우저는 video 태그를 지원하지 않습니다.",
+  "promo-video-fallback-link": "영상 다운로드"
 }
