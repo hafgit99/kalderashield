@@ -1246,8 +1246,8 @@ main details[open] > div {
    * so this cannot come back as a guess. 0.35rem rather than 0.25rem because the
    * first pass left 1px of overflow at 1280px, where the German title wraps to
    * seven lines and the last line's ink sits closest to the edge. */
-  line-height: 1.2;
-  padding-block: 0.35rem;
+  line-height: 1.22;
+  padding-block: 0.4rem;
   letter-spacing: -0.03em;
   max-width: 20ch;
 }
@@ -1452,6 +1452,9 @@ h3 {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--accent);
+  padding-bottom: 0.12em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .muted {
