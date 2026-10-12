@@ -133,7 +133,8 @@
     "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1",
     "windows:preview:package": "node scripts/windows-preview-package.cjs",
     "audit:doc-links": "node scripts/audit-doc-links.cjs",
-    "audit:ignore-parity": "node scripts/audit-ignore-parity.cjs"
+    "audit:ignore-parity": "node scripts/audit-ignore-parity.cjs",
+    "audit:prop-drilling": "node scripts/audit-prop-drilling.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",

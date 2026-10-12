@@ -64,7 +64,6 @@ interface VaultWorkspaceProps {
   onSelectDashboard: () => void;
   onBackToList: () => void;
   onSelectItem: (item: VaultItem) => void;
-  onSelectAuditItem?: (item: VaultItem) => void;
   onToggleFavorite: (item: VaultItem) => void | Promise<void>;
   onEdit: () => void;
   onDelete: (id: string) => void;

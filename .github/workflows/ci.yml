@@ -559,6 +559,15 @@ jobs:
       - name: 'Ignore lists have not drifted (P2-10)'
         run: npm run audit:ignore-parity
 
+      # P2-3. The full prop-drilling refactor is not done and is not a mechanical
+      # job -- VaultWorkspace is memoised and that memo works, so moving 50 props
+      # into context would cost the vault view its bail-out. What this does is
+      # hold the line: no declared-but-unused props anywhere, and the three
+      # chain signatures pinned at today's counts so the debt cannot grow while
+      # the design question is open.
+      - name: 'No dead props, chain has not grown (P2-3)'
+        run: npm run audit:prop-drilling
+
       - name: Gitleaks (secret scan)
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
