@@ -24,6 +24,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.cjs\"",
     "i18n:audit": "node scripts/i18n-audit.cjs",
     "deadcode:audit": "node scripts/audit-dead-code.cjs",
+    "audit:reproducibility": "node scripts/audit-build-reproducibility.cjs",
     "deadcode:audit:strict": "node scripts/audit-dead-code.cjs --strict",
     "deadcode:baseline": "node scripts/audit-dead-code.cjs --write-baseline",
     "test:unit": "vitest run",

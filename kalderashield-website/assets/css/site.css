@@ -1240,11 +1240,14 @@ main details[open] > div {
    * platform whose natural line box is taller, and the descenders of the last
    * word disappear -- which is what "the Y in Only is half gone" looks like.
    *
-   * 1.2 plus 0.25rem of padding contains all eight families with room to spare,
-   * and scripts/audit-hero-metrics.cjs now measures it on every CI run so this
-   * cannot come back as a guess. */
+   * 1.2 plus padding contains every family the stack can resolve to, and
+   * scripts/audit-hero-metrics.cjs measures all eight on every CI run -- across
+   * the Turkish, English and German titles, at three widths, 72 combinations --
+   * so this cannot come back as a guess. 0.35rem rather than 0.25rem because the
+   * first pass left 1px of overflow at 1280px, where the German title wraps to
+   * seven lines and the last line's ink sits closest to the edge. */
   line-height: 1.2;
-  padding-block: 0.25rem;
+  padding-block: 0.35rem;
   letter-spacing: -0.03em;
   max-width: 20ch;
 }
