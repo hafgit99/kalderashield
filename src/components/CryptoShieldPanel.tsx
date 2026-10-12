@@ -2,7 +2,11 @@ import { useSyncExternalStore } from 'react';
 import { AlertTriangle, Fingerprint } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
-import { getArgon2DegradationInfo, subscribeArgon2Degradation } from '../lib/argon2id';
+import {
+  formatArgon2MemoryComparison,
+  getArgon2DegradationInfo,
+  subscribeArgon2Degradation,
+} from '../lib/argon2id';
 
 export default function CryptoShieldPanel() {
   const { t } = useLanguage();
@@ -58,7 +62,7 @@ export default function CryptoShieldPanel() {
             <p className="mt-1">{t('dashboard.crypto.degradedDesc')}</p>
             <div className="mt-2 flex items-center justify-between font-mono text-[10px]">
               <span>
-                Argon2id: {Math.round(degradation.activeMemoryKiB / 1024)} / {Math.round(degradation.requestedMemoryKiB / 1024)} MiB
+                Argon2id: {formatArgon2MemoryComparison(degradation)}
               </span>
               <span className={degradation.writeBlocked ? 'font-bold text-red-400' : 'font-bold text-amber-400'}>
                 {degradation.writeBlocked

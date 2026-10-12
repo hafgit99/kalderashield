@@ -181,6 +181,40 @@ export function getArgon2DegradationInfo(): Argon2DegradationInfo | null {
 }
 
 /**
+ * P3-4: the panel that shows this used to do its own arithmetic.
+ *
+ * `CryptoShieldPanel` rendered `Math.round(activeMemoryKiB / 1024)` and
+ * `Math.round(requestedMemoryKiB / 1024)` inline, which put a unit conversion
+ * for a cryptographic cost parameter inside a React component. The rounding was
+ * also the interesting part: Argon2id's memory parameter is specified in KiB and
+ * every profile this project ships is a whole number of MiB, so `Math.round`
+ * happened to be exact -- for values that are not whole MiB it would report a
+ * cost the vault was never actually using, and a panel saying "16 / 64 MiB"
+ * next to a profile of 16.5 MiB is a claim, not an approximation.
+ *
+ * So the conversion lives here, next to the parameter definitions and the
+ * MIN/MAX constants it has to agree with, and the component asks for a string.
+ *
+ * Exactness is deliberate: a sub-MiB remainder is shown rather than rounded
+ * away. The value is a security parameter the user may be asked to reason about
+ * (degradation means the vault opened with less work than was requested), so
+ * the honest form is the number that was actually used.
+ */
+export const NO_MEMORY_COST = '-';
+
+export function formatArgon2MemoryCost(memoryKiB: number): string {
+  if (!Number.isFinite(memoryKiB)) return NO_MEMORY_COST;
+  const mib = memoryKiB / 1024;
+  if (Number.isInteger(mib)) return `${mib} MiB`;
+  return `${Math.round(mib * 10) / 10} MiB`;
+}
+
+/** `"32 / 64 MiB"` — what the degradation panel shows. */
+export function formatArgon2MemoryComparison(info: Argon2DegradationInfo): string {
+  return `${formatArgon2MemoryCost(info.activeMemoryKiB)} / ${formatArgon2MemoryCost(info.requestedMemoryKiB)}`;
+}
+
+/**
  * P1-6: Returns true if Argon2id memory degradation was detected and vault writes
  * should be blocked to prevent persisting records with weak KDF parameters.
  */

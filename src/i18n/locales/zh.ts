@@ -211,7 +211,8 @@ export const zh = {
     'vaultForm.title.edit': '更新保险库项目',
     'vaultForm.subtitle': '您的数据会立即在浏览器处理器中本地加密。',
     'vaultForm.close': '关闭',
-    'vaultForm.category.login': '登录',
+    'vaultForm.categoryUpdated': "类别已更新为 {category}",
+  'vaultForm.category.login': '登录',
     'vaultForm.category.card': '卡片',
     'vaultForm.category.passkey': '安全密钥',
     'vaultForm.category.identity': '身份',
@@ -1230,4 +1231,9 @@ export const zh = {
   'settings.legal.description': '隐私政策和使用条款。这些文档长期有效，无需锁定密码库即可阅读。',
   'settings.legal.updated': '当前版本',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "意外的应用错误",
+  'error.crashed.description': "当前视图发生了运行时异常。为您的安全，已保护已解密的金库内存，应用程序应立即锁定。",
+  'error.crashed.lockNow': "立即锁定金库",
 } as const;

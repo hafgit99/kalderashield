@@ -211,7 +211,8 @@ export const en = {
     'vaultForm.title.edit': 'Update Vault Item',
     'vaultForm.subtitle': 'Your data is encrypted locally in your browser processor instantly.',
     'vaultForm.close': 'Close',
-    'vaultForm.category.login': 'Login',
+    'vaultForm.categoryUpdated': "Category updated to {category}",
+  'vaultForm.category.login': 'Login',
     'vaultForm.category.card': 'Card',
     'vaultForm.category.passkey': 'Secure Key',
     'vaultForm.category.identity': 'Identity',
@@ -1230,4 +1231,9 @@ export const en = {
   'settings.legal.description': 'Privacy Policy and Terms of Use. These documents are permanent: read them without locking your vault.',
   'settings.legal.updated': 'Current version',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Unexpected Application Error",
+  'error.crashed.description': "A runtime exception occurred in the active view. For your security, decrypted vault memory has been protected and the application should be locked.",
+  'error.crashed.lockNow': "Lock Vault Immediately",
 } as const;

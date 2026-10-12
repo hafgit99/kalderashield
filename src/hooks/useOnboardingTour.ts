@@ -31,38 +31,83 @@ export interface UseOnboardingTourResult {
   resetTour: () => void;
 }
 
+/* ── Why every catch in this file is here ────────────────────────────────────
+ *
+ * P3-3: this file used to carry seven `catch { // ignore }` blocks with no
+ * reason, against a repo standard that every empty catch explains itself. They
+ * were not accidental, they were just undocumented -- but four of them were the
+ * same read four times over, so the honest form is one helper with one stated
+ * consequence rather than eight silent blocks.
+ *
+ * The consequence, stated once: **localStorage can throw, and when it does this
+ * tour forgets everything.** In Safari private mode `setItem` throws
+ * QuotaExceededError; in an embedded WebView with DOM storage disabled,
+ * `getItem` throws on access. Neither is exceptional for a password manager,
+ * which is expected to run in whatever the user put it in.
+ *
+ * What that costs is that the checklist reappears on the next load. That is the
+ * correct trade for a *checklist*: it is a hint, it holds no secret, and losing
+ * it costs the user one glance at something they already did. The alternative --
+ * letting a storage failure throw out of a React initialiser -- would take the
+ * whole vault UI down with it, to protect a progress indicator.
+ *
+ * What it must never cost is the session. The React state is set outside the
+ * try blocks, so a storage failure loses persistence, not the step the user just
+ * completed. That separation is the whole reason the writes below are wrapped
+ * and the setters are not, and it is worth stating because the reverse order
+ * reads just as naturally.
+ */
+
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === 'true';
+  } catch {
+    // DOM storage unavailable on access. The flag reads as "not yet", which is
+    // the same state a first-time visitor is in.
+    return false;
+  }
+}
+
+function writeFlag(key: string): void {
+  try {
+    localStorage.setItem(key, 'true');
+  } catch {
+    // Quota or private mode. The step stays complete for this session and is
+    // re-asked next time; see the note above.
+  }
+}
+
+function clearFlags(keys: readonly string[]): void {
+  for (const key of keys) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Same trade: `resetTour` has already reset the in-memory state, so the
+      // tour is visible again either way. A storage that refuses removal will
+      // refuse on the next read too.
+    }
+  }
+}
+
+const ALL_FLAG_KEYS: readonly string[] = [
+  ONBOARDING_STORAGE_KEYS.DISMISSED,
+  ONBOARDING_STORAGE_KEYS.EXT_EXPLORED,
+  ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE,
+  ONBOARDING_STORAGE_KEYS.AUDIT_DONE,
+];
+
 export function useOnboardingTour(items: VaultItem[]): UseOnboardingTourResult {
-  const [isDismissed, setIsDismissed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ONBOARDING_STORAGE_KEYS.DISMISSED) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isDismissed, setIsDismissed] = useState<boolean>(() =>
+    readFlag(ONBOARDING_STORAGE_KEYS.DISMISSED));
 
-  const [extExplored, setExtExplored] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ONBOARDING_STORAGE_KEYS.EXT_EXPLORED) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [extExplored, setExtExplored] = useState<boolean>(() =>
+    readFlag(ONBOARDING_STORAGE_KEYS.EXT_EXPLORED));
 
-  const [emergencyKitDone, setEmergencyKitDone] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [emergencyKitDone, setEmergencyKitDone] = useState<boolean>(() =>
+    readFlag(ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE));
 
-  const [auditDone, setAuditDone] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(ONBOARDING_STORAGE_KEYS.AUDIT_DONE) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [auditDone, setAuditDone] = useState<boolean>(() =>
+    readFlag(ONBOARDING_STORAGE_KEYS.AUDIT_DONE));
 
   // Step 1 is complete if user has at least 1 non-deleted vault item
   const hasItems = useMemo(() => {
@@ -89,27 +134,23 @@ export function useOnboardingTour(items: VaultItem[]): UseOnboardingTourResult {
 
   const dismissTour = useCallback(() => {
     setIsDismissed(true);
-    try {
-      localStorage.setItem(ONBOARDING_STORAGE_KEYS.DISMISSED, 'true');
-    } catch {
-      // ignore
-    }
+    writeFlag(ONBOARDING_STORAGE_KEYS.DISMISSED);
   }, []);
 
   const markStepComplete = useCallback((stepId: 1 | 2 | 3 | 4) => {
-    try {
-      if (stepId === 2) {
-        setExtExplored(true);
-        localStorage.setItem(ONBOARDING_STORAGE_KEYS.EXT_EXPLORED, 'true');
-      } else if (stepId === 3) {
-        setEmergencyKitDone(true);
-        localStorage.setItem(ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE, 'true');
-      } else if (stepId === 4) {
-        setAuditDone(true);
-        localStorage.setItem(ONBOARDING_STORAGE_KEYS.AUDIT_DONE, 'true');
-      }
-    } catch {
-      // ignore
+    // Step 1 has no case and needs none: it is derived from the item list, so
+    // there is nothing to remember. The setters run before the write for every
+    // other step, which is what keeps a storage failure from also losing the
+    // step itself -- see the note above.
+    if (stepId === 2) {
+      setExtExplored(true);
+      writeFlag(ONBOARDING_STORAGE_KEYS.EXT_EXPLORED);
+    } else if (stepId === 3) {
+      setEmergencyKitDone(true);
+      writeFlag(ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE);
+    } else if (stepId === 4) {
+      setAuditDone(true);
+      writeFlag(ONBOARDING_STORAGE_KEYS.AUDIT_DONE);
     }
   }, []);
 
@@ -118,14 +159,7 @@ export function useOnboardingTour(items: VaultItem[]): UseOnboardingTourResult {
     setExtExplored(false);
     setEmergencyKitDone(false);
     setAuditDone(false);
-    try {
-      localStorage.removeItem(ONBOARDING_STORAGE_KEYS.DISMISSED);
-      localStorage.removeItem(ONBOARDING_STORAGE_KEYS.EXT_EXPLORED);
-      localStorage.removeItem(ONBOARDING_STORAGE_KEYS.EMERGENCY_KIT_DONE);
-      localStorage.removeItem(ONBOARDING_STORAGE_KEYS.AUDIT_DONE);
-    } catch {
-      // ignore
-    }
+    clearFlags(ALL_FLAG_KEYS);
   }, []);
 
   return {

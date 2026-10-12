@@ -210,6 +210,7 @@ export const ar = {
   'vaultForm.title.edit': 'تحديث عنصر المخزن',
   'vaultForm.subtitle': 'يتم تشفير بياناتك محليًا في معالج المتصفح الخاص بك على الفور.',
   'vaultForm.close': 'يغلق',
+  'vaultForm.categoryUpdated': "تم تحديث الفئة إلى {category}",
   'vaultForm.category.login': 'تسجيل الدخول',
   'vaultForm.category.card': 'بطاقة',
   'vaultForm.category.passkey': 'مفتاح آمن',
@@ -1225,4 +1226,9 @@ export const ar = {
   'settings.legal.description': 'سياسة الخصوصية وشروط الاستخدام. هذه المستندات دائمة: اقرأها دون قفل الخزنة.',
   'settings.legal.updated': 'الإصدار الحالي',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "خطأ غير متوقع في التطبيق",
+  'error.crashed.description': "حدث استثناء وقت التشغيل في العرض النشط. من أجل سلامتك، تمت حماية ذاكرة الخزنة المشفرة ويجب قفل التطبيق.",
+  'error.crashed.lockNow': "اقفل الخزنة الآن",
 } as const;

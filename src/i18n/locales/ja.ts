@@ -210,6 +210,7 @@ export const ja = {
   'vaultForm.title.edit': 'ボールトアイテムの更新',
   'vaultForm.subtitle': 'データはブラウザ プロセッサ内でローカルに即座に暗号化されます。',
   'vaultForm.close': '近い',
+  'vaultForm.categoryUpdated': "カテゴリを {category} に更新しました",
   'vaultForm.category.login': 'ログイン',
   'vaultForm.category.card': 'カード',
   'vaultForm.category.passkey': '安全なキー',
@@ -1225,4 +1226,9 @@ export const ja = {
   'settings.legal.description': 'プライバシーポリシーと利用規約。これらの文書は常設です。保管庫をロックせずに読むことができます。',
   'settings.legal.updated': '現在の版',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "予期しないアプリケーションエラー",
+  'error.crashed.description': "現在のビューでランタイム例外が発生しました。安全のため、復号された保管庫メモリは保護され、アプリケーションをロックする必要があります。",
+  'error.crashed.lockNow': "今すぐ保管庫をロック",
 } as const;

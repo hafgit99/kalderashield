@@ -14,6 +14,14 @@ import CryptoShieldPanel from './CryptoShieldPanel';
 vi.mock('../lib/argon2id', () => ({
   getArgon2DegradationInfo: vi.fn(() => null),
   subscribeArgon2Degradation: vi.fn(() => () => {}),
+  // P3-4 moved the KiB -> MiB conversion out of the component. The mock has to
+  // keep it, or the tests would be asserting against a module that no longer
+  // exports what the panel renders -- which is exactly the kind of fake green
+  // this repo has been bitten by twice.
+  formatArgon2MemoryComparison: vi.fn(
+    (info: { activeMemoryKiB: number; requestedMemoryKiB: number }) =>
+      `${info.activeMemoryKiB / 1024} / ${info.requestedMemoryKiB / 1024} MiB`,
+  ),
 }));
 
 afterEach(() => {

@@ -210,6 +210,7 @@ export const it = {
   'vaultForm.title.edit': 'Aggiorna elemento del Vault',
   'vaultForm.subtitle': 'I tuoi dati vengono crittografati localmente nel processore del tuo browser istantaneamente.',
   'vaultForm.close': 'Vicino',
+  'vaultForm.categoryUpdated': "Categoria aggiornata a {category}",
   'vaultForm.category.login': 'Login',
   'vaultForm.category.card': 'Carta',
   'vaultForm.category.passkey': 'Chiave sicura',
@@ -1225,4 +1226,9 @@ export const it = {
   'settings.legal.description': 'Informativa sulla privacy e condizioni d\'uso. Questi documenti sono permanenti: leggili senza bloccare la cassaforte.',
   'settings.legal.updated': 'Versione corrente',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Errore applicazione imprevisto",
+  'error.crashed.description': "Si è verificata un'eccezione runtime nella vista attiva. Per la tua sicurezza la memoria decifrata della cassaforte è stata protetta e l'applicazione dovrebbe essere bloccata.",
+  'error.crashed.lockNow': "Blocca la cassaforte ora",
 } as const;

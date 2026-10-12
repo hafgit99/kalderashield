@@ -210,6 +210,7 @@ export const ru = {
   'vaultForm.title.edit': 'Обновить элемент хранилища',
   'vaultForm.subtitle': 'Ваши данные мгновенно шифруются локально в процессоре вашего браузера.',
   'vaultForm.close': 'Закрывать',
+  'vaultForm.categoryUpdated': "Категория изменена на {category}",
   'vaultForm.category.login': 'Авторизоваться',
   'vaultForm.category.card': 'Карта',
   'vaultForm.category.passkey': 'Безопасный ключ',
@@ -1225,4 +1226,9 @@ export const ru = {
   'settings.legal.description': 'Политика конфиденциальности и условия использования. Эти документы постоянны: прочитайте их, не блокируя хранилище.',
   'settings.legal.updated': 'Текущая версия',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Непредвиденная ошибка приложения",
+  'error.crashed.description': "В активном представлении возникла исключительная ситуация. В целях безопасности расшифрованная память хранилища защищена, и приложение должно быть заблокировано.",
+  'error.crashed.lockNow': "Заблокировать хранилище",
 } as const;

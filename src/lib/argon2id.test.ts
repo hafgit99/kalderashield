@@ -6,10 +6,15 @@ import {
   createArgon2idHash,
   deriveArgon2idKey,
   enforceMinimumKdfFloor,
+  formatArgon2MemoryComparison,
+  formatArgon2MemoryCost,
   getDefaultKdfProfile,
   isArgon2WriteBlocked,
+  NO_MEMORY_COST,
   subscribeArgon2Degradation,
   verifyArgon2idHash,
+  CROSS_PLATFORM_KDF_PROFILE,
+  DESKTOP_NATIVE_KDF_PROFILE,
 } from './argon2id';
 
 const hash = vi.fn(async ({ pass, salt, hashLen, time, mem, parallelism }) => ({
@@ -289,5 +294,45 @@ describe('argon2id KDF floor and defaults', () => {
       parallelism: 1,
       hashLength: 32,
     });
+  });
+});
+
+describe('argon2id memory cost formatting (P3-4)', () => {
+  // The panel used to do `Math.round(kiB / 1024)` inline. These assertions are
+  // what the component gave up: the conversion belongs to the service that owns
+  // the parameter, because it is a cryptographic cost, not a layout detail.
+  it('reports the shipped profiles exactly', () => {
+    expect(formatArgon2MemoryCost(64 * 1024)).toBe('64 MiB');
+    expect(formatArgon2MemoryCost(32 * 1024)).toBe('32 MiB');
+    expect(formatArgon2MemoryCost(16 * 1024)).toBe('16 MiB');
+    expect(formatArgon2MemoryCost(8 * 1024)).toBe('8 MiB');
+  });
+
+  it('keeps a sub-MiB remainder instead of rounding it away', () => {
+    // Math.round(16896 / 1024) is 17, which would tell the user the vault
+    // opened with 17 MiB when it used 16.5. Degradation means the user may be
+    // reasoning about exactly this number.
+    expect(formatArgon2MemoryCost(16896)).toBe('16.5 MiB');
+    expect(formatArgon2MemoryCost(8704)).toBe('8.5 MiB');
+  });
+
+  it('agrees with the profile constants the vault actually ships', () => {
+    expect(formatArgon2MemoryCost(DESKTOP_NATIVE_KDF_PROFILE.memoryKiB)).toBe('64 MiB');
+    expect(formatArgon2MemoryCost(CROSS_PLATFORM_KDF_PROFILE.memoryKiB)).toBe('32 MiB');
+  });
+
+  it('renders active-then-requested, which is the order that explains the drop', () => {
+    expect(formatArgon2MemoryComparison({
+      degraded: true,
+      activeMemoryKiB: 16 * 1024,
+      requestedMemoryKiB: 64 * 1024,
+      timestamp: 0,
+      writeBlocked: false,
+    })).toBe('16 MiB / 64 MiB');
+  });
+
+it('refuses to invent a cost for a value that is not a number', () => {
+    expect(formatArgon2MemoryCost(Number.NaN)).toBe(NO_MEMORY_COST);
+    expect(formatArgon2MemoryCost(Number.POSITIVE_INFINITY)).toBe(NO_MEMORY_COST);
   });
 });

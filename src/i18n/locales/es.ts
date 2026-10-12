@@ -210,6 +210,7 @@ export const es = {
   'vaultForm.title.edit': 'Actualizar artículo de la bóveda',
   'vaultForm.subtitle': 'Sus datos se cifran localmente en el procesador de su navegador al instante.',
   'vaultForm.close': 'Cerca',
+  'vaultForm.categoryUpdated': "Categoría actualizada a {category}",
   'vaultForm.category.login': 'Acceso',
   'vaultForm.category.card': 'Tarjeta',
   'vaultForm.category.passkey': 'Clave segura',
@@ -1225,4 +1226,9 @@ export const es = {
   'settings.legal.description': 'Política de privacidad y condiciones de uso. Estos documentos son permanentes: lea sin bloquear su bóveda.',
   'settings.legal.updated': 'Versión actual',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Error inesperado de la aplicación",
+  'error.crashed.description': "Se produjo una excepción en tiempo de ejecución en la vista activa. Por su seguridad, la memoria descifrada de la bóveda se ha protegido y la aplicación debería bloquearse.",
+  'error.crashed.lockNow': "Bloquear la bóveda ahora",
 } as const;

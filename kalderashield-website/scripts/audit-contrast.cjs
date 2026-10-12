@@ -105,6 +105,28 @@ const PAGES = ['/index.html', '/download/', '/urun/password-vault/', '/guvenlik/
           const f = (v) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
           return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
         };
+
+        /* Every colour stop of a gradient, as parsed colours.
+         *
+         * Chromium serialises a resolved gradient as
+         * `linear-gradient(135deg, rgb(15, 118, 110) 0%, rgb(13, 148, 136) 45%, …)`,
+         * so the stops are readable without touching the author sheet -- and
+         * reading them there rather than in CSS is deliberate, because the
+         * variables have already been resolved by then. The bug this exists to
+         * catch lived in exactly that resolution path: `var(--accent)` flipped
+         * with the theme while the two literal stops did not. */
+        const parseGradientStops = (image) => {
+          if (!image || image === 'none' || !image.includes('gradient')) return [];
+          const stops = [];
+          const re = /(rgba?\([^)]*\)|color\(srgb[^)]*\))/g;
+          let m;
+          while ((m = re.exec(image)) !== null) {
+            const c = parse(m[1]);
+            if (c && c.a > 0) stops.push(c);
+          }
+          return stops;
+        };
+
         const out = [];
         const seen = new Set();
 
@@ -131,9 +153,32 @@ const PAGES = ['/index.html', '/download/', '/urun/password-vault/', '/guvenlik/
           if (!bg) bg = { r: 255, g: 255, b: 255, a: 1 };
           const over = (f, b) => ({ r: f.r * f.a + b.r * (1 - f.a), g: f.g * f.a + b.g * (1 - f.a), b: f.b * f.a + b.b * (1 - f.a), a: 1 });
 
-          const text = over(fg, bg);
-          const [hi, lo] = [lum(text), lum(bg)].sort((x, y) => y - x);
-          const ratio = (hi + 0.05) / (lo + 0.05);
+          // P3-8 follow-up: what is painted is not always `color`.
+          //
+          // With `background-clip: text` the glyphs are filled from the element's
+          // own background image and the `color` is only a fallback for engines
+          // that do not support the property. Reading `color` therefore measures
+          // a colour the reader never sees -- and that is how the hero title
+          // shipped at 2.63:1 with this gate green: `.gradient-text` declares
+          // `color: var(--accent)` (5.29:1 on the cream ground) while painting
+          // the gradient's far stop.
+          //
+          // So for those elements the check runs against every colour stop in
+          // the gradient and takes the worst. Stops are read from the computed
+          // background-image, which means they arrive already resolved through
+          // var(), through the media query and through [data-theme] -- which is
+          // the point, because the bug lived in exactly that resolution path.
+          const clip = cs.webkitBackgroundClip || cs.backgroundClip;
+          const gradientStops = clip === 'text' || clip === 'text-border-box'
+            ? parseGradientStops(cs.backgroundImage)
+            : [];
+
+          const candidates = gradientStops.length ? gradientStops : [fg];
+          const worst = candidates
+            .map((f) => ({ f, ratio: (() => { const t = over(f, bg); const [hi, lo] = [lum(t), lum(bg)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); })() }))
+            .sort((a, b) => a.ratio - b.ratio)[0];
+
+          const ratio = worst.ratio;
 
           const size = parseFloat(cs.fontSize);
           const weight = +cs.fontWeight || 400;
@@ -141,13 +186,14 @@ const PAGES = ['/index.html', '/download/', '/urun/password-vault/', '/guvenlik/
           const need = large ? 3 : 4.5;
           if (ratio >= need) continue;
 
-          const key = el.tagName + '.' + (el.className || '').toString().slice(0, 24) + '|' + cs.color;
+          const key = el.tagName + '.' + (el.className || '').toString().slice(0, 24) + '|' + (gradientStops.length ? 'gradient' : cs.color);
           if (seen.has(key)) continue;
           seen.add(key);
           out.push({
             sel: el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).trim().split(/\s+/).join('.') : ''),
             ratio: +ratio.toFixed(2),
             need,
+            painted: gradientStops.length ? worst.f : null,
             size: cs.fontSize,
             weight,
             text: (el.textContent || '').trim().slice(0, 40),
