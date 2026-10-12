@@ -12,6 +12,8 @@
  * wrapping secret never persists — only its wrapped ciphertext handle does.
  */
 
+import { base64ToBytes, bytesToBase64 } from './common/bytes';
+
 /** Opaque JSON handle returned by the native wrap operation. */
 export type AndroidBiometricHandle = string;
 
@@ -148,14 +150,4 @@ export function isBiometricHandle(value: string): boolean {
   return trimmed.startsWith('{') && trimmed.includes('"v"') && trimmed.includes('"ct"');
 }
 
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
 
-function base64ToBytes(value: string): Uint8Array {
-  return new Uint8Array(atob(value).split('').map((char) => char.charCodeAt(0)));
-}

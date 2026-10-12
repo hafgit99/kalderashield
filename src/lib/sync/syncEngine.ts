@@ -15,6 +15,7 @@ import type {
 } from './syncTypes';
 import { SyncError, syncErrorCodes } from './syncTypes';
 import { validateRemoteSyncMetadata } from './syncTypes';
+import { sha256HexOfString } from '../common/sha256';
 
 const VAULT_VERSION = '7.0';
 
@@ -29,13 +30,7 @@ function getOrCreateDeviceId(): string {
   return id;
 }
 
-async function sha256Hex(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(input));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+
 
 // ─── Envelope Build / Parse ──────────────────────────────────────────────────
 
@@ -52,7 +47,7 @@ export async function buildSyncEnvelope(
 ): Promise<{ encryptedBlob: string; metadata: SyncMetadata }> {
   const payload = JSON.stringify(items);
   const encryptedBlob = await encryptDataWithPasswordSecure(payload, masterPassword);
-  const checksum = await sha256Hex(encryptedBlob);
+  const checksum = await sha256HexOfString(encryptedBlob);
 
   const latestItemUpdatedAt = items.reduce((latest, item) => {
     const candidate = new Date(item.updatedAt ?? item.createdAt).getTime();
@@ -79,7 +74,7 @@ export async function parseSyncEnvelope(
   expectedChecksum?: string,
 ): Promise<VaultItem[]> {
   if (expectedChecksum) {
-    const actual = await sha256Hex(encryptedBlob);
+    const actual = await sha256HexOfString(encryptedBlob);
     if (actual !== expectedChecksum) {
       throw new SyncError(syncErrorCodes.checksumMismatch, 'Remote vault checksum mismatch — possible tampering');
     }

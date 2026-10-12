@@ -20,6 +20,7 @@ import {
   wrapAndroidBiometricSecret,
 } from './biometricAndroid';
 import { webCryptoAesGcmDecrypt, webCryptoAesGcmEncrypt, generateSafeIv, type WebCryptoAesGcmPayload } from './webcrypto';
+import { base64ToBytes, bytesToBase64 } from './common/bytes';
 
 export const BIOMETRIC_PBKDF2_ITERATIONS = 600_000;
 
@@ -93,18 +94,6 @@ export interface BiometricInfoV4 {
 }
 
 type BiometricInfo = BiometricInfoV2 | NativeBiometricInfoV3 | BiometricInfoV4;
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  return new Uint8Array(atob(value).split('').map((char) => char.charCodeAt(0)));
-}
 
 const BIOMETRIC_DB_NAME = 'KalderaShield_biometric_db';
 const BIOMETRIC_STORE_NAME = 'biometric_info';

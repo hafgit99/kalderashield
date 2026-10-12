@@ -38,6 +38,7 @@ import {
   generateSafeIv,
   type WebCryptoAesGcmPayload,
 } from './webcrypto';
+import { base64ToBytes, bytesToBase64 } from './common/bytes';
 
 const HINT_STORAGE_KEY = 'KalderaShield_password_hint';
 const HINT_KEY_INDEXED_DB_STORAGE_KEY = 'KalderaShield_password_hint_key';
@@ -46,18 +47,6 @@ interface PasswordHintEnvelope {
   version: 2;
   cipher: 'AES-256-GCM';
   payload: WebCryptoAesGcmPayload;
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  return new Uint8Array(atob(value).split('').map((char) => char.charCodeAt(0)));
 }
 
 function getOrCreateWrappingKey(): Uint8Array {

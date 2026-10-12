@@ -8,6 +8,7 @@ import { secureRandomBytes } from './random';
 import { getDefaultKdfProfile, type Argon2idOptions } from './argon2id';
 import type { WebCryptoAesGcmPayload } from './webcrypto';
 import { isTestEnv } from './environment';
+import { bytesToHex } from './common/bytes';
 import type { VaultDatabaseRow } from './vaultDatabaseFormat';
 
 /** Mask value written into plaintext-looking SQLite columns for encrypted rows. */
@@ -30,10 +31,6 @@ export const NEW_VAULT_ITEM_KDF_PARAMS: Required<Argon2idOptions> = getDefaultKd
 export async function maybeDelay(ms: number): Promise<void> {
   if (isTestEnv) return;
   await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 export function createVaultEncryptionSalt(): string {

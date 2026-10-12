@@ -19,6 +19,7 @@
  */
 
 import { runVaultAudit, getStrengthLabel } from './security';
+import { createIdFactory, keyedCollection } from './common/keyedCollection';
 import type {
   FolderIconKey,
   SmartFolder,
@@ -31,15 +32,7 @@ export const SMART_FOLDER_LIBRARY_STORAGE_KEY = 'kalderashield-smart-folders-v1'
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-let _counter = 0;
-function uniqueId(): string {
-  _counter += 1;
-  return `smart-${Date.now().toString(36)}-${_counter.toString(36)}`;
-}
-
-function isStorageAvailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
+const uniqueId = createIdFactory('smart');
 
 function parseEntry(raw: unknown): SmartFolder | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -94,32 +87,14 @@ function parseRule(raw: unknown): SmartFolderRule | null {
   }
 }
 
-function readRaw(): SmartFolder[] {
-  if (!isStorageAvailable()) return [];
-  try {
-    const raw = window.localStorage.getItem(SMART_FOLDER_LIBRARY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const out: SmartFolder[] = [];
-    for (const entry of parsed) {
-      const valid = parseEntry(entry);
-      if (valid) out.push(valid);
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
+// No `maxEntries`: this library was written without a cap, and inventing one
+// here would silently start discarding a user's saved smart folders.
+const smartFolders = keyedCollection<SmartFolder>({
+  storageKey: SMART_FOLDER_LIBRARY_STORAGE_KEY,
+  parseEntry,
+});
 
-function writeRaw(entries: SmartFolder[]): void {
-  if (!isStorageAvailable()) return;
-  try {
-    window.localStorage.setItem(SMART_FOLDER_LIBRARY_STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    /* ignore */
-  }
-}
+const readRaw = smartFolders.read;
 
 /* ---------------------------------------------------------------- *
  * Built-in presets
@@ -364,7 +339,7 @@ export function createSmartFolder(input: CreateSmartFolderInput): SmartFolder {
     rules: input.rules,
     createdAt: new Date().toISOString(),
   };
-  writeRaw([...library, entry]);
+  smartFolders.write([...library, entry]);
   return entry;
 }
 
@@ -384,13 +359,13 @@ export function updateSmartFolder(
       rules: patch.rules ?? entry.rules,
     };
   });
-  writeRaw(next);
+  smartFolders.write(next);
   return next;
 }
 
 export function deleteSmartFolder(id: string): SmartFolder[] {
   const library = readRaw();
-  writeRaw(library.filter((entry) => entry.id !== id));
+  smartFolders.write(library.filter((entry) => entry.id !== id));
   return library.filter((entry) => entry.id !== id);
 }
 
@@ -398,7 +373,7 @@ export function ensureBuiltInPresents(): SmartFolder[] {
   const builtIns = builtInSmartFolders();
   const library = readRaw();
   const userFolders = library.filter((entry) => !entry.builtIn);
-  writeRaw(userFolders);
+  smartFolders.write(userFolders);
   return [...builtIns, ...userFolders];
 }
 

@@ -21,6 +21,7 @@
  */
 
 import { registerOnCloseSession } from './vaultSession';
+import { keyedCollection } from './common/keyedCollection';
 
 export interface RecentSearchEntry {
   /** The query the user actually submitted (trimmed, non-empty). */
@@ -32,52 +33,33 @@ export interface RecentSearchEntry {
 export const RECENT_SEARCHES_STORAGE_KEY = 'kalderashield-recent-searches';
 export const MAX_RECENT_SEARCHES = 10;
 
-function isStorageAvailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+function parseEntry(raw: unknown): RecentSearchEntry | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.query !== 'string' || obj.query.trim().length === 0) return null;
+  if (typeof obj.lastUsedAt !== 'string') return null;
+  return { query: obj.query, lastUsedAt: obj.lastUsedAt };
 }
 
-function parseEntries(raw: string | null): RecentSearchEntry[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((entry): entry is RecentSearchEntry => {
-        return (
-          entry !== null &&
-          typeof entry === 'object' &&
-          typeof entry.query === 'string' &&
-          typeof entry.lastUsedAt === 'string' &&
-          entry.query.trim().length > 0
-        );
-      })
-      .slice(0, MAX_RECENT_SEARCHES);
-  } catch {
-    return [];
-  }
-}
+/**
+ * `removeWhenEmpty` because a search history is not state the user chose to
+ * keep: leaving the last query on disk after the list empties would leave a
+ * fragment of what they were looking for. The other three collections write `[]`
+ * instead, which is right for them.
+ */
+const recentSearches = keyedCollection<RecentSearchEntry>({
+  storageKey: RECENT_SEARCHES_STORAGE_KEY,
+  parseEntry,
+  maxEntries: MAX_RECENT_SEARCHES,
+  removeWhenEmpty: true,
+});
 
 export function readRecentSearches(): RecentSearchEntry[] {
-  if (!isStorageAvailable()) return [];
-  try {
-    return parseEntries(window.localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY));
-  } catch {
-    return [];
-  }
+  return recentSearches.read();
 }
 
 function writeEntries(entries: RecentSearchEntry[]): void {
-  if (!isStorageAvailable()) return;
-  try {
-    if (entries.length === 0) {
-      window.localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
-    } else {
-      window.localStorage.setItem(RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(entries));
-    }
-  } catch {
-    // Ignore quota / privacy-mode errors — the recent searches panel
-    // is a nice-to-have and must never break the main search flow.
-  }
+  recentSearches.write(entries);
 }
 
 /**
@@ -110,12 +92,7 @@ export function removeRecentSearch(query: string): RecentSearchEntry[] {
 
 /** Wipe the entire history. */
 export function clearRecentSearches(): void {
-  if (!isStorageAvailable()) return;
-  try {
-    window.localStorage.removeItem(RECENT_SEARCHES_STORAGE_KEY);
-  } catch {
-    // Ignore storage errors
-  }
+  recentSearches.clear();
 }
 
 registerOnCloseSession(() => {
