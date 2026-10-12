@@ -41,7 +41,7 @@ const fs = require('fs');
  * path rather than by bare `require('playwright')` because Node walks up from
  * this file's directory, and `kalderashield-website/node_modules` does not
  * exist. */
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..');
 const REPO_ROOT = path.join(ROOT, '..');
 const { chromium } = require(path.join(REPO_ROOT, 'node_modules', 'playwright'));
 
@@ -87,6 +87,11 @@ async function main() {
     let p = decodeURIComponent((req.url || '/').split('?')[0]);
     if (p.endsWith('/')) p += 'index.html';
     const full = path.join(ROOT, p);
+    if (!full.startsWith(ROOT)) {
+      res.writeHead(404);
+      res.end('not found');
+      return;
+    }
     if (!fs.existsSync(full)) {
       res.writeHead(404);
       res.end('not found');
