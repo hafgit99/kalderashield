@@ -131,7 +131,9 @@
     "security:argon2-bounds": "node scripts/security-argon2-bounds-parity.cjs",
     "android:lint": "cd src-tauri/gen/android && gradlew.bat :app:lintArmDebug --console=plain",
     "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1",
-    "windows:preview:package": "node scripts/windows-preview-package.cjs"
+    "windows:preview:package": "node scripts/windows-preview-package.cjs",
+    "audit:doc-links": "node scripts/audit-doc-links.cjs",
+    "audit:ignore-parity": "node scripts/audit-ignore-parity.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",

@@ -65,6 +65,12 @@ const TOKEN_RE = /^\{\{TESTCOUNT\}\}/;
 const META_RE = /(<meta\s+name="x-test-count"\s+content=")(\d+)("\s*\/?>)/;
 const COUNT_ATTR_RE = /(<span class="stat-num" data-count=")(\d+)(")/;
 
+// "1803 unit tests across 217 files", as it appears in the audit package's
+// CI row. Plain digits rather than the grouped format the site uses: this file
+// writes them the English way, and the regex has to match what is actually on
+// disk rather than what this project would have written.
+const AUDIT_TEST_CLAIM_RE = /(\d+)\s+unit tests across\s+(\d+)\s+files/;
+
 // Group 2 is the digits and separators; group 3 is the whitespace before the
 // rest of the sentence plus the wording. Splitting them there is what keeps
 // "2.213 test" from becoming "2.213test".
@@ -336,9 +342,9 @@ function checkCoverageClaim(floor) {
 
 function main() {
   const check = process.argv.includes('--check');
-  const { tests } = countTests();
+  const { tests, files } = countTests();
   const floor = coverageFloor();
-  console.log(`testler: ${tests} (${countTests().files} dosya)   kapsam esigi: lines ${floor}`);
+  console.log(`testler: ${tests} (${files} dosya)   kapsam esigi: lines ${floor}`);
 
   const dict = JSON.parse(fs.readFileSync(path.join(I18N, BASE + '.json'), 'utf8'));
   void dict;
@@ -378,6 +384,41 @@ if (check) {
       const expected = (format('tr', tests) + ' ' + trSuffix).trim();
       if (actual !== expected) {
         problems.push(`index.html: badge-tests "${actual}" ama olmasi gereken "${expected}"`);
+      }
+    }
+
+    // SECURITY_AUDIT_PACKAGE/ is handed to an external assessor, so a stale
+    // number in it is a stale number in someone else's assessment. It carried
+    // "1803 unit tests across 217 files" while the site was publishing 2321
+    // across 258 -- the document understated the suite by 518 tests, in a table
+    // whose whole job is to be the evidence index.
+    //
+    // The website checks caught the site copy but nothing covered this file: the
+    // package is outside siteRoot, so it was invisible to every gate above.
+    const auditApp = path.join(
+      siteRoot,
+      '..',
+      'SECURITY_AUDIT_PACKAGE',
+      'APPLICATION_OSTIF_ALPHA_OMEGA.md'
+    );
+    if (fs.existsSync(auditApp)) {
+      const auditHtml = fs.readFileSync(auditApp, 'utf8');
+      const claim = AUDIT_TEST_CLAIM_RE.exec(auditHtml);
+      if (!claim) {
+        problems.push(
+          'SECURITY_AUDIT_PACKAGE/APPLICATION_OSTIF_ALPHA_OMEGA.md: birim test sayisi iddiasi bulunamadi; denetleyen belge guncel sayiyi gostermiyor'
+        );
+      } else {
+        if (Number(claim[1]) !== tests) {
+          problems.push(
+            `SECURITY_AUDIT_PACKAGE/APPLICATION_OSTIF_ALPHA_OMEGA.md: ${claim[1]} test yaziyor ama gercek ${tests}`
+          );
+        }
+        if (Number(claim[2]) !== files) {
+          problems.push(
+            `SECURITY_AUDIT_PACKAGE/APPLICATION_OSTIF_ALPHA_OMEGA.md: ${claim[2]} dosya yaziyor ama gercek ${files}`
+          );
+        }
       }
     }
 
