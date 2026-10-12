@@ -27,6 +27,7 @@
   "hero-tagline-1": "No servers.",
   "hero-tagline-2": "No accounts.",
   "hero-tagline-3": "Local control.",
+  "promo-video-label": "KalderaShield promo video",
   "dlhub-eyebrow": "Download Center",
   "dlhub-title": "Download KalderaShield",
   "dlhub-desc": "Official installation packages for every platform. Every download is verifiable via SHA-256 digests and signatures.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "The behaviour of third-party components that affects users is covered by LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Download the unsigned preview from GitHub Releases",
   "win-preview-assets": "NSIS installer (.exe), MSI package and portable EXE — all unsigned.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "Your browser does not support the video tag.",
+  "promo-video-fallback-link": "Download the video"
 }

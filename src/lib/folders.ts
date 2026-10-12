@@ -17,6 +17,7 @@
  */
 
 import type { FolderIconKey, TagColorKey, VaultFolder } from '../types';
+import { createIdFactory, keyedCollection } from './common/keyedCollection';
 
 export const FOLDER_LIBRARY_STORAGE_KEY = 'kalderashield-folder-library-v1';
 export const ROOT_FOLDER_ID = '__root__';
@@ -32,10 +33,6 @@ export const ROOT_FOLDER: VaultFolder = {
   icon: 'inbox',
   createdAt: '1970-01-01T00:00:00.000Z',
 };
-
-function isStorageAvailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function isValidColor(value: unknown): value is TagColorKey {
   const allowed: TagColorKey[] = [
@@ -75,32 +72,13 @@ function parseEntry(raw: unknown): VaultFolder | null {
   };
 }
 
-function readRaw(): VaultFolder[] {
-  if (!isStorageAvailable()) return [];
-  try {
-    const raw = window.localStorage.getItem(FOLDER_LIBRARY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const out: VaultFolder[] = [];
-    for (const entry of parsed) {
-      const valid = parseEntry(entry);
-      if (valid) out.push(valid);
-    }
-    return out.slice(0, MAX_FOLDER_ENTRIES);
-  } catch {
-    return [];
-  }
-}
+const folders = keyedCollection<VaultFolder>({
+  storageKey: FOLDER_LIBRARY_STORAGE_KEY,
+  parseEntry,
+  maxEntries: MAX_FOLDER_ENTRIES,
+});
 
-function writeRaw(entries: VaultFolder[]): void {
-  if (!isStorageAvailable()) return;
-  try {
-    window.localStorage.setItem(FOLDER_LIBRARY_STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    /* ignore quota errors */
-  }
-}
+const readRaw = folders.read;
 
 /* ---------------------------------------------------------------- *
  * Tree algorithms
@@ -228,11 +206,7 @@ export function folderMatchSet(
  * CRUD
  * ---------------------------------------------------------------- */
 
-let _counter = 0;
-function uniqueId(): string {
-  _counter += 1;
-  return `folder-${Date.now().toString(36)}-${_counter.toString(36)}`;
-}
+const uniqueId = createIdFactory('folder');
 
 export class FolderCycleError extends Error {
   constructor(message: string) {
@@ -260,9 +234,7 @@ export function readFolderLibrary(): VaultFolder[] {
 }
 
 export function writeFolderLibrary(entries: VaultFolder[]): VaultFolder[] {
-  const safe = entries.slice(0, MAX_FOLDER_ENTRIES);
-  writeRaw(safe);
-  return safe;
+  return folders.write(entries);
 }
 
 export interface CreateFolderInput {
@@ -296,7 +268,7 @@ export function createFolder(input: CreateFolderInput): VaultFolder {
     order: input.order,
     createdAt: new Date().toISOString(),
   };
-  writeRaw([...library, folder]);
+  folders.write([...library, folder]);
   return folder;
 }
 
@@ -339,7 +311,7 @@ export function updateFolder(id: string, patch: UpdateFolderInput): VaultFolder[
       throw new FolderDepthError('Maximum folder depth reached');
     }
   }
-  writeRaw(next);
+  folders.write(next);
   return next;
 }
 
@@ -348,7 +320,7 @@ export function deleteFolder(id: string): VaultFolder[] {
   const library = readRaw();
   const subtreeIds = new Set(subtreeOf(library, id).map((entry) => entry.id));
   const next = library.filter((entry) => !subtreeIds.has(entry.id));
-  writeRaw(next);
+  folders.write(next);
   return next;
 }
 

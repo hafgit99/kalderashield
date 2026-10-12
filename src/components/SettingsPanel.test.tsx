@@ -105,7 +105,6 @@ vi.mock('../lib/biometric', () => ({
   setBiometricAutofillRequireEnabled: vi.fn(),
   isBiometricV2UpgradeRequired: vi.fn(() => false),
   isBiometricHardwareBound: vi.fn(() => false),
-  dismissBiometricV2UpgradeNotification: vi.fn(),
 }));
 
 vi.mock('../lib/emergencyKit', () => ({

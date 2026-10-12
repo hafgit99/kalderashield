@@ -27,11 +27,7 @@ release-local/
 # Staging for the manually uploaded unsigned Windows preview. Holds copies of the
 # build's own binaries plus a generated SHA256SUMS.txt -- megabytes of derived
 # output that must never enter the repository, for the same reason release-local/
-# does not.
-# Staging for the manually uploaded unsigned Windows preview. Holds copies of the
-# build's own binaries plus a generated SHA256SUMS.txt -- megabytes of derived
-# output that must never enter the repository, for the same reason release-local/
-# does not.
+# does.
 release-preview/
 release-local/**/com.kalderashield.desktop.json
 release-local/**/KalderaShield-host.bat
@@ -51,8 +47,14 @@ src-tauri/gen/android/**/.gradle/
 .kotlin/
 *.kotlin/
 target/
-release-local/
 .tmp/
+
+# Throwaway visual probes. `*.tmp.mjs` is a debugging harness someone writes to
+# look at a page; the *.png next to it is what it produced. Both are answers to a
+# question that was asked, not sources the next person needs.
+*.tmp.mjs
+tests/hero-*.png
+tests/viewport-*.png
 
 # Tooling caches
 .vite/
@@ -99,18 +101,31 @@ src-tauri/tauri.dev.conf.json
 # the unpacked extension, so it is build output that must not reach the remote.
 .sandbox/
 
-# ── Promo video, unpublished ───────────────────────────────────────────────
-# The homepage video block, the rendered assets and the Remotion project that
-# produces them are one unit. Committing the markup without assets would leave
-# every locale homepage pointing at a 12 MB file that is not in the repository,
-# and no gate looks at src attributes, so it would fail silently. Nothing about
-# the video is therefore committed until the video itself is: the block stays in
-# the working tree, and these entries keep the build tooling and the rendered
-# 20 MB of mp4/webm out of the remote in the meantime.
+# ── Promo video: bytes out of git, reference kept honest ────────────────────
+# The rendered assets are 12 MB of mp4 plus twelve subtitle tracks, and the
+# Remotion project that produces them is a build input rather than a source.
+# None of that belongs in the remote, and all of it has to exist on the server,
+# because the twelve homepages reference it.
+#
+# The markup IS committed -- the block, its CSS, its three dictionary keys and
+# the subtitle-language switch in site.js are ordinary tracked source. What is
+# kept out is only the bytes.
+#
+# This used to be a different arrangement and the difference cost a deploy: the
+# comment here read "nothing about the video is committed until the video itself
+# is, the block stays in the working tree", and that is exactly how the homepages
+# ended up serving a block from a working tree git had never seen while the
+# repository had none. The video then went live, and was later pulled from all
+# twelve homepages -- but the 12 MB file stayed on the server and the repository
+# never learned either half.
+#
+# The sentence that made it unsafe was "no gate looks at src attributes, so it
+# would fail silently". That gate now exists: scripts/audit-local-assets.cjs
+# resolves every local src, href, poster and srcset in the 289 pages against
+# this tree (11,426 references) and fails on any that do not. Ignoring the
+# bytes is only defensible while something checks the reference.
 promo-video/
 kalderashield-website/assets/video/
-kalderashield-website/scripts/add-promo-video.cjs
-kalderashield-website/scripts/verify-promo-video.cjs
 
 # Professional structure audit (private; the sibling docs/ reports above follow
 # the same rule and are excluded from the GitHub remote for the same reason)

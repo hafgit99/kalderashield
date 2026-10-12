@@ -45,7 +45,6 @@ interface VaultPageProps {
   onSelectDashboard: () => void;
   onBackToList: () => void;
   onSelectItem: (item: VaultItem) => void;
-  onSelectAuditItem: (item: VaultItem) => void;
   onToggleFavorite: (item: VaultItem) => void | Promise<void>;
   onEdit: () => void;
   onDelete: (id: string) => void;
@@ -77,7 +76,7 @@ interface VaultPageProps {
   onApproveAutofill?: (item: VaultItem) => void;
 }
 
-export function VaultPage({
+function VaultPage({
   selectedItem,
   mobileActiveView,
   filteredItems,
@@ -111,7 +110,6 @@ export function VaultPage({
   onSelectDashboard,
   onBackToList,
   onSelectItem,
-  onSelectAuditItem,
   onToggleFavorite,
   onEdit,
   onDelete,
@@ -234,7 +232,6 @@ export function VaultPage({
         onSelectDashboard={onSelectDashboard}
         onBackToList={onBackToList}
         onSelectItem={onSelectItem}
-        onSelectAuditItem={onSelectAuditItem}
         onToggleFavorite={onToggleFavorite}
         onEdit={onEdit}
         onDelete={onDelete}

@@ -23,6 +23,7 @@ import {
   isBiometricEnabled,
   isBiometricHardwareBound,
   isBiometricSupported,
+  isBiometricV2UpgradeRequired,
   registerBiometric,
   hydrateBiometric,
   resetBiometricCacheForTesting,
@@ -318,6 +319,35 @@ describe('biometric master password wrapper', () => {
     await hydrateBiometric();
 
     await expect(authenticateBiometric()).rejects.toThrow();
+  });
+
+  it('clears the v2 upgrade notice once the user re-registers', async () => {
+    // Y6 removes the insecure v2 bundle and tells the user, through
+    // lock.error.biometricV2Upgrade, to sign in and re-enable biometrics in
+    // Settings. `biometricV2UpgradeRequired` is module state, so before this
+    // fix the notice survived the very act the message asks for: the user
+    // re-registered, the lock screen still said "re-enable biometric unlock",
+    // and there was no code path anywhere in src/ that could clear it.
+    await putStoredBiometricIntoDB({
+      version: 2,
+      credentialId: bytesToBase64(new Uint8Array(rawId)),
+      salt: bytesToBase64(new Uint8Array([5, 6, 7, 8])),
+      bundle: {
+        iv: '000000000000000000000000',
+        tag: '00000000000000000000000000000000',
+        ciphertext: bytesToBase64(encoder.encode('insecure-v2-master-pass')),
+      },
+    });
+    // `isHydrated` latches on the first hydrate in beforeEach, so the cache has
+    // to be reset before this test can re-hydrate and observe the v2 branch.
+    resetBiometricCacheForTesting();
+    await hydrateBiometric();
+    expect(isBiometricV2UpgradeRequired()).toBe(true);
+
+    // What the user does next, per the message: unlock and re-enable.
+    await registerBiometric('master-pass');
+
+    expect(isBiometricV2UpgradeRequired()).toBe(false);
   });
 
   it('requires secure storage for Android native biometric registration', async () => {

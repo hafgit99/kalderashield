@@ -15,7 +15,6 @@ import {
   areByteArraysEqual,
   buildVaultItemRow,
   createVaultEncryptionSalt,
-  bytesToHex,
   ENCRYPTED_MARKER,
   LEGACY_VAULT_ITEM_KDF_PARAMS,
   LEGACY_VAULT_ITEM_KDF_SALT,
@@ -24,6 +23,7 @@ import {
   sanitizeQueryForLog,
   VAULT_ITEM_KDF,
 } from './sqliteOpfsShared';
+import { bytesToHex } from './common/bytes';
 import {
   consumeVaultRollbackDetected,
   createDesktopManagedSetupMarker,

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 import { isAndroidRuntime, isDesktopRuntime } from './desktopStorage';
+import { sha256Hex } from './common/sha256';
 
 const MANIFEST_PATH = './KalderaShield-integrity.json';
 // Y-20: the document that decides what runs. Never in the manifest -- Tauri
@@ -133,15 +134,6 @@ export function collectDocumentAssetReferences(html: string): string[] {
     if (url) references.push(url);
   }
   return references;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
-}
-
-async function sha256Hex(data: BufferSource): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return bytesToHex(new Uint8Array(digest));
 }
 
 export function canonicalAssetPayload(assets: AssetIntegrityEntry[]): string {

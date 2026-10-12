@@ -210,6 +210,7 @@ export const pt = {
   'vaultForm.title.edit': 'Atualizar item do cofre',
   'vaultForm.subtitle': 'Seus dados são criptografados localmente no processador do seu navegador instantaneamente.',
   'vaultForm.close': 'Fechar',
+  'vaultForm.categoryUpdated': "Categoria atualizada para {category}",
   'vaultForm.category.login': 'Conecte-se',
   'vaultForm.category.card': 'Cartão',
   'vaultForm.category.passkey': 'Chave segura',
@@ -1225,4 +1226,9 @@ export const pt = {
   'settings.legal.description': 'Política de privacidade e termos de uso. Estes documentos são permanentes: leia sem bloquear o seu cofre.',
   'settings.legal.updated': 'Versão atual',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Erro inesperado do aplicativo",
+  'error.crashed.description': "Ocorreu uma exceção em tempo de execução na visão ativa. Por sua segurança, a memória decifrada do cofre foi protegida e o aplicativo deve ser bloqueado.",
+  'error.crashed.lockNow': "Bloquear o cofre agora",
 } as const;

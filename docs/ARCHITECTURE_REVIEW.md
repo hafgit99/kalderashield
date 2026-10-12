@@ -6,7 +6,10 @@
 > **Kapsam:** `aegisvaultv7` deposu — Tüm katmanlar, özellikle Android (Tauri Mobile)
 > **Sürüm:** 7.0.1.0 (npm) / 7.0.1 (Tauri) / versionCode 7000001
 > **Yöntem:** Statik kod analizi, manifest ve Gradle inceleme, mimari gözden geçirme, commit-by-commit P0-P3 doğrulaması
-> **İlgili rapor:** `docs/SECURITY_CODE_AUDIT_REPORT_2026.md`
+> **İlgili rapor:** `SECURITY_CODE_AUDIT_REPORT_2026.md` — depo dışında tutuluyor,
+> izlenmiyor ve istenirse sağlanıyor. Nedeni: rapor satır numaraları ve zafiyet
+> ayrıntıları içeriyor; aşağıdaki bölümler o bulguların **kod tabanındaki
+> doğrulanmış hallerini** içeriyor, yani bu belge tek başına okunabilir.
 
 ---
 
@@ -56,7 +59,7 @@ Aşağıda her madde dosya:satır referansıyla detaylandırılmıştır.
 
 ## 1. P0-P3 Düzeltmelerinin Doğrulanması (Güvenlik Raporu)
 
-Bu bölüm, `docs/SECURITY_CODE_AUDIT_REPORT_2026.md` raporundaki P0-P3 önerilerinin kod tabanında doğrulanmasını gösterir.
+Bu bölüm, iç rapordaki P0-P3 önerilerinin kod tabanında doğrulanmasını gösterir.
 
 ### 1.1 P0 — Acil Güvenlik Düzeltmeleri (5/5 ✅)
 

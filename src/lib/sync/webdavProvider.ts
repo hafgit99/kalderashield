@@ -16,18 +16,11 @@ import {
   readResponseTextBounded,
   validateRemoteSyncMetadata,
 } from './syncTypes';
+import { bytesToBase64 } from '../common/bytes';
 
 const VAULT_FILE = 'vault.ks';
 const METADATA_FILE = 'metadata.json';
 const KALDERASHIELD_DIR = 'KalderaShield';
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
 
 function buildBasicAuthHeader(username: string, password: string): string {
   const credentialBytes = new TextEncoder().encode(`${username}:${password}`);

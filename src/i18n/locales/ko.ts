@@ -210,6 +210,7 @@ export const ko = {
   'vaultForm.title.edit': 'Vault 항목 업데이트',
   'vaultForm.subtitle': '귀하의 데이터는 귀하의 브라우저 프로세서에서 즉시 로컬로 암호화됩니다.',
   'vaultForm.close': '닫다',
+  'vaultForm.categoryUpdated': "카테고리를 {category}(으)로 변경했습니다",
   'vaultForm.category.login': '로그인',
   'vaultForm.category.card': '카드',
   'vaultForm.category.passkey': '보안 키',
@@ -1225,4 +1226,9 @@ export const ko = {
   'settings.legal.description': '개인정보 처리방침 및 이용약관. 이 문서는 상시 제공되며, 보관함을 잠그지 않고도 확인할 수 있습니다.',
   'settings.legal.updated': '현재 버전',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "예기치 않은 애플리케이션 오류",
+  'error.crashed.description': "활성 화면에서 런타임 예외가 발생했습니다. 보안을 위해 복호화된 보관함 메모리가 보호되었으며 애플리케이션을 잠가야 합니다.",
+  'error.crashed.lockNow': "지금 보관함 잠금",
 } as const;

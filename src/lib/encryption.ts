@@ -6,6 +6,8 @@
 import { secureRandomBytes } from './random';
 import { deriveArgon2idKey, MIN_ARGON2ID_MEMORY_KIB } from './argon2id';
 import { webCryptoAesGcmDecrypt, webCryptoAesGcmEncrypt, generateSafeIv } from './webcrypto';
+import { bytesToHex } from './common/bytes';
+import { sha256Hex } from './common/sha256';
 
 // KalderaShield cross-platform secure backup KDF profile.
 //
@@ -58,14 +60,9 @@ export class SecureBackupError extends Error {
   }
 }
 
-async function sha256Hex(input: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', input);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 export async function encryptDataWithPasswordSecure(rawData: string, password: string): Promise<string> {
   const saltBytes = secureRandomBytes(16);
-  const saltHex = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const saltHex = bytesToHex(saltBytes);
   const kdfParams = { ...BACKUP_KDF_PROFILE };
 
   const aesKey = await deriveArgon2idKey(password, saltHex, kdfParams);

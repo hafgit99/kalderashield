@@ -208,6 +208,21 @@ jobs:
         working-directory: kalderashield-website
         run: node scripts/audit-contrast.cjs
 
+      # The hero title is the only heading on this site set in a system font
+      # stack rather than a webfont, so which family a visitor gets is decided by
+      # their operating system. It shipped at `line-height: 1.08`, which is
+      # tighter than the font's own line box -- the element box was shorter than
+      # the glyphs in it, overflowing 6px above and 4px below on Windows. Nothing
+      # clipped, so it rendered; that was luck. One `overflow: hidden` on a
+      # parent and the descenders of "Only" disappear.
+      #
+      # Reading the CSS cannot answer this, and neither can the contrast audit:
+      # it needs a rendered box compared against the union of the text's own
+      # client rects, on each family the stack can resolve to.
+      - name: Hero title contains its own glyphs on every system font
+        working-directory: kalderashield-website
+        run: node scripts/audit-hero-metrics.cjs
+
       # The homepage publishes how many tests the suite has. It used to be a
       # hardcoded number in the markup and in twelve translation files, and it
       # had already drifted. This regenerates it from `vitest list` and fails if
@@ -261,6 +276,21 @@ jobs:
       - name: No dictionary key is left unrendered
         working-directory: kalderashield-website
         run: node scripts/audit-orphan-keys.cjs
+
+      # Every other gate in this job reads markup that has already been checked
+      # for language, dictionaries and contrast, and none of them asks whether
+      # the file a <source> or <img> points at exists. That is what let the
+      # homepages be published from a working tree git never saw: the 12 MB
+      # promo video and its twelve subtitle tracks are still served from
+      # kalderashield.com while the block referencing them sat only in a stash.
+      # Nothing here would have noticed either half.
+      #
+      # The ignore rules in .gitignore keep those bytes out of git; this is what
+      # makes them safe -- it keeps the reference from becoming a 404 that only
+      # a visitor could see. 11,426 local references, currently all resolving.
+      - name: Every local src and href resolves to a file in the tree
+        working-directory: kalderashield-website
+        run: node scripts/audit-local-assets.cjs
 
       # "kurulum särasında" for "sırasında". Turkish has no ä and no û, so those
       # two characters are a corrupted character rather than a word, and no
@@ -483,6 +513,60 @@ jobs:
 
       - name: Fuzz tests
         run: npm run test:fuzz
+
+      # P2-5: the audit report counted unused exports by hand and got 164,
+      # which is a number nobody can maintain by reading. This runs knip plus a
+      # check knip cannot do -- a module imported only by its own test looks
+      # alive to knip, and that is exactly the shape the report's two "dead"
+      # modules had.
+      #
+      # Delta-gated against scripts/dead-code-baseline.json for the same reason
+      # audit-orphan-keys.cjs is: failing on today's pile would be a false
+      # signal on day one. The gate fails only on dead code the baseline does
+      # not already contain, so the debt stops growing rather than being paid
+      # off inside an unrelated commit.
+      - name: 'Dead code audit (P2-5)'
+        run: npm run deadcode:audit
+
+      # P3-8. The report assumed the build was not reproducible; measured, the
+      # asset-integrity manifest already is, and this keeps it that way by
+      # pinning the mechanism rather than the outcome. Runs in milliseconds, so
+      # it does not spend a second vite build to prove something twice.
+      - name: 'Build reproducibility (P3-8)'
+        run: npm run audit:reproducibility
+
+      # P3-7. Thresholds sit above today's largest tracked file on purpose.
+      # There is no pile to clear: the one 1.61MB file is the icon master the
+      # whole icon set is generated from, and the 12MB promo video is already
+      # ignored. This stops the next screen recording or .sketch source rather
+      # than failing on a state that is already correct.
+      - name: 'No oversized or forbidden tracked files (P3-7)'
+        run: npm run audit:repo-size
+
+      # P2-10. Two tracked documents pointed into docs/, which is untracked on
+      # purpose, so both resolved to nothing. One of them is the evidence index
+      # handed to an external assessor -- a missing row there reads as a finding
+      # about this project that is not true. Measured: 49 tracked markdown files,
+      # 20 distinct docs/ references. Scoped to docs/*.md deliberately; see the
+      # script header for why a wider net would be worse than none.
+      - name: 'Tracked documents point at files that exist (P2-10)'
+        run: npm run audit:doc-links
+
+      # P2-10. .zcodeignore had drifted 8 patterns behind .gitignore, including
+      # release-preview/, promo-video/ and the 12MB video directory -- so a tool
+      # honouring it would walk into what git deliberately keeps out. Checked one
+      # way on purpose: .gitignore is the authority because git enforces it.
+      - name: 'Ignore lists have not drifted (P2-10)'
+        run: npm run audit:ignore-parity
+
+      # P2-3. The full prop-drilling refactor is not done and is not a mechanical
+      # job -- VaultWorkspace is memoised and that memo works, so moving 50 props
+      # into context would cost the vault view its bail-out. What this does is
+      # hold the line: no declared-but-unused props anywhere, and the three
+      # chain signatures pinned at today's counts so the debt cannot grow while
+      # the design question is open.
+      - name: 'No dead props, chain has not grown (P2-3)'
+        run: npm run audit:prop-drilling
 
       - name: Gitleaks (secret scan)
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0

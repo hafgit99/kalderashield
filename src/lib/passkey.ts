@@ -23,6 +23,7 @@ import {
 import { withActiveVaultEncryptionKey } from './vaultSession';
 import { logSecurityEvent, securityEventCodes } from './securityEvents';
 import { verifyPasskeyAssertion } from './passkeyAssertion';
+import { base64ToBytes } from './common/bytes';
 
 export const PASSKEY_KEY_CONTEXT = 'kalderashield:passkey-vault-key:v1';
 
@@ -592,12 +593,7 @@ function defaultExpectedOrigin(): string {
   return 'tauri://localhost';
 }
 
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
-}
+
 
 export function recordToVaultFields(record: PasskeyRecord): VaultPasskeyFields {
   return {

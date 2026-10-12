@@ -210,6 +210,7 @@ export const de = {
   'vaultForm.title.edit': 'Tresorelement aktualisieren',
   'vaultForm.subtitle': 'Ihre Daten werden sofort lokal in Ihrem Browser-Prozessor verschlüsselt.',
   'vaultForm.close': 'Schließen',
+  'vaultForm.categoryUpdated': "Kategorie auf {category} aktualisiert",
   'vaultForm.category.login': 'Login',
   'vaultForm.category.card': 'Karte',
   'vaultForm.category.passkey': 'Sicherer Schlüssel',
@@ -1225,4 +1226,9 @@ export const de = {
   'settings.legal.description': 'Datenschutzerklärung und Nutzungsbedingungen. Diese Dokumente sind dauerhaft: Sie können sie ohne Sperren des Tresors lesen.',
   'settings.legal.updated': 'Aktuelle Fassung',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Unerwarteter Anwendungsfehler",
+  'error.crashed.description': "In der aktiven Ansicht ist eine Laufzeitausnahme aufgetreten. Zu Ihrer Sicherheit wurde der entschlüsselte Tresorspeicher geschützt und die Anwendung sollte gesperrt werden.",
+  'error.crashed.lockNow': "Tresor sofort sperren",
 } as const;

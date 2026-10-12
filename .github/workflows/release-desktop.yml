@@ -1053,18 +1053,47 @@ jobs:
             exit 0
           fi
           mkdir -p ~/.ssh
-          if [ -n "${UPDATE_KNOWN_HOSTS:-}" ]; then
-            printf '%s\n' "$UPDATE_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            echo "::warning::UPDATE_ENDPOINT_KNOWN_HOSTS not set — falling back to accept-new (TOFU)."
-            ssh-keyscan -H update.KalderaShield.xyz >> ~/.ssh/known_hosts 2>/dev/null || true
+          # P3-2: the host key is a pin, not a suggestion.
+          #
+          # This used to fall back to `ssh-keyscan` when UPDATE_ENDPOINT_KNOWN_HOSTS
+          # was absent, which is trust-on-first-use: whoever answers the DNS at
+          # that moment wins the race, and `StrictHostKeyChecking=accept-new` then
+          # happily verifies the attacker's key against the attacker's own
+          # keyscan. A release job is the worst possible moment for TOFU -- it is
+          # predictable, it is automated, and it re-publishes on every tag.
+          #
+          # Measured impact is limited, and it is worth being precise about why
+          # rather than overstating it: everything uploaded here is public and
+          # signed (latest.json plus its Sigstore bundle, SHA256SUMS.txt plus its
+          # bundle), and the SSH *client* key is what authenticates us, so an
+          # on-path attacker who wins the race learns nothing they could not read
+          # from the GitHub Release they came from, and cannot alter a signed
+          # manifest. What they can do is silently drop the mirror upload, which
+          # the warning two lines below already reports.
+          #
+          # So this is not the hole it looks like, and the honest fix is the
+          # cheap one: refuse to publish to the mirror when the operator has not
+          # pinned the host, and say so loudly. GitHub Releases is the primary
+          # updater source, nothing here is secret, and `continue-on-error` on
+          # this step means a misconfigured mirror degrades to "no backup
+          # mirror" rather than to a failed release.
+          if [ -z "${UPDATE_KNOWN_HOSTS:-}" ]; then
+            echo "::warning::UPDATE_ENDPOINT_KNOWN_HOSTS not set - refusing to publish the updater manifest to the backup mirror."
+            echo "::warning::An unpinned host key cannot be verified, and this release must not trust one it just discovered."
+            echo "::warning::Set the secret to the output of: ssh-keyscan -H update.KalderaShield.xyz"
+            echo "::warning::GitHub Releases remains the primary updater source; only the backup mirror is skipped."
+            exit 0
           fi
+          printf '%s\n' "$UPDATE_KNOWN_HOSTS" > ~/.ssh/known_hosts
           printf '%s\n' "$UPDATE_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           # Remote path is chroot-relative: the deploy user only sees /pub inside
           # /opt/forgejo/update-files. Modern scp uses the SFTP protocol, which is
           # the only channel this user has (ForceCommand internal-sftp, no shell).
-          if scp -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+          #
+          # `yes`, not `accept-new`: with a pinned key in known_hosts, any host
+          # that is not that key must abort the upload rather than be learned.
+          if scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
             release-local/updater/latest.json \
             release-local/updater/latest.json.sigstore.json \
             release-local/SHA256SUMS.txt \
@@ -1072,7 +1101,7 @@ jobs:
             "$CLEAN_HOST:pub/"; then
             echo "Updater manifest published to backup endpoint."
           else
-            echo "::warning::Publishing to backup mirror failed or host unreachable. GitHub Releases is the primary updater source."
+            echo "::warning::Publishing to backup mirror failed or host key did not match the pin. GitHub Releases is the primary updater source."
           fi
 
 

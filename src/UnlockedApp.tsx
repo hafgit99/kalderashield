@@ -53,6 +53,7 @@ import UpdateNotificationBanner from './components/UpdateNotificationBanner';
 import { useOnboardingTour } from './hooks/useOnboardingTour';
 import OnboardingTour from './components/OnboardingTour';
 import { useLanguage } from './i18n/LanguageContext';
+import type { TranslationKey } from './i18n/translations';
 import type { VaultItem } from './types';
 
 interface UnlockedAppProps {
@@ -371,9 +372,23 @@ export default function UnlockedApp({
     if (item) {
       const updatedItem = { ...item, category: newCategory, updatedAt: new Date().toISOString() };
       await handleSaveItem(updatedItem);
+      // The category union and the dictionary keys are not the same vocabulary:
+      // 'secure_note' is stored, 'vaultForm.category.secureNote' is translated.
+      // Building the key with a template literal compiles and renders the raw
+      // key at runtime for that one case, which is the failure mode the type
+      // error here is about.
+      const CATEGORY_LABEL_KEYS: Record<VaultItem['category'], TranslationKey> = {
+        login: 'vaultForm.category.login',
+        card: 'vaultForm.category.card',
+        passkey: 'vaultForm.category.passkey',
+        identity: 'vaultForm.category.identity',
+        secure_note: 'vaultForm.category.secureNote',
+      };
       showNotification({
         title: t('vaultForm.title.edit'),
-        message: 'Category updated successfully / Kategori güncellendi',
+        message: t('vaultForm.categoryUpdated', {
+          category: t(CATEGORY_LABEL_KEYS[newCategory]),
+        }),
         type: 'success',
       });
     }

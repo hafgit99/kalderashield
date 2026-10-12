@@ -1,5 +1,6 @@
 import { secureRandomBytes } from './random';
 import { registerOnCloseSession } from './vaultSession';
+import { base64ToBytes, bytesToBase64, bytesToHex, hexToBytes } from './common/bytes';
 
 export interface WebCryptoAesGcmPayload {
   iv: string;
@@ -14,32 +15,6 @@ export interface WebCryptoAesGcmBytesPayload {
 }
 
 const AUTH_TAG_BYTES = 16;
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const chunks = hex.match(/.{1,2}/g) ?? [];
-  return new Uint8Array(chunks.map((byte) => parseInt(byte, 16)));
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index++) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
-}
 
 interface CacheEntry {
   key: CryptoKey;

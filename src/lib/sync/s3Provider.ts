@@ -12,6 +12,7 @@ import type {
   S3SyncConfig,
 } from './syncTypes';
 import { SyncError, syncErrorCodes } from './syncTypes';
+import { sha256Hex, sha256HexOfString } from '../common/sha256';
 import {
   MAX_SYNC_PAYLOAD_BYTES,
   readResponseTextBounded,
@@ -24,12 +25,14 @@ const DEFAULT_KALDERASHIELD_DIR = 'KalderaShield';
 
 // ─── WebCrypto SigV4 Helpers ──────────────────────────────────────────────────
 
-async function sha256Hex(data: string | Uint8Array): Promise<string> {
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+/**
+ * SigV4 hashes either raw bytes (an encrypted upload body) or a canonical
+ * string (the canonical request). Both are UTF-8 when they are strings, which
+ * is what AWS specifies and what the previous local `string | Uint8Array`
+ * branch did.
+ */
+async function hashForSigning(data: string | Uint8Array): Promise<string> {
+  return typeof data === 'string' ? sha256HexOfString(data) : sha256Hex(data);
 }
 
 async function hmacSha256(key: Uint8Array, data: string): Promise<Uint8Array> {
@@ -137,7 +140,7 @@ export class S3SyncProvider implements SyncProvider {
   ): Promise<Record<string, string>> {
     const targetUrl = new URL(url);
     const { amzDate, dateStamp } = getAmzTimestamps();
-    const payloadHash = await sha256Hex(body);
+    const payloadHash = await hashForSigning(body);
 
     const headers: Record<string, string> = {
       host: targetUrl.host,
@@ -167,7 +170,7 @@ export class S3SyncProvider implements SyncProvider {
       payloadHash,
     ].join('\n');
 
-    const canonicalRequestHash = await sha256Hex(canonicalRequest);
+    const canonicalRequestHash = await sha256HexOfString(canonicalRequest);
     const credentialScope = `${dateStamp}/${this.region}/s3/aws4_request`;
 
     const stringToSign = [

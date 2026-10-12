@@ -18,6 +18,7 @@ import { withActiveBackupPassword } from './vaultSession';
 import { secureRandomToken } from './random';
 import { logSecurityEvent, securityEventCodes } from './securityEvents';
 import { saveDesktopExportFile, isNativeFileDialogSupported } from './desktopFiles';
+import { sha256HexOfString } from './common/sha256';
 import type { VaultItem } from '../types';
 
 export const SNAPSHOT_DB_NAME = 'KalderaShield_snapshots_db';
@@ -95,14 +96,7 @@ function openSnapshotDb(): Promise<IDBDatabase> {
   });
 }
 
-async function sha256Hex(str: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+
 
 /**
  * Creates an encrypted snapshot of the current vault state.
@@ -127,7 +121,7 @@ export async function createVaultSnapshot(
 
         const rawJson = JSON.stringify(envelope);
         const encryptedPayload = await encryptDataWithPasswordSecure(rawJson, masterPassword);
-        const checksum = await sha256Hex(encryptedPayload);
+        const checksum = await sha256HexOfString(encryptedPayload);
 
         const record: VaultSnapshotRecord = {
           id: 'snap_' + Date.now() + '_' + secureRandomToken(6),

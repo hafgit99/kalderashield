@@ -70,6 +70,97 @@ and quality-gate documentation, but has no completed independent third-party
 security audit. See [Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md)
 for what that document does and does not claim.
 
+## Desktop auto-updater (Tauri updater / minisign)
+
+This is a separate trust chain from everything above, and it is the one most
+likely to be assumed covered when it is not. Authenticode, GPG and the Android
+keystore all sign the artifact **file**. The updater signs a **manifest**, and
+that manifest is what a shipped client fetches and acts on without asking.
+
+### What the manifest is and where it comes from
+
+The Tauri updater reads `latest.json` from the release endpoint declared in
+`src-tauri/tauri.conf.json`:
+
+```
+https://github.com/hafgit99/kalderashield/releases/latest/download/latest.json
+```
+
+`latest.json` lists each artifact with its platform, version, SHA-256 and URL,
+and carries a `signature` field. That signature is **minisign** over the
+canonical JSON body, produced by the same build that produced the artifact —
+`scripts/generate-updater-manifest.cjs` reads the `.sig` files the Tauri CLI
+writes and refuses to publish if no artifact carries a valid one. The manifest
+and every `latest.json.sigstore.json` beside it are uploaded to the release, and
+the mirror step copies the same two files.
+
+### Key custody — weaker than the Windows section, and stated as such
+
+| | Windows (SignPath) | Updater (minisign) |
+|---|---|---|
+| Private key location | SignPath's HSM | GitHub Actions repository secret |
+| Does this project hold it | No | No, directly — but see below |
+| A build runner can be made to sign | Only by asking, then a human approves | Yes, by asking. Nothing else stands between it and a signature |
+| Revocable | Yes, by SignPath | Only by shipping a new application |
+
+`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` are stored
+as GitHub Actions secrets and are exposed to the desktop build step
+(`_reusable-desktop-build.yml`). GitHub encrypts secrets at rest and masks them
+in logs, but a workflow with the secret in its environment **can exfiltrate
+it**, and unlike SignPath there is no human approval step between "the runner
+asks" and "the signature exists".
+
+The mitigating property, and it is a real one: the client does not trust a
+signature, it trusts a **pinned public key**. That key is compiled into every
+shipped binary as `plugins.updater.pubkey`. An attacker who obtains the private
+key cannot use it against an already-installed client, because those clients
+verify against the key already inside them. They can publish a manifest that
+newly-updated clients would accept, and any client still on the old key will
+reject it. Rotating the key therefore requires releasing a new application
+version, which is why the response to a suspected compromise is "ship a release
+that pins a new key", and why that path needs to be known before it is needed.
+
+```
+untrusted comment: minisign public key: 5ADF998A224AF97D
+RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN
+```
+
+### Key generation, custody and recovery — the gap
+
+The following are **not recorded anywhere else**, and are called out here
+rather than left implied:
+
+- **How the key was generated.** Not recorded. Tauri's documented route is
+  `npm run tauri signer generate -w ~/.tauri/myapp.key`, which prompts for a
+  password; a key produced any other way may differ in entropy source.
+- **Where the encrypted private key is backed up, and whether that backup has
+  been tested.** Not recorded.
+- **Who besides the repository owner can restore it.** Not recorded, and the
+  honest answer today is "nobody", which is the same single-person exposure
+  already stated in the Team roles section.
+- **What happens on suspected compromise.** Not recorded as a procedure.
+
+These are the items to fill in, and they are filled in by the person who holds
+the key rather than by anyone reading this document.
+
+### What happens without the key
+
+Fail-closed, in code rather than in policy. `scripts/desktop-release-gate.cjs`
+and `scripts/local-release.cjs` both pass
+`bundle.createUpdaterArtifacts: false` when `TAURI_SIGNING_PRIVATE_KEY` is
+absent, so a build without the key produces **no updater bundles and no
+manifest** rather than an unsigned one. `build-windows-unsigned.yml` relies on
+this and states so. A release therefore cannot ship an updater manifest that
+nothing signed.
+
+### What a valid updater signature does and does not mean
+
+It means the manifest was produced by a build that held the signing key, and
+that the artifacts it names are the ones this project published. It does not
+mean the software has been audited, and it is not a security endorsement. See
+[Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md), which says the
+same thing for the other signature types.
+
 ## Team roles
 
 KalderaShield is maintained by a single person. That is stated here rather than
@@ -166,6 +257,7 @@ separate from Authenticode and is unaffected by anything on this page.
 | Linux | Yes | Yes | Detached GPG + Sigstore |
 | Android | Yes | Yes | Release keystore |
 | Browser extension | Yes | Yes | Sigstore keyless (store signatures for Chrome/Firefox) |
+| Desktop auto-updater manifest | Yes | Yes | Tauri minisign (see the updater section) |
 | Windows | **Preview only** | **No** | Application not yet submitted |
 | macOS | No | No | Certificate not yet issued |
 

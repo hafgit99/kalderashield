@@ -38,9 +38,7 @@
  * for this credential*, which is what a relying party actually needs.
  */
 
-const COSE_ALG_ES256 = -7;
-const COSE_ALG_EDDSA = -8;
-const COSE_ALG_RS256 = -257;
+import { base64ToBytes, bytesToBase64 } from './common/bytes';
 
 /** Flags byte offsets inside authenticator data (WebAuthn §6.1). */
 const AUTH_DATA_MIN_LENGTH = 37;
@@ -100,16 +98,11 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array): boolean {
 export function base64UrlToBytes(value: string): Uint8Array {
   const normalised = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalised + '='.repeat((4 - (normalised.length % 4)) % 4);
-  const binary = atob(padded);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
+  return base64ToBytes(padded);
 }
 
 export function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 async function sha256(bytes: Uint8Array): Promise<Uint8Array> {
@@ -338,14 +331,4 @@ export async function verifyPasskeyAssertion(
   }
 
   return { verified: true, signCount };
-}
-
-/** Maps a COSE algorithm id to the passkey algorithm label, for logging. */
-export function describeCoseAlgorithm(coseAlg: number | undefined): string {
-  switch (coseAlg) {
-    case COSE_ALG_ES256: return 'ES256';
-    case COSE_ALG_EDDSA: return 'EdDSA';
-    case COSE_ALG_RS256: return 'RS256';
-    default: return 'unknown';
-  }
 }

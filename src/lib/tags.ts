@@ -17,6 +17,7 @@
  */
 
 import type { TagColorKey, TagDefinition } from '../types';
+import { createIdFactory, keyedCollection } from './common/keyedCollection';
 
 export const TAG_LIBRARY_STORAGE_KEY = 'kalderashield-tag-library-v1';
 export const MAX_TAG_LIBRARY_ENTRIES = 200;
@@ -60,10 +61,6 @@ export const TAG_COLOR_KEYS: TagColorKey[] = Object.keys(TAG_PALETTE) as TagColo
  * Persistence
  * ---------------------------------------------------------------- */
 
-function isStorageAvailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
-
 function isValidColor(value: unknown): value is TagColorKey {
   return typeof value === 'string' && (TAG_COLOR_KEYS as string[]).includes(value);
 }
@@ -85,32 +82,13 @@ function parseEntry(raw: unknown): TagDefinition | null {
   };
 }
 
-function readRaw(): TagDefinition[] {
-  if (!isStorageAvailable()) return [];
-  try {
-    const raw = window.localStorage.getItem(TAG_LIBRARY_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const out: TagDefinition[] = [];
-    for (const entry of parsed) {
-      const valid = parseEntry(entry);
-      if (valid) out.push(valid);
-    }
-    return out.slice(0, MAX_TAG_LIBRARY_ENTRIES);
-  } catch {
-    return [];
-  }
-}
+const tags = keyedCollection<TagDefinition>({
+  storageKey: TAG_LIBRARY_STORAGE_KEY,
+  parseEntry,
+  maxEntries: MAX_TAG_LIBRARY_ENTRIES,
+});
 
-function writeRaw(entries: TagDefinition[]): void {
-  if (!isStorageAvailable()) return;
-  try {
-    window.localStorage.setItem(TAG_LIBRARY_STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    // Quota or private-mode errors are non-fatal.
-  }
-}
+const readRaw = tags.read;
 
 /* ---------------------------------------------------------------- *
  * Slug + id helpers
@@ -130,12 +108,8 @@ export function slugifyTagName(name: string): string {
     .slice(0, 64);
 }
 
-let _counter = 0;
-function uniqueId(): string {
-  _counter += 1;
-  // Time + counter is good enough — these ids are local to the device.
-  return `tag-${Date.now().toString(36)}-${_counter.toString(36)}`;
-}
+// Time + counter is good enough — these ids are local to the device.
+const uniqueId = createIdFactory('tag');
 
 /* ---------------------------------------------------------------- *
  * Public API
@@ -146,9 +120,7 @@ export function readTagLibrary(): TagDefinition[] {
 }
 
 export function writeTagLibrary(entries: TagDefinition[]): TagDefinition[] {
-  const safe = entries.slice(0, MAX_TAG_LIBRARY_ENTRIES);
-  writeRaw(safe);
-  return safe;
+  return tags.write(entries);
 }
 
 export function createTag(input: { name: string; color?: TagColorKey }): TagDefinition | null {
@@ -166,7 +138,7 @@ export function createTag(input: { name: string; color?: TagColorKey }): TagDefi
     color: input.color ?? 'indigo',
     createdAt: new Date().toISOString(),
   };
-  writeRaw([...library, entry]);
+  tags.write([...library, entry]);
   return entry;
 }
 
@@ -189,13 +161,13 @@ export function updateTag(
       slug: patch.name ? slugifyTagName(patch.name) : entry.slug,
     };
   });
-  writeRaw(next);
+  tags.write(next);
   return next;
 }
 
 export function deleteTag(id: string): TagDefinition[] {
   const library = readRaw();
-  writeRaw(library.filter((entry) => entry.id !== id));
+  tags.write(library.filter((entry) => entry.id !== id));
   return library.filter((entry) => entry.id !== id);
 }
 
@@ -250,7 +222,7 @@ export function ensureTagsExist(names: string[]): TagDefinition[] {
   }
   if (additions.length > 0) {
     const merged = [...library, ...additions].slice(0, MAX_TAG_LIBRARY_ENTRIES);
-    writeRaw(merged);
+    tags.write(merged);
     return merged;
   }
   return library;

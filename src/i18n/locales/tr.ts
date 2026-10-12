@@ -211,7 +211,8 @@ export const tr = {
     'vaultForm.title.edit': 'Kasa Ögesini Güncelle',
     'vaultForm.subtitle': 'Verileriniz anlık olarak tarayıcı işlemcinizde yerel olarak kriptolanır.',
     'vaultForm.close': 'Kapat',
-    'vaultForm.category.login': 'Giriş',
+    'vaultForm.categoryUpdated': "Kategori {category} olarak güncellendi",
+  'vaultForm.category.login': 'Giriş',
     'vaultForm.category.card': 'Kart',
     'vaultForm.category.passkey': 'Güvenli Anahtar',
     'vaultForm.category.identity': 'Kimlik',
@@ -1230,4 +1231,9 @@ export const tr = {
   'settings.legal.description': 'Gizlilik Politikası ve Kullanım Şartları. Bu belgeler kalıcıdır: kasanızı kilitlemeden de okuyabilirsiniz.',
   'settings.legal.updated': 'Güncel sürüm',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Beklenmeyen Uygulama Hatası",
+  'error.crashed.description': "Etkin görünümde bir çalışma zamanı hatası oluştu. Güvenliğiniz için çözülmüş kasa belleğiniz korundu ve uygulama kilitlenmelidir.",
+  'error.crashed.lockNow': "Kasayı Hemen Kilitle",
 } as const;

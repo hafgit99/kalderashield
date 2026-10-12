@@ -111,3 +111,20 @@ pip-wheel-metadata/
 wheels/
 # ----- ↑ 以上为 ZCode 默认排除规则（自定义规则请写在本行下方，不会被同步/恢复改动）-----
 # 自定义规则写在下方（本行提示可删除）
+
+# ----- synced from .gitignore (P2-10) -----
+# These were missing here and present in .gitignore. An external tool honouring
+# this file would have walked into directories the project deliberately
+# excludes, including the 12MB promo video and release-preview/.
+#
+# scripts/audit-ignore-parity.cjs fails when .gitignore has an entry this file
+# does not, so the two cannot drift apart again. .gitignore is the authority
+# because git is what actually enforces it.
+release-preview/
+*.tmp.mjs
+tests/hero-*.png
+tests/viewport-*.png
+.sandbox/
+promo-video/
+kalderashield-website/assets/video/
+PROFESYONEL_YAPI_DENETIM_RAPORU.md

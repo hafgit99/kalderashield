@@ -20,6 +20,7 @@
   "snap-img1-alt": "KalderaShield Versionierte verschlüsselte Snapshots und Historie",
   "snap-img2-alt": "KalderaShield Automatische Snapshot-Konfiguration und Einstellungen",
   "snap-img-hint": "Klicken zum Vergrößern",
+  "promo-video-label": "KalderaShield Promo-Video",
   "dlhub-eyebrow": "Download-Center",
   "dlhub-title": "KalderaShield herunterladen",
   "dlhub-desc": "Offizielle Installationspakete für alle Plattformen. Jeder Download ist über SHA-256-Prüfsummen und Signaturen überprüfbar.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "Das Verhalten Dritter, das Nutzer betrifft, ist in LICENSE-3RD-PARTY.md geregelt.",
   "win-preview-link": "Unsignierte Vorschau von GitHub Releases herunterladen",
   "win-preview-assets": "NSIS-Installationsprogramm (.exe), MSI-Paket und portable EXE — alle unsigniert.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "Ihr Browser unterstützt das Video-Tag nicht.",
+  "promo-video-fallback-link": "Video herunterladen"
 }

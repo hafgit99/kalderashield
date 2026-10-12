@@ -23,6 +23,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"scripts/**/*.cjs\"",
     "i18n:audit": "node scripts/i18n-audit.cjs",
+    "deadcode:audit": "node scripts/audit-dead-code.cjs",
+    "audit:reproducibility": "node scripts/audit-build-reproducibility.cjs",
+    "audit:repo-size": "node scripts/audit-repo-size.cjs",
+    "deadcode:audit:strict": "node scripts/audit-dead-code.cjs --strict",
+    "deadcode:baseline": "node scripts/audit-dead-code.cjs --write-baseline",
     "test:unit": "vitest run",
     "test:release": "vitest run --config vitest.release.config.ts",
     "test:coverage": "vitest run --coverage",
@@ -126,7 +131,10 @@
     "security:argon2-bounds": "node scripts/security-argon2-bounds-parity.cjs",
     "android:lint": "cd src-tauri/gen/android && gradlew.bat :app:lintArmDebug --console=plain",
     "windows:msix-probe": "powershell -ExecutionPolicy Bypass -File scripts/msix-registry-probe.ps1",
-    "windows:preview:package": "node scripts/windows-preview-package.cjs"
+    "windows:preview:package": "node scripts/windows-preview-package.cjs",
+    "audit:doc-links": "node scripts/audit-doc-links.cjs",
+    "audit:ignore-parity": "node scripts/audit-ignore-parity.cjs",
+    "audit:prop-drilling": "node scripts/audit-prop-drilling.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",
@@ -171,6 +179,7 @@
     "fast-check": "^4.10.2",
     "globals": "^17.11.0",
     "jsdom": "^30.1.1",
+    "knip": "^6.41.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript-eslint": "^8.70.1",

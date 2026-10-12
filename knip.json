@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": [
+        "index.html",
+        "src-extension/background.ts",
+        "tests/e2e/**/*.spec.ts",
+        "tests/e2e/**/*.ts",
+        "scripts/**/*.cjs",
+        "scripts/**/*.mjs"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "src-extension/**/*.{ts,tsx}", "scripts/**/*.{cjs,mjs}"],
+      "ignore": ["kalderashield-website/**"],
+      "ignoreDependencies": [
+        "@cyclonedx/cyclonedx-npm",
+        "@stryker-mutator/api",
+        "@stryker-mutator/typescript-checker",
+        "@testing-library/jest-dom",
+        "@testing-library/user-event",
+        "@types/chrome",
+        "playwright",
+        "tailwindcss"
+      ],
+      "ignoreBinaries": ["tsc", "gradlew.bat"]
+    }
+  }
+}

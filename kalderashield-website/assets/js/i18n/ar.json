@@ -20,6 +20,7 @@
   "snap-img1-alt": "شاشة سجل اللقطات والنسخ الاحتياطية المشفرة في KalderaShield",
   "snap-img2-alt": "إعدادات أتمتة اللقطات وفترات التكرار في KalderaShield",
   "snap-img-hint": "انقر لتكبير لقطة الشاشة",
+  "promo-video-label": "فيديو عرضي لكالديراشيلد",
   "dlhub-eyebrow": "مركز التنزيل",
   "dlhub-title": "تنزيل KalderaShield",
   "dlhub-desc": "حزم التثبيت الرسمية لجميع الأنظمة. يمكن التحقق من سلامة كل تنزيل عبر بصمات SHA-256 والتواقيع الرقمية.",
@@ -1406,5 +1407,7 @@
   "csp-p1-19-tail": "ويُغطّى سلوك مكوّنات الأطراف الثالثة التي تؤثر في المستخدمين في LICENSE-3RD-PARTY.md.",
   "win-preview-link": "نزّل الإعاينة غير الموقّعة من GitHub Releases",
   "win-preview-assets": "مُثبِّت NSIS (.exe) وحزمة MSI وملف EXE المحمول — جميعها غير موقَّعة.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview"
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "promo-video-fallback": "متصفحك لا يدعم علم video.",
+  "promo-video-fallback-link": "نزّل الفيديو"
 }

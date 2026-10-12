@@ -7,8 +7,6 @@
 
 export type SyncProviderType = 'webdav' | 's3' | 'disabled';
 
-export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'conflict';
-
 export interface SyncMetadata {
   /** ISO-8601 UTC timestamp of the last successful upload */
   updatedAt: string;

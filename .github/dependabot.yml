@@ -1,3 +1,17 @@
+# Dependabot configuration.
+#
+# Groups exist because of the `overrides` block in package.json. Those eight
+# pins are not decorative: `qs`, `undici`, `shell-quote`, `fast-uri`, `ip-address`
+# and the two `minimatch`/`brace-expansion` pairs are pinned for security
+# reasons, and each one is a package whose patch release can pull a *different*
+# transitive version out from under it. Ungrouped, Dependabot opens a PR per
+# package per week, which trains a reviewer to click through them.
+#
+# Grouped, the same week arrives as two or three reviewable PRs.
+#
+# Groups are deliberately coarse: "all production dependencies" and "all
+# development dependencies". Narrower groups fragment the queue back into what
+# this was meant to stop.
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -5,12 +19,48 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      # Runtime dependencies. These end up in the shipped bundle, so a change
+      # here is a change a user runs.
+      production-dependencies:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      # Everything that only exists to build, test or lint. Still grouped,
+      # because a week of one-PR-per-linter is still a week of nothing reviewed.
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+      # Dependabot cannot see package.json overrides, so a dependency that an
+      # override constrains produces a PR that npm install then rejects or
+      # silently resolves back to the pinned version. Naming them lets the
+      # remaining PR be closed with a reason instead of left to rot open.
+      #
+      # `applies-to: security-updates` is what makes this survive: security
+      # updates arrive as their own stream, and one that conflicts with an
+      # override still needs a human to look at it.
+      overridden-pins:
+        applies-to: "version-updates"
+        patterns:
+          - "qs"
+          - "adm-zip"
+          - "fast-uri"
+          - "shell-quote"
+          - "undici"
+          - "ip-address"
+          - "minimatch"
+          - "brace-expansion"
 
   - package-ecosystem: "cargo"
     directory: "/src-tauri"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      rust-crates:
+        patterns:
+          - "*"
 
   # GitHub Actions used in workflows (keeps SHA-pinned actions up to date)
   - package-ecosystem: "github-actions"
@@ -18,4 +68,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-
+    groups:
+      # Every third-party action in every workflow is pinned by commit SHA, so
+      # Dependabot's per-action PRs are the only thing that keeps those pins
+      # from ageing into a supply-chain hole. One grouped PR per week is a
+      # reviewable diff; twelve are a backlog nobody reads.
+      actions:
+        patterns:
+          - "*"

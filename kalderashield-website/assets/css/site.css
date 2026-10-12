@@ -48,10 +48,26 @@
      on the page" was the only text failing WCAG AA. */
   --text-faint: #737e8f;
 
-  --accent: #2dd4bf;
+--accent: #2dd4bf;
   --accent-strong: #5eead4;
-  /* Eyebrow and other small brand-coloured text: clears 10:1 on --bg. */
   --accent-text: #2dd4bf;
+
+  /* Gradient stops for text painted with background-clip: text.
+   *
+   * These live here, beside --accent, rather than as literals inside
+   * .gradient-text. That is not tidiness -- it is a bug that shipped. The
+   * gradient used to be `var(--accent) 0%, #60e0d0 45%, #a78bfa 100%`: the
+   * first stop followed the palette and the other two did not, and the light
+   * override was written as `:root[data-theme="light"]`. "system" is defined as
+   * the *absence* of data-theme (see site.js), so in the default state the
+   * background went light while the gradient stayed dark, and the last stop --
+   * #a78bfa on #fcfbf9 -- painted the tail of the hero title at a contrast no
+   * reader could see. "Only" disappeared.
+   *
+   * A hardcoded hex in a themeable rule is a rule with an undeclared theme. */
+  --grad-from: #2dd4bf;
+  --grad-mid: #60e0d0;
+  --grad-to: #a78bfa;
   /* Identity-only accent: the wordmark's "Shield". No other rule may use it. */
   --ember: #ff7b2e;
 
@@ -104,6 +120,12 @@
   --accent: #0f766e;
   --accent-strong: #115e59;
   --accent-text: #0f766e;
+
+  /* Deepened for the cream ground; see the note on the dark block. */
+  --grad-from: #0f766e;
+  --grad-mid: #0d9488;
+  --grad-to: #6d28d9;
+
   --ember: #c2410c;
   --warn: #8a5a12;
   --warn-bg: #fdf6e7;
@@ -133,6 +155,11 @@
     --accent: #0f766e;
     --accent-strong: #115e59;
     --accent-text: #0f766e;
+
+    --grad-from: #0f766e;
+    --grad-mid: #0d9488;
+    --grad-to: #6d28d9;
+
     --ember: #c2410c;
     --warn: #8a5a12;
     --warn-bg: #fdf6e7;
@@ -698,6 +725,55 @@ a:hover {
   animation: hero-in 0.6s ease-out 0.18s both;
 }
 
+/* The promo video. Same window treatment as .hero-shot so the video reads as
+ * the product running, not as an embedded marketing asset. */
+.promo-video {
+  margin-top: 40px;
+  animation: hero-in 0.6s ease-out 0.26s both;
+}
+
+.promo-video-el {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #06060a;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 32px 80px rgb(0 0 0 / 0.34),
+    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* The text inside <video> is fallback content: a browser paints it only when it
+   cannot play the file at all. It is wrapped in a <p> for two reasons.
+
+   First, .promo-video-el pins background #06060a in every theme. In the light
+   palettes --text is #16120e, so the fallback inherited a near-black colour on
+   a near-black background and audit-contrast measured 1.09:1 against a 4.5
+   requirement. Stating the colour outright makes the fallback readable in the
+   one situation it exists for.
+
+   Second, an element of its own is what lets the block mark the copy with
+   data-i18n. Written straight into the twelve locale files it survived only
+   until generate-locales.cjs rebuilt every /<locale>/ page from the
+   unprefixed Turkish source, which left Turkish fallback text on all twelve
+   homepages -- undetectable by audit-static-i18n, because a node with no
+   data-i18n is not one it compares. */
+.promo-video-fallback {
+  color: #e9edf4;
+  margin: 0;
+  padding: 16px;
+}
+
+.promo-video-fallback a {
+  color: #e9edf4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-video { animation: none; }
+}
+
 /* The hero screenshot in an application window frame: a title bar with three
    window dots, then the image flush inside it.
  *
@@ -1146,7 +1222,32 @@ main details[open] > div {
   margin: 0 0 1rem;
   font-size: clamp(2.6rem, 6.5vw, 4.2rem);
   font-weight: 300;
-  line-height: 1.08;
+  /* P3-9: was 1.08, which is TIGHTER than the font's own line box, so the
+   * element box never contained its glyphs. Measured with a real browser
+   * across every family this stack can resolve to, at line-height 1.08:
+   *
+   *   Segoe UI / system-ui (Windows)  6px above, 4px below
+   *   Verdana, Tahoma                  4px above, 2px below
+   *   Arial, Georgia, Courier New     2px above
+   *   Times New Roman                 1px above
+   *
+   * The hero title is the one heading here set in a *system* stack, so which
+   * font a visitor gets is decided by their OS, not by this stylesheet. On
+   * Windows -- the worst case, and the largest overflow -- the first line's
+   * ascenders sat above the box and the last line's descenders below it. Nothing
+   * in the current CSS clips, so it renders; that is luck, not design. Add an
+   * `overflow: hidden` to a parent, ship a font stack change, or render on a
+   * platform whose natural line box is taller, and the descenders of the last
+   * word disappear -- which is what "the Y in Only is half gone" looks like.
+   *
+   * 1.2 plus padding contains every family the stack can resolve to, and
+   * scripts/audit-hero-metrics.cjs measures all eight on every CI run -- across
+   * the Turkish, English and German titles, at three widths, 72 combinations --
+   * so this cannot come back as a guess. 0.35rem rather than 0.25rem because the
+   * first pass left 1px of overflow at 1280px, where the German title wraps to
+   * seven lines and the last line's ink sits closest to the edge. */
+  line-height: 1.2;
+  padding-block: 0.35rem;
   letter-spacing: -0.03em;
   max-width: 20ch;
 }
@@ -1334,19 +1435,23 @@ h3 {
 .gradient-text {
   /* Real gradient, one accent step into lavender. Kept to a 2-3 word span so
      the clipped fill always reads on a single line. Interactive language
-     stays teal; this is a wordmark-level emphasis only. */
-  background: linear-gradient(135deg, var(--accent) 0%, #60e0d0 45%, #a78bfa 100%);
+     stays teal; this is a wordmark-level emphasis only.
+     
+     Every stop is a variable. The light override used to be a separate
+     `:root[data-theme="light"]` rule, which does not cover "system" -- that mode
+     is the absence of the attribute -- so the default state painted the dark
+     ramp's #a78bfa onto the cream ground and the hero title lost its last word.
+     Three variables flip with everything else; this file no longer has a
+     gradient literal to forget.
+     
+     `color` stays declared for the same reason `.stat-num` keeps it: it is the
+     fallback for a browser without background-clip, and it is what a
+     forced-colours mode paints, where transparent fill would erase the text. */
+  background: linear-gradient(135deg, var(--grad-from) 0%, var(--grad-mid) 45%, var(--grad-to) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--accent);
-}
-
-:root[data-theme="light"] .gradient-text {
-  /* Darker endpoints so the gradient keeps contrast on the light surface. */
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 45%, #6d28d9 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
 }
 
 .muted {

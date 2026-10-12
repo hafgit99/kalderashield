@@ -20,6 +20,7 @@ import {
   wrapAndroidBiometricSecret,
 } from './biometricAndroid';
 import { webCryptoAesGcmDecrypt, webCryptoAesGcmEncrypt, generateSafeIv, type WebCryptoAesGcmPayload } from './webcrypto';
+import { base64ToBytes, bytesToBase64 } from './common/bytes';
 
 export const BIOMETRIC_PBKDF2_ITERATIONS = 600_000;
 
@@ -93,18 +94,6 @@ export interface BiometricInfoV4 {
 }
 
 type BiometricInfo = BiometricInfoV2 | NativeBiometricInfoV3 | BiometricInfoV4;
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  return new Uint8Array(atob(value).split('').map((char) => char.charCodeAt(0)));
-}
 
 const BIOMETRIC_DB_NAME = 'KalderaShield_biometric_db';
 const BIOMETRIC_STORE_NAME = 'biometric_info';
@@ -257,9 +246,11 @@ export function isBiometricV2UpgradeRequired(): boolean {
   return biometricV2UpgradeRequired;
 }
 
-export function dismissBiometricV2UpgradeNotification(): void {
-  biometricV2UpgradeRequired = false;
-}
+/* P2-5 removed `dismissBiometricV2UpgradeNotification`. It was exported, mocked
+ * in two component tests, and called from nothing in `src/`. The notice is not a
+ * dismissible banner -- `lock.error.biometricV2Upgrade` tells the user to sign in
+ * and re-enable biometrics, so the only thing that can honestly clear it is a
+ * successful re-registration. That is what `registerBiometric` now does. */
 
 export function resetBiometricCacheForTesting(): void {
   cachedBiometricInfo = null;
@@ -367,14 +358,6 @@ export function disableBiometric(): void {
   });
 }
 
-export async function disableBiometricAsync(): Promise<void> {
-  cachedBiometricInfo = null;
-  removeSecureStorageItem(secureStorageKeys.biometricInfo);
-  removeSecureStorageItem(secureStorageKeys.biometricWrappingSecret);
-  clearAndroidBiometricKey();
-  await deleteBiometricFromIndexedDBWithRetry();
-}
-
 export interface BiometricCredentialsPayload {
   masterPassword: string;
   secretKey?: string | null;
@@ -430,13 +413,27 @@ export async function registerBiometric(
 
   const payload = serializeBiometricPayload(input);
 
+  // P2-5: reaching this point means the user did what
+  // `lock.error.biometricV2Upgrade` asked of them -- signed in and re-enabled
+  // biometric unlock. `biometricV2UpgradeRequired` is module state, so without
+  // this the notice outlived the action that resolves it and the lock screen
+  // kept telling a user with working biometrics to go set them up.
+  //
+  // Cleared only on success: a cancelled WebAuthn prompt throws above and the
+  // notice must survive that, because the registration still has not happened.
+  const clearV2UpgradeNotice = (): void => {
+    biometricV2UpgradeRequired = false;
+  };
+
   if (hasWebAuthnSupport()) {
     await registerWebAuthnBiometric(payload, type);
+    clearV2UpgradeNotice();
     return;
   }
 
   if (await isNativeBiometricAvailable()) {
     await registerNativeBiometric(payload);
+    clearV2UpgradeNotice();
     return;
   }
 

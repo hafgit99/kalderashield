@@ -210,6 +210,7 @@ export const fr = {
   'vaultForm.title.edit': 'Mettre à jour l\'élément du coffre-fort',
   'vaultForm.subtitle': 'Vos données sont instantanément cryptées localement dans le processeur de votre navigateur.',
   'vaultForm.close': 'Fermer',
+  'vaultForm.categoryUpdated': "Catégorie mise à jour : {category}",
   'vaultForm.category.login': 'Se connecter',
   'vaultForm.category.card': 'Carte',
   'vaultForm.category.passkey': 'Clé sécurisée',
@@ -1227,4 +1228,9 @@ export const fr = {
   'settings.legal.description': 'Politique de confidentialité et conditions d\'utilisation. Ces documents sont permanents : lisez-les sans verrouiller votre coffre.',
   'settings.legal.updated': 'Version actuelle',
   /* --- end legal copy --- */
+
+  /* P3-5: the crash screen. English literals in a twelve-locale app. */
+  'error.crashed.title': "Erreur applicative inattendue",
+  'error.crashed.description': "Une exception d'exécution s'est produite dans la vue active. Pour votre sécurité, la mémoire du coffre déchiffrée a été protégée et l'application doit être verrouillée.",
+  'error.crashed.lockNow': "Verrouiller le coffre maintenant",
 } as const;

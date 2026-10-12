@@ -29,10 +29,6 @@ export interface VaultPaginationState {
   loadCount: number;
 }
 
-export interface VaultPaginationCallbacks {
-  onLoad?(visibleCount: number, totalCount: number): void;
-}
-
 export interface VaultPaginationOptions {
   initialVisibleCount?: number;
   batchSize?: number;
