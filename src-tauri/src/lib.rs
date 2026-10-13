@@ -12,6 +12,7 @@ const MAX_VAULT_FILE_BYTES: u64 = 25 * 1024 * 1024; // 25 MB
 mod credential_handler;
 mod linux_security;
 mod native_messaging;
+mod secure_storage;
 
 struct ExtensionState {
     credentials:
@@ -951,6 +952,9 @@ pub fn run() {
                 session_generation,
             );
 
+            // Populate in-process desktop secure storage cache
+            secure_storage::init_desktop_secure_storage();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -977,6 +981,11 @@ pub fn run() {
             credential_handler::close_rust_session,
             credential_handler::update_rust_active_vault_key,
             credential_handler::has_rust_session,
+            secure_storage::is_desktop_secure_storage_available,
+            secure_storage::get_desktop_secure_item,
+            secure_storage::set_desktop_secure_item,
+            secure_storage::remove_desktop_secure_item,
+            secure_storage::get_all_desktop_secure_items,
             restart_app
         ])
         .build(tauri::generate_context!())

@@ -35,6 +35,7 @@ import { disableRecoveryKey } from './recoveryKey';
 import { createDemoItems } from './storageDemoItems';
 import {
   getSecureStorageItem,
+  initializeDesktopSecureStorage,
   isSecureStorageAvailable,
   removeSecureStorageItem,
   secureStorageKeys,
@@ -114,10 +115,13 @@ export function isVaultStorageUnavailableError(err: unknown): err is VaultStorag
 }
 
 export async function initializeStorage(): Promise<void> {
-  // Phase 1: IndexedDB cache must be ready before anything reads setup flags,
+  // Phase 1: IndexedDB and desktop secure storage caches must be ready before anything reads setup flags,
   // but biometric hydrate is completely independent — run them together.
   const biometricPromise = hydrateBiometric();
-  await initializeIndexedDbStorage();
+  await Promise.all([
+    initializeIndexedDbStorage(),
+    initializeDesktopSecureStorage(),
+  ]);
 
   // Phase 2: OPFS pre-hydrate (desktop only) and backend restore run concurrently.
   const opfsPromise = isDesktopRuntime()

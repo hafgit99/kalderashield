@@ -22,6 +22,7 @@ vi.mock('./secureStorage', () => ({
   setSecureStorageItem: vi.fn(() => false),
   removeSecureStorageItem: vi.fn(() => false),
   isSecureStorageAvailable: vi.fn(() => false),
+  initializeDesktopSecureStorage: vi.fn(async () => undefined),
 }));
 
 // Mock argon2id with a deterministic but fast derivation for tests
