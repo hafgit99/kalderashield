@@ -459,8 +459,14 @@ export async function setupMasterPasswordWithSecretKey(
   // mandatory on every later unlock regardless of what the user was told.
   //
   // Without a store to keep it in, the vault is set up on the master password
-  // alone. That is a deliberate reduction in what this platform protects, and
-  // it is why the checkbox is hidden there rather than merely disabled.
+  // alone. That is a deliberate reduction in what this platform protects.
+  //
+  // This branch is no longer reachable from the UI: the lock screen only
+  // offers a key where `isRememberSecretKeySupported()` is true, and drops it
+  // silently where it is false. It stays as the backstop for a caller that
+  // hands over a key anyway -- the one thing that must never happen is a vault
+  // sealed with a secret nobody holds a copy of, which locks the user out
+  // permanently rather than merely weakening their setup.
   if (!isRememberSecretKeySupported()) {
     await setupMasterPassword(password);
     forgetRememberedAccountSecretKey();

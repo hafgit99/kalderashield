@@ -39,6 +39,23 @@ export function LockScreenSecretKeySection({
     return null;
   }
 
+  /**
+   * First-time setup on a platform that cannot keep the key: render nothing.
+   *
+   * The section used to render here anyway -- field, "cannot be remembered"
+   * warning and the emergency kit button. Every part of that is a promise the
+   * platform cannot keep: the field was mandatory, and the kit exported a key
+   * that `setupMasterPasswordWithSecretKey` then discarded, so the vault it
+   * described did not exist.
+   *
+   * A vault that genuinely requires a key keeps the section even where the
+   * platform cannot store one -- that key was sealed in somewhere else, and the
+   * emergency kit is the only way to get it back.
+   */
+  if (!isSetup && !requiresSecretKey && !canRememberSecretKey) {
+    return null;
+  }
+
   return (
     <div className="rounded-2xl glass-panel p-3 sm:p-4 space-y-3">
       <div className="flex items-center gap-3">
