@@ -19,7 +19,7 @@ const { apply } = require('./lib/signpath-policy-i18n.cjs');
 const I18N_DIR = path.resolve(__dirname, '..', 'assets', 'js', 'i18n');
 const CODES = ['ar', 'de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'tr', 'zh'];
 
-const TAG = 'v7.0.21-unsigned-preview';
+const TAG = 'v7.0.22-unsigned-preview';
 const RELEASES =
   'https://github.com/hafgit99/kalderashield/releases/tag/' + TAG;
 

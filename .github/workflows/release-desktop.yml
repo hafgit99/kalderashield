@@ -129,10 +129,10 @@ jobs:
       updater-copy: |
         set -euo pipefail
         bundle=src-tauri/target/release/bundle
-        find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ ;
+        find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ \;
         find "$bundle" -type f \( \
           -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
-          -exec cp {} release-local/linux/ ;
+          -exec cp {} release-local/linux/ \;
         ls -la release-local/linux/
         node scripts/verify-signature-payloads.cjs --dir release-local/linux
     secrets: inherit
@@ -226,7 +226,7 @@ jobs:
         set -euo pipefail
         find src-tauri/target -path '*release/bundle*' -type f \( \
           -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
-          -exec cp {} release-local/macos/ ;
+          -exec cp {} release-local/macos/ \;
         ls -la release-local/macos/
         node scripts/verify-signature-payloads.cjs --dir release-local/macos
     secrets: inherit
