@@ -28,8 +28,8 @@ static DESKTOP_STORE: Mutex<Option<HashMap<String, String>>> = Mutex::new(None);
 mod platform {
     use std::collections::HashMap;
     use windows_sys::Win32::Security::Credentials::{
-        CredDeleteW, CredFree, CredReadW, CredWriteW,
-        CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
+        CredDeleteW, CredFree, CredReadW, CredWriteW, CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE,
+        CRED_TYPE_GENERIC,
     };
 
     const TARGET_PREFIX: &str = "KalderaShield/";
@@ -52,14 +52,7 @@ mod platform {
         let target = wide(&target_name(key));
         let mut cred_ptr: *mut CREDENTIALW = std::ptr::null_mut();
 
-        let ok = unsafe {
-            CredReadW(
-                target.as_ptr(),
-                CRED_TYPE_GENERIC,
-                0,
-                &mut cred_ptr,
-            )
-        };
+        let ok = unsafe { CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut cred_ptr) };
 
         if ok == 0 || cred_ptr.is_null() {
             return None;
@@ -132,8 +125,8 @@ mod platform {
 
 #[cfg(target_os = "linux")]
 mod platform {
-    use std::collections::HashMap;
     use keyring::Entry;
+    use std::collections::HashMap;
 
     const SERVICE_NAME: &str = "KalderaShield";
 
@@ -297,4 +290,3 @@ pub fn get_all_desktop_secure_items() -> HashMap<String, String> {
     }
     platform::load_all(KNOWN_KEYS)
 }
-
