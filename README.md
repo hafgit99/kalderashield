@@ -17,13 +17,13 @@
 <br />
 
 ![Vault Score](https://img.shields.io/badge/In_App_Vault_Score-92%2F100-brightgreen?style=flat-square&logo=shield)
-![Tests](https://img.shields.io/badge/Unit_Tests-2%2C321_Passed-success?style=flat-square&logo=vitest)
+![Tests](https://img.shields.io/badge/Unit_Tests-2%2C356_Passed-success?style=flat-square&logo=vitest)
 ![Fuzz Tests](https://img.shields.io/badge/Fuzz_Tests-37_Passed-success?style=flat-square&logo=vitest)
-![Coverage](https://img.shields.io/badge/Coverage-91.2%25_Lines_·_82.3%25_Branches-brightgreen?style=flat-square&logo=vitest)
+![Coverage](https://img.shields.io/badge/Coverage-91.5%25_Lines_·_82.3%25_Branches-brightgreen?style=flat-square&logo=vitest)
 ![Mutation Testing](https://img.shields.io/badge/Mutation_Testing-8_Stryker_Suites_·_90.8%25_Peak-blue?style=flat-square&logo=stryker)
 ![TypeScript](https://img.shields.io/badge/TypeScript-0_Errors-blue?style=flat-square&logo=typescript)
 ![License](https://img.shields.io/badge/License-Apache_2.0-orange?style=flat-square)
-![i18n](https://img.shields.io/badge/i18n-12_Languages_·_1%2C221_Keys-purple?style=flat-square)
+![i18n](https://img.shields.io/badge/i18n-12_Languages_·_1%2C222_Keys-purple?style=flat-square)
 
 <sub>Badges are measured from this repository, not asserted. Unit, fuzz, coverage and
 Rust numbers come from the commands in [Verification &amp; Testing](#verification--testing) run on
@@ -87,7 +87,7 @@ What *is* independently reproducible is the engineering evidence below: every nu
 - **Design invariant — hardware binding is a convenience layer**: Vault key derivation always remains **master password + Secret Key via Argon2id**. Device loss, TPM reset, or authenticator replacement degrades only convenience — never access to the vault. The vault file stays fully portable (sync, encrypted backups, sharing).
 
 ### 🌐 Internationalization (i18n)
-Full localization across 12 languages, verified at **100% key parity (1,221 keys × 12 locales)** by `npm run i18n:audit`:  
+Full localization across 12 languages, verified at **100% key parity (1,222 keys × 12 locales)** by `npm run i18n:audit`:  
 **Turkish (TR) • English (EN) • German (DE) • French (FR) • Spanish (ES) • Italian (IT) • Portuguese (PT) • Russian (RU) • Japanese (JA) • Chinese (ZH) • Korean (KO) • Arabic (AR)**.
 
 ---
@@ -136,16 +136,16 @@ Measured on the current commit (`npm run test:unit`, `npm run test:coverage`, `n
 | **TypeScript Typecheck** | **`0 errors`** | ✅ 100% Clean | `tsc --noEmit` |
 | **ESLint** | **`0 errors, 22 warnings`** | ✅ Clean (warnings are React Hooks / consistent-type-imports, all pre-existing) | ESLint 9 flat config |
 | **Unit & Integration Test Suite** | **`258 test files passed (258/258)`** | ✅ 100% Green | Vitest 4.1.11 |
-| **Unit Tests Executed** | **`2,321 tests passed (2,321/2,321)`** | ✅ 100% Green | Vitest / React Testing Library |
+| **Unit Tests Executed** | **`2,356 tests passed (2,356/2,356)`** | ✅ 100% Green | Vitest / React Testing Library |
 | **Property-Based Fuzz Tests** | **`37 tests across 9 files passed`** | ✅ 100% Green | fast-check v4 |
-| **End-to-End (E2E) Suites** | **`34 scenarios · Chromium 34/34 (1.8 min)`** | ✅ Green — runs as the `e2e-smoke` CI job | Playwright (Chromium) |
+| **End-to-End (E2E) Suites** | **`34 scenarios · Chromium 34/34 (1.6 min)`** | ✅ Green — runs as the `e2e-smoke` CI job | Playwright (Chromium) |
 | **Mutation Testing** | **`8 specialized Stryker suites - 90.8% peak gate score`** | ✅ Measured & Gated | @stryker-mutator/core v9 |
 | **Rust Backend Tests** | **`74 tests passed (74/74)`** | ✅ 100% Green | `cargo test` (Tauri 2) |
-| **Lines Coverage** | **`91.23%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
-| **Statements Coverage** | **`89.68%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
-| **Functions Coverage** | **`89.11%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
-| **Branches Coverage** | **`82.33%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
-| **Localization Parity** | **`12 locales × 1,221 keys — 100% parity`** | ✅ PASS | `npm run i18n:audit` |
+| **Lines Coverage** | **`91.47%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
+| **Statements Coverage** | **`89.91%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
+| **Functions Coverage** | **`89.37%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
+| **Branches Coverage** | **`82.30%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
+| **Localization Parity** | **`12 locales × 1,222 keys — 100% parity`** | ✅ PASS | `npm run i18n:audit` |
 
 **What CI actually runs** (`.github/workflows/ci.yml`): `typecheck`, `unit-tests` (coverage run,
 report uploaded as a 7-day artifact), `e2e-smoke`, `rust-tests`, `security`, `website-gates`.

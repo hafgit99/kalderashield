@@ -25,7 +25,7 @@
 | **CII Best Practices Badge** | **passing** — https://www.bestpractices.dev/en/projects/14390 |
 | **SAST** | CodeQL (javascript-typescript), SHA-pinned workflow, clean: 1 finding dismissed with documented intentional-design rationale; all remaining alerts resolved |
 | **Dependencies** | Dependabot at 100% coverage: 19/19 update PRs merged across npm + Cargo; `npm audit` production-clean; `cargo audit` reviewed (all findings are Tauri-ecosystem "unmaintained" warnings, documented) |
-| **CI gates on every PR** | Typecheck, 2321 unit tests across 258 files, Rust check+tests, CodeQL; required status checks + up-to-date branch rule + linear history on `main` (classic protection + ruleset) |
+| **CI gates on every PR** | Typecheck, 2356 unit tests across 258 files, Rust check+tests, CodeQL; required status checks + up-to-date branch rule + linear history on `main` (classic protection + ruleset) |
 | **Release signing** | Every release artifact (desktop installers, APKs, extension zips/xpi, SBOMs, checksums) is cosign Sigstore **keyless**-signed (OIDC-bound, Rekor transparency log); Tauri updater bundles additionally minisign-signed; `SHA256SUMS.txt` signed |
 | **SBOM** | Per-release CycloneDX: npm 1.6 (~589 components) + Cargo 1.5 (~510 components incl. all target triples), signed and published as release assets |
 | **Release pipeline** | Fully automated tag-triggered workflow, SHA-pinned actions, per-job least-privilege tokens, idempotent publish, tag↔version guard |

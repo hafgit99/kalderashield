@@ -14,19 +14,19 @@ Current measured baseline from the latest local run:
 
 | Metric | Baseline |
 | --- | ---: |
-| Lines | 91.23% |
-| Statements | 89.68% |
-| Functions | 89.11% |
-| Branches | 82.33% |
+| Lines | 91.47% |
+| Statements | 89.91% |
+| Functions | 89.37% |
+| Branches | 82.30% |
 
 Coverage thresholds live in `vitest.config.ts:45-50` and currently pass at the measured baseline:
 
 | Metric | Current threshold | Current status |
 | --- | ---: | --- |
-| Lines | 90% | PASS at 91.23% |
-| Statements | 88% | PASS at 89.68% |
-| Functions | 85% | PASS at 89.11% |
-| Branches | 80% | PASS at 82.33% |
+| Lines | 90% | PASS at 91.47% |
+| Statements | 88% | PASS at 89.91% |
+| Functions | 85% | PASS at 89.37% |
+| Branches | 80% | PASS at 82.30% |
 
 These thresholds prevent meaningful regressions while keeping the release-quality bar visible and repeatable.
 
