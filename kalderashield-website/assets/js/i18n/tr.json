@@ -532,7 +532,7 @@
   "donate-spotlight-title": "Bağımsız & Açık Kaynak Geliştirmeye Katkıda Bulunun",
   "donate-spotlight-desc": "KalderaShield yatırım fonu, reklam veya kullanıcı verisi satışı olmadan %100 topluluk odaklı geliştirilir. Bağışlar; bağımsız güvenlik denetimleri ve altyapı giderleri için kullanılır.",
   "win-store-title": "İmzasız Önizleme — Yayımlandı",
-  "win-store-desc": "<strong>Bu dosyalar imzalı değildir.</strong> Windows SmartScreen \"PC'niz korundu\" uyarısı gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek. Bu beklenen bir durumdur ve kötü amaçlı yazılım anlamına gelmez. Çalıştırmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. Bu bir <em>ön sürümdür</em>: kararlı sürüm değildir ve <code>latest</code> ona işaret etmez. Neden imzasız olduğu: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şimdilik imzalayacak bir sertifika yok. SignPath Foundation programına başvuru <strong>henüz gönderilmemiştir</strong>. İmza sağlandığında sonraki Windows sürümleri imzalanacak ve bu uyarı kaldırılacak.",
+  "win-store-desc": "<strong>Bu dosyalar imzalı değildir.</strong> Windows SmartScreen \"PC'niz korundu\" uyarısı gösterecek ve kurulumu çalıştırmak için \"Daha fazla bilgi\" → \"Yine de çalıştır\" demeniz gerekecek. Bu beklenen bir durumdur ve kötü amaçlı yazılım anlamına gelmez. Çalıştırmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. Bu bir <em>ön sürümdür</em>: kararlı sürüm değildir ve <code>latest</code> ona işaret etmez. Neden imzasız olduğu: sürüm hattı imzasız bir masaüstü sürümünü hata sayar, bu yüzden şimdilik imzalayacak bir sertifika yok. SignPath Foundation programına başvuru hazırlandı ama henüz gönderilmedi. İmza sağlandığında sonraki Windows sürümleri imzalanacak ve bu uyarı kaldırılacak.",
   "win-store-cta": "Bu sayfayı takip edin",
   "win-pinned-note": "Bu Windows paketi imzasızdır: kod imzalama sertifikası bulunmadığı için kurulum sırasında SmartScreen uyarısı görülebilir. Dosyanın değiştirilmediğini SHA-256 özetiyle doğrulayabilirsiniz.",
   "privacy-eyebrow": "Yasal",
@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "Kullanıcıları etkileyen üçüncü taraf bileşenlerin davranışı LICENSE-3RD-PARTY.md ile kapsanır.",
   "win-preview-link": "İmzasız önizlemeyi GitHub Releases'dan indirin",
   "win-preview-assets": "NSIS kurucusu (.exe), MSI paketi ve taşınabilir EXE — hepsi imzasız.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
   "promo-video-fallback": "Tarayıcınız video etiketini desteklemiyor.",
   "promo-video-fallback-link": "Videoyu indirin"
 }
