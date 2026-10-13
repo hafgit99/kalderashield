@@ -87,7 +87,7 @@ mod platform {
         let comment = wide("KalderaShield secure storage");
         let blob = value.as_bytes();
 
-        let mut cred = CREDENTIALW {
+        let cred = CREDENTIALW {
             Flags: 0,
             Type: CRED_TYPE_GENERIC,
             TargetName: target.as_ptr() as *mut _,
@@ -102,7 +102,7 @@ mod platform {
             UserName: std::ptr::null_mut(),
         };
 
-        unsafe { CredWriteW(&mut cred, 0) != 0 }
+        unsafe { CredWriteW(&cred, 0) != 0 }
     }
 
     pub fn remove_item(key: &str) -> bool {
@@ -154,10 +154,7 @@ mod platform {
 
     pub fn get_item(key: &str) -> Option<String> {
         let entry = Entry::new(SERVICE_NAME, key).ok()?;
-        match entry.get_password() {
-            Ok(pwd) => Some(pwd),
-            Err(_) => None,
-        }
+        entry.get_password().ok()
     }
 
     pub fn set_item(key: &str, value: &str) -> bool {
