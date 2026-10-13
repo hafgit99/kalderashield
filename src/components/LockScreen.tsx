@@ -46,6 +46,7 @@ import {
   generateAccountSecretKey,
   isAccountSecretKeyFormatValid,
 } from '../lib/secretKey';
+import { subscribeDesktopSecureStorage } from '../lib/secureStorage';
 import KalderaShieldLogo from '../../assets/KalderaShield-app-icon.png';
 import { saveEmergencyKit } from '../lib/emergencyKit';
 import { validateMasterPassword } from '../lib/security';
@@ -103,8 +104,22 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const canRememberSecretKey = isRememberSecretKeySupported();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  /**
+   * Whether this setup is offering a second factor at all.
+   *
+   * The Secret Key used to be generated unconditionally on first setup and then
+   * silently discarded by `setupMasterPasswordWithSecretKey` on any platform
+   * that cannot store one: the user was shown a 45-character key, told it was
+   * mandatory, offered an emergency kit containing it, and then got a vault
+   * sealed with the master password alone. The kit they saved would never have
+   * recovered anything.
+   *
+   * So a key is only generated where it can be kept. Where it cannot, setup
+   * offers one factor and says so, rather than promising two and delivering one.
+   */
+  const offersSecretKeyAtSetup = canRememberSecretKey;
   const [secretKey, setSecretKey] = useState(() => (
-    rememberedSecretKey || (isSetup ? '' : generateAccountSecretKey())
+    rememberedSecretKey || (isSetup || !offersSecretKeyAtSetup ? '' : generateAccountSecretKey())
   ));
   const [rememberSecretKey, setRememberSecretKey] = useState(!isSetup ? true : Boolean(rememberedSecretKey));
   const [showPassword, setShowPassword] = useState(false);
@@ -113,6 +128,27 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const [lockoutRemainingMs, setLockoutRemainingMs] = useState(() => getLockoutRemainingMs());
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+
+  // Subscribe to desktop secure storage completion (hydrates rememberedSecretKey if delayed)
+  useEffect(() => {
+    return subscribeDesktopSecureStorage(() => {
+      if (isSetup) {
+        const remembered = getRememberedAccountSecretKey();
+        if (remembered) {
+          setSecretKey(remembered);
+        }
+      } else if (isRememberSecretKeySupported()) {
+        setSecretKey((prev) => (prev && isAccountSecretKeyFormatValid(prev) ? prev : generateAccountSecretKey()));
+      }
+    });
+  }, [isSetup]);
+
+  // Defensive fallback: if first-time setup offers a secret key, ensure it is generated and never empty
+  useEffect(() => {
+    if (!isSetup && offersSecretKeyAtSetup && (!secretKey || !isAccountSecretKeyFormatValid(secretKey))) {
+      setSecretKey(generateAccountSecretKey());
+    }
+  }, [isSetup, offersSecretKeyAtSetup, secretKey]);
 
   // Micro-interaction UI states
   const [isShaking, setIsShaking] = useState(false);
@@ -266,7 +302,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
           setError(t('lock.error.confirmationMismatch'));
           return;
         }
-        if (!isAccountSecretKeyFormatValid(secretKey)) {
+        if (offersSecretKeyAtSetup && !isAccountSecretKeyFormatValid(secretKey)) {
           triggerShake();
           setError(t('lock.error.secretKeyInvalid'));
           return;
@@ -331,7 +367,12 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
 
   const handleDownloadEmergencyKit = async () => {
     try {
-      const saved = await saveEmergencyKit(secretKey);
+      let keyToSave = secretKey;
+      if (!isSetup && (!keyToSave || !isAccountSecretKeyFormatValid(keyToSave))) {
+        keyToSave = generateAccountSecretKey();
+        setSecretKey(keyToSave);
+      }
+      const saved = await saveEmergencyKit(keyToSave);
       if (!saved) {
         setError(t('lock.error.emergencyKitCancelled'));
       }

@@ -24,10 +24,33 @@ import { test as base, expect } from '@playwright/test';
  * covering anyway. A test for the checklist itself should opt back in by
  * clearing this flag, which is the point of putting it in a fixture rather than
  * in the helpers every spec already calls. */
+declare global {
+  interface Window {
+    KalderaShieldAndroidSecureStorage?: {
+      getItem: (key: string) => string | null;
+      setItem: (key: string, value: string) => boolean;
+      removeItem: (key: string) => boolean;
+    };
+  }
+}
+
 export const test = base.extend({
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('KalderaShield_onboarding_dismissed', 'true');
+      window.KalderaShieldAndroidSecureStorage = {
+        getItem: (key: string) => {
+          return window.localStorage.getItem('__mock_sec_' + key);
+        },
+        setItem: (key: string, value: string) => {
+          window.localStorage.setItem('__mock_sec_' + key, value);
+          return true;
+        },
+        removeItem: (key: string) => {
+          window.localStorage.removeItem('__mock_sec_' + key);
+          return true;
+        },
+      };
     });
     await use(page);
   },

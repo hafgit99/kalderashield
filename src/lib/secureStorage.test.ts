@@ -4,22 +4,33 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const mockInvoke = vi.fn();
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
 import {
   getSecureStorageItem,
+  initializeDesktopSecureStorage,
   isSecureStorageAvailable,
   removeSecureStorageItem,
+  resetDesktopSecureStorageForTests,
   secureStorageKeys,
+  setDesktopSecureStorageCacheForTests,
   setSecureStorageItem,
   setSecureStorageItemResult,
 } from './secureStorage';
 
 afterEach(() => {
   delete window.KalderaShieldAndroidSecureStorage;
+  delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+  resetDesktopSecureStorageForTests();
+  mockInvoke.mockReset();
   vi.restoreAllMocks();
 });
 
 describe('secure storage bridge', () => {
-  it('reports unavailable when the Android bridge is missing', () => {
+  it('reports unavailable when both Android and Desktop bridges are missing', () => {
     expect(isSecureStorageAvailable()).toBe(false);
     expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBeNull();
     expect(setSecureStorageItem(secureStorageKeys.rememberedSecretKey, 'secret')).toBe(false);
@@ -115,5 +126,66 @@ describe('secure storage bridge', () => {
     };
     const res4 = setSecureStorageItemResult(secureStorageKeys.rememberedSecretKey, 'secret');
     expect(res4.success).toBe(false);
+  });
+
+  describe('desktop secure storage', () => {
+    it('initializes from Tauri IPC commands and populates cache', async () => {
+      (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+      mockInvoke.mockImplementation(async (cmd: string) => {
+        if (cmd === 'is_desktop_secure_storage_available') return true;
+        if (cmd === 'get_all_desktop_secure_items') {
+          return {
+            [secureStorageKeys.rememberedSecretKey]: 'desktop-secret-123',
+          };
+        }
+        return null;
+      });
+
+      await initializeDesktopSecureStorage();
+
+      expect(isSecureStorageAvailable()).toBe(true);
+      expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBe('desktop-secret-123');
+    });
+
+    it('handles desktop setItem and removeItem with sync cache and async Tauri calls', async () => {
+      (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+      setDesktopSecureStorageCacheForTests({});
+      mockInvoke.mockResolvedValue(true);
+
+      expect(isSecureStorageAvailable()).toBe(true);
+      expect(setSecureStorageItem(secureStorageKeys.rememberedSecretKey, 'new-val')).toBe(true);
+      expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBe('new-val');
+      expect(mockInvoke).toHaveBeenCalledWith('set_desktop_secure_item', {
+        key: secureStorageKeys.rememberedSecretKey,
+        value: 'new-val',
+      });
+
+      expect(removeSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBe(true);
+      expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBeNull();
+      expect(mockInvoke).toHaveBeenCalledWith('remove_desktop_secure_item', {
+        key: secureStorageKeys.rememberedSecretKey,
+      });
+    });
+
+    it('falls back gracefully when desktop secure storage reports unavailable', async () => {
+      (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+      mockInvoke.mockImplementation(async (cmd: string) => {
+        if (cmd === 'is_desktop_secure_storage_available') return false;
+        return null;
+      });
+
+      await initializeDesktopSecureStorage();
+
+      expect(isSecureStorageAvailable()).toBe(false);
+      expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBeNull();
+      expect(setSecureStorageItem(secureStorageKeys.rememberedSecretKey, 'foo')).toBe(false);
+    });
+
+    it('handles setSecureStorageItemResult on desktop', () => {
+      setDesktopSecureStorageCacheForTests({});
+      const res = setSecureStorageItemResult(secureStorageKeys.rememberedSecretKey, 'val');
+      expect(res.success).toBe(true);
+      expect(getSecureStorageItem(secureStorageKeys.rememberedSecretKey)).toBe('val');
+    });
   });
 });

@@ -18,6 +18,7 @@ import {
   getRememberedAccountSecretKey,
   isAccountSecretKeyRequired,
   isMasterPasswordSet,
+  isRememberSecretKeySupported,
   setupMasterPasswordWithSecretKey,
   verifyMasterPassword,
 } from '../lib/storage';
@@ -63,6 +64,11 @@ function secretKeyInput(): HTMLInputElement {
 beforeEach(() => {
   vi.mocked(isMasterPasswordSet).mockReturnValue(false);
   vi.mocked(isAccountSecretKeyRequired).mockReturnValue(false);
+  // Reset explicitly rather than relying on the factory default. A test that
+  // overrides this to false would otherwise leak into every later test in the
+  // file, which is how the pre-filled-key unlock test ended up looking for a
+  // checkbox that a previous test had switched off.
+  vi.mocked(isRememberSecretKeySupported).mockReturnValue(true);
   vi.mocked(getRememberedAccountSecretKey).mockReturnValue(null);
   vi.mocked(verifyMasterPassword).mockResolvedValue(false);
   vi.mocked(isBiometricEnabled).mockReturnValue(false);
@@ -222,6 +228,68 @@ describe('LockScreen', () => {
         false,
       );
       expect(onUnlock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('platforms that cannot store a Secret Key', () => {
+    beforeEach(() => {
+      vi.mocked(isRememberSecretKeySupported).mockReturnValue(false);
+      vi.mocked(isMasterPasswordSet).mockReturnValue(false);
+    });
+
+    it('offers no second factor at setup, and no key the vault will discard', () => {
+      render(<LockScreen onUnlock={vi.fn()} />);
+
+      // The whole section is gone: no field, no "remember" checkbox, no
+      // emergency kit. Each of those promised a key the platform cannot keep.
+      expect(screen.queryByTestId('lock-secret-key-input')).toBeNull();
+      expect(screen.queryByTestId('lock-remember-secret-key-checkbox')).toBeNull();
+      expect(screen.queryByTestId('lock-emergency-kit-button')).toBeNull();
+      expect(screen.queryByTestId('lock-secret-key-no-secure-store')).toBeNull();
+    });
+
+    it('still completes setup, with no Secret Key handed to the storage layer', async () => {
+      const onUnlock = vi.fn();
+      render(<LockScreen onUnlock={onUnlock} />);
+
+      fireEvent.change(passwordInput(), { target: { value: 'strong-pass-12' } });
+      fireEvent.change(confirmationInput(), { target: { value: 'strong-pass-12' } });
+      fireEvent.click(screen.getByTestId('lock-terms-checkbox'));
+      fireEvent.submit(document.querySelector('form') as HTMLFormElement);
+
+      await waitFor(() => {
+        expect(setupMasterPasswordWithSecretKey).toHaveBeenCalledWith(
+          'strong-pass-12',
+          '',
+          true,
+        );
+        expect(onUnlock).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('does not block setup on an empty Secret Key field', () => {
+      // The validity check used to run unconditionally, so a platform that was
+      // never given a key could not be set up at all -- the section was drawn,
+      // the key was mandatory, and the value never reached the vault.
+      render(<LockScreen onUnlock={vi.fn()} />);
+
+      fireEvent.change(passwordInput(), { target: { value: 'strong-pass-12' } });
+      fireEvent.change(confirmationInput(), { target: { value: 'strong-pass-12' } });
+      fireEvent.click(screen.getByTestId('lock-terms-checkbox'));
+      fireEvent.submit(document.querySelector('form') as HTMLFormElement);
+
+      expect(screen.queryByText(/Secret Key/i)).toBeNull();
+    });
+
+    it('still asks for a key when the vault was sealed with one elsewhere', () => {
+      // Android-created vault, opened on a platform that cannot store the key.
+      // Hiding this would lock the user out of their own vault.
+      vi.mocked(isAccountSecretKeyRequired).mockReturnValue(true);
+      vi.mocked(isMasterPasswordSet).mockReturnValue(true);
+
+      render(<LockScreen onUnlock={vi.fn()} />);
+
+      expect(screen.getByTestId('lock-secret-key-input')).toBeTruthy();
     });
   });
 

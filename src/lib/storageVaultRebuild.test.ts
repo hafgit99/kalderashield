@@ -78,6 +78,7 @@ vi.mock('./secureStorage', () => ({
   removeSecureStorageItem: vi.fn(async () => undefined),
   secureStorageKeys: {},
   setSecureStorageItem: vi.fn(async () => undefined),
+  initializeDesktopSecureStorage: vi.fn(async () => undefined),
 }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 

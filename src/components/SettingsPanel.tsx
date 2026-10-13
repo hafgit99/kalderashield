@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { isAndroidAutofillSupported } from '../lib/androidAutofill';
+import { isAccountSecretKeyRequired, isRememberSecretKeySupported } from '../lib/storage';
 import { useSettingsVaultItems } from '../hooks/useSettingsVaultItems';
 import { useSettingsPassword } from '../hooks/useSettingsPassword';
 import { useSettingsBiometric } from '../hooks/useSettingsBiometric';
@@ -57,6 +58,13 @@ export default function SettingsPanel({
   // the tab it was clicked from, so Settings -> Terms lands on the terms rather
   // than on whichever one was read last.
   const [legalTab, setLegalTab] = useState<LegalTermsTab | null>(null);
+
+  /* Whether the emergency kit has anything to recover on this platform. Both
+   * are read at render time, not from a hook: they are capability questions
+   * about the vault and the platform, and neither changes while the panel is
+   * open. */
+  const requiresSecretKey = isAccountSecretKeyRequired();
+  const canRememberSecretKey = isRememberSecretKeySupported();
 
   const {
     items,
@@ -215,14 +223,26 @@ export default function SettingsPanel({
         />
       </div>
 
-      {/* Emergency Kit Card */}
-      <SettingsEmergencyKitCard
-        emergencySecretKey={emergencySecretKey}
-        onEmergencySecretKeyChange={onEmergencySecretKeyChange}
-        emergencyKitSuccess={emergencyKitSuccess}
-        emergencyKitError={emergencyKitError}
-        onDownloadEmergencyKit={handleDownloadEmergencyKit}
-      />
+      {/*
+        Emergency Kit Card.
+
+        Hidden only when there is provably nothing to recover: the vault does
+        not use a Secret Key, and this platform cannot create one. Showing it
+        there asked the user to type a key that protects nothing.
+
+        It stays whenever either half holds. A vault sealed with a Secret Key
+        needs its kit on every platform, including the ones that cannot store
+        the key themselves -- that is exactly the device the kit exists for.
+      */}
+      {(requiresSecretKey || canRememberSecretKey) && (
+        <SettingsEmergencyKitCard
+          emergencySecretKey={emergencySecretKey}
+          onEmergencySecretKeyChange={onEmergencySecretKeyChange}
+          emergencyKitSuccess={emergencyKitSuccess}
+          emergencyKitError={emergencyKitError}
+          onDownloadEmergencyKit={handleDownloadEmergencyKit}
+        />
+      )}
 
       {/* Dynamic Auto-Lock Interval Card */}
       <SettingsAutoLockCard

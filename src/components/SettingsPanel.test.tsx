@@ -10,7 +10,7 @@ import { decryptDataWithPasswordSecure, encryptDataWithPasswordSecure } from '..
 import { isNativeFileDialogSupported, openDesktopImportFile, saveDesktopExportFile } from '../lib/desktopFiles';
 import { isAndroidAutofillSupported, openAndroidAutofillSettings } from '../lib/androidAutofill';
 import { disableBiometric, isBiometricEnabled, isBiometricSupported, registerBiometric } from '../lib/biometric';
-import { changeMasterPassword, deleteVaultItem, getRememberedAccountSecretKey, getVaultItems, isAccountSecretKeyRequired, migrateActiveVaultStorageToWaSqlite, resetSystem, reseedDemoData, saveVaultItems, verifyMasterPassword } from '../lib/storage';
+import { changeMasterPassword, deleteVaultItem, getRememberedAccountSecretKey, getVaultItems, isAccountSecretKeyRequired, isRememberSecretKeySupported, migrateActiveVaultStorageToWaSqlite, resetSystem, reseedDemoData, saveVaultItems, verifyMasterPassword } from '../lib/storage';
 import { closeVaultSession, openVaultSession } from '../lib/vaultSession';
 import type { VaultItem } from '../types';
 import { LanguageProvider } from '../i18n/LanguageContext';
@@ -61,6 +61,11 @@ vi.mock('../lib/storage', () => ({
   getRememberedAccountSecretKey: vi.fn(() => 'EG7-1111-2222-3333-4444'),
   getVaultItems: vi.fn(async () => vaultItems),
   isAccountSecretKeyRequired: vi.fn(() => false),
+  /* Defaults to true so the existing emergency-kit tests keep exercising a
+   * platform that can store the key. The card is hidden only where the vault
+   * has no key AND the platform cannot create one; there is a dedicated test
+   * for that combination. */
+  isRememberSecretKeySupported: vi.fn(() => true),
   migrateActiveVaultStorageToWaSqlite: vi.fn(),
   resetSystem: vi.fn(),
   reseedDemoData: vi.fn(),
@@ -793,6 +798,30 @@ describe('SettingsPanel biometric controls', () => {
 });
 
 describe('SettingsPanel Emergency Kit controls', () => {
+  it('hides the kit where the vault has no key and the platform cannot create one', async () => {
+    // The one combination where there is provably nothing to recover. Showing
+    // the card here asked the user to type a key that protects nothing: setup
+    // never generated one, and `setupMasterPasswordWithSecretKey` sealed the
+    // vault with the master password alone.
+    vi.mocked(isAccountSecretKeyRequired).mockReturnValue(false);
+    vi.mocked(isRememberSecretKeySupported).mockReturnValue(false);
+
+    renderSettingsWithLanguage('en');
+
+    expect(screen.queryByTestId('settings-emergency-kit-card')).toBeNull();
+  });
+
+  it('keeps the kit on a platform that cannot store a key when the vault needs one', async () => {
+    // A vault sealed with a Secret Key somewhere else. The kit is precisely for
+    // the device that cannot keep the key, so it must stay.
+    vi.mocked(isAccountSecretKeyRequired).mockReturnValue(true);
+    vi.mocked(isRememberSecretKeySupported).mockReturnValue(false);
+
+    renderSettingsWithLanguage('en');
+
+    expect(screen.getByTestId('settings-emergency-kit-card')).toBeTruthy();
+  });
+
   it('hands out the emergency kit even when the vault has no secret-key profile', async () => {
     // The kit used to be refused unless `isAccountSecretKeyRequired()`. On
     // desktop and web the vault is set up on the master password alone -- the

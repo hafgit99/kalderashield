@@ -1,6 +1,6 @@
 # Quality Gates
 
-This document tracks the automated test gates for Aegis Vault 7. The goal is to raise confidence in small, measurable steps without making early development brittle.
+This document tracks the automated test gates for KalderaShield. The goal is to raise confidence in small, measurable steps without making early development brittle.
 
 ## Current Unit Coverage Baseline
 

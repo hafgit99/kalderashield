@@ -26,7 +26,7 @@ Per the [OSTIF/Least Authority Security Best Practices Guide, Chapter 6](https:/
 
 | Surface | Access | Notes |
 | --- | --- | --- |
-| `aegisvault.xyz` domain + DNS | Maintainer-controlled | Hosts documentation and `/.well-known/security.txt` (RFC 9116) only; the app is local-first and has no runtime dependency on this host |
+| `kalderashield.com` domain + DNS | Maintainer-controlled | Hosts documentation and `/.well-known/security.txt` (RFC 9116) only; the app is local-first and has no runtime dependency on this host |
 | VPS hosting the domain | Maintainer-controlled (SSH) | No user data is stored; compromise is bounded to defacement/phishing risk (see INCIDENT_RESPONSE.md §5.3) |
 
 ## 4. Accounts & Distribution
@@ -35,7 +35,7 @@ Per the [OSTIF/Least Authority Security Best Practices Guide, Chapter 6](https:/
 | --- | --- | --- |
 | GitHub account (releases, advisories, CI) | Maintainer | Account-level compromise procedure: INCIDENT_RESPONSE.md §5.2 |
 | Extension store accounts (Chrome Web Store, Firefox AMO, Edge Add-ons, Safari/App Store as applicable) | Maintainer | Publishing accounts for signed extension builds |
-| `admin@aegisvault.xyz` mailbox | Maintainer | Private security reporting channel #2 (channel #1: GitHub Private Vulnerability Reporting) |
+| `admin@kalderashield.com` mailbox | Maintainer | Private security reporting channel #2 (channel #1: GitHub Private Vulnerability Reporting) |
 
 ## 5. Review Checklist (per major release)
 
