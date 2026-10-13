@@ -1,6 +1,6 @@
-# Aegis Vault 7 Desktop Threat Model
+# KalderaShield Desktop Threat Model
 
-This document defines the current desktop security model for Aegis Vault 7. It is intentionally conservative: product copy and release claims must not promise more than this model supports.
+This document defines the current desktop security model for KalderaShield. It is intentionally conservative: product copy and release claims must not promise more than this model supports.
 
 ## Scope
 
@@ -143,8 +143,8 @@ Unsupported recovery paths:
 Required user-facing recovery rules:
 
 - The user must store the master password outside the vault.
-- The user should keep at least one encrypted `.aegis` backup outside the device.
-- The backup password should not be stored only inside Aegis Vault 7.
+- The user should keep at least one encrypted `.KalderaShield` backup outside the device.
+- The backup password should not be stored only inside KalderaShield.
 - Plaintext JSON backups are high risk and should be discouraged or gated before release.
 
 ## Residual Risk Register

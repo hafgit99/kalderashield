@@ -1,17 +1,17 @@
-# Audit Application Package — Aegis Vault 7
+# Audit Application Package — KalderaShield
 
 **Prepared for:** OSTIF "Get an Audit" program · OpenSSF Alpha-Omega (Alpha / seasonal grant)
-**Date:** September 2026 · **Version:** 1.0.0 · **Maintainer:** Hafiz (@hafgit99) · admin@aegisvault.xyz
+**Date:** September 2026 · **Version:** 1.0.0 · **Maintainer:** Hafiz (@hafgit99) · admin@kalderashield.com
 
 ---
 
 ## 1. Project Summary
 
-**Aegis Vault 7** is a local-first, zero-knowledge password manager for Windows, macOS, Linux, Android, and Chromium/Firefox/Safari browsers. All cryptography runs client-side (Argon2id + AES-256-GCM via WebCrypto/WASM); no server ever receives plaintext secrets. The desktop stack is Rust/Tauri; mobile is Tauri Android with hardware-backed KeyStore wrapping; the browser extension is Manifest V3 with full Public Suffix List phishing detection.
+**KalderaShield** is a local-first, zero-knowledge password manager for Windows, macOS, Linux, Android, and Chromium/Firefox/Safari browsers. All cryptography runs client-side (Argon2id + AES-256-GCM via WebCrypto/WASM); no server ever receives plaintext secrets. The desktop stack is Rust/Tauri; mobile is Tauri Android with hardware-backed KeyStore wrapping; the browser extension is Manifest V3 with full Public Suffix List phishing detection.
 
-- **Repository:** https://github.com/hafgit99/aegis-vault-v7
-- **License:** MIT (OSI-approved, Alpha-Omega eligible)
-- **Website:** https://aegisvault.xyz
+- **Repository:** https://github.com/hafgit99/kalderashield
+- **License:** Apache-2.0 (OSI-approved, Alpha-Omega eligible)
+- **Website:** https://kalderashield.com
 - **Threat model:** `THREAT_MODEL.md` (English)
 - **Audit scope document (English):** `docs/EXTERNAL_AUDIT_SCOPE_EN.md`
 
@@ -70,12 +70,12 @@ We state this candidly: the user base is small but the project's security engine
 |---|---|
 | Threat model | `THREAT_MODEL.md` |
 | Audit scope (EN) | `docs/EXTERNAL_AUDIT_SCOPE_EN.md` |
-| Security policy | `SECURITY.md` (admin@aegisvault.xyz) |
+| Security policy | `SECURITY.md` (admin@kalderashield.com) |
 | Hardening plan | `OSTIF_ALPHA_OMEGA_HAZIRLIK_PLANI.md` (TR) — **depo dışında tutuluyor, izlenmiyor; talep üzerine sağlanır.** Bu tablodaki diğer `docs/` belgelerinin aksine yayımlanmamıştır, çünkü iç yol haritası. Satır, belge olmadığı halde orada olduğunu ima etmesin diye burada duruyor. |
 | Threat/prep docs | `docs/ANDROID_READINESS.md`, `docs/RELEASE_PLAN.md` |
 | Audit package index | `SECURITY_AUDIT_PACKAGE/README.md` |
-| Latest signed release | https://github.com/hafgit99/aegis-vault-v7/releases/tag/v7.0.4 |
-| SBOM (npm / Cargo) | release assets `npm-sbom.json` / `cargo-sbom.json` (v7.0.4+) |
+| Latest signed release | https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20 |
+| SBOM (npm / Cargo) | release assets `npm-sbom.json` / `cargo-sbom.json` (v7.0.20+) |
 | CII badge | https://www.bestpractices.dev/en/projects/14390 |
 
 ---
@@ -86,4 +86,4 @@ We state this candidly: the user base is small but the project's security engine
 - **Priority order:** Layer 2 (IPC bridge) → Layer 1 (crypto core) → Layer 3 (extension) → Layer 5 (supply chain) → Layer 4 (Android)
 - **Deliverables:** findings report + remediation verification + published summary
 
-*Contact: admin@aegisvault.xyz · GitHub: @hafgit99*
+*Contact: admin@kalderashield.com · GitHub: @hafgit99*
