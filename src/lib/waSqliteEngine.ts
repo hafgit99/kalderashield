@@ -147,8 +147,14 @@ CREATE TABLE IF NOT EXISTS vault_items (
 CREATE INDEX IF NOT EXISTS idx_vault_items_deleted ON vault_items(deleted);
 CREATE INDEX IF NOT EXISTS idx_vault_items_category ON vault_items(category);
 CREATE INDEX IF NOT EXISTS idx_vault_items_updated_at ON vault_items(updated_at);
+CREATE TABLE IF NOT EXISTS vault_state (
+  id TEXT PRIMARY KEY,
+  version_counter INTEGER NOT NULL DEFAULT 0,
+  sealed_at_version_counter INTEGER,
+  integrity_hmac TEXT
+);
 INSERT OR REPLACE INTO storage_metadata (key, value)
-VALUES ('schema_version', '1');
+VALUES ('schema_version', '2');
 `;
 
 export function createWaSqliteModuleConfig(

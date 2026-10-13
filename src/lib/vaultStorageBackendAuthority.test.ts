@@ -348,19 +348,20 @@ describe('P2-2: what the wa-sqlite backend silently degrades to', () => {
  * a class may declare fewer parameters and TypeScript accepts it, because a
  * function taking fewer parameters is assignable to one taking more.
  *
- * WaSqliteVaultStorageRepository does exactly that -- it declares three
- * parameters -- and it has no integrity-HMAC machinery at all, so there is
- * nothing for a fourth parameter to do. The reachability test above is what
- * makes this latent rather than live: the branch at storage.ts:394 is guarded by
- * `isDesktopRuntime()`, and desktop and Android always keep SQLiteOPFS, which
- * does sign. So today the dropped argument cannot cost anything.
+ * That is how wa-sqlite went years with three parameters, no integrity-HMAC
+ * machinery at all, and a green gate. It was described as unreachable because
+ * the branch at storage.ts:394 is guarded by `isDesktopRuntime()` and desktop
+ * and Android keep SQLiteOPFS. That reasoning was half right and dangerous:
+ * the browser branch below it returns `activated-wa-sqlite-default` for a fresh
+ * vault, so every new browser vault was created unsigned.
  *
- * The assertions below pin that invariant. If wa-sqlite is ever promoted to a
- * desktop, they fail by name instead of a vault quietly persisting unsigned.
+ * The gap is closed (2026-10-13): both backends now declare four parameters,
+ * and wa-sqlite seals, re-seals and verifies. The arity assertion stays, for
+ * the reason in the comment below it.
  */
 
 describe('P2-2: first persisted state is signed (K-3)', () => {
-  it('every platform where storage.ts passes a vault encryption key ends up on OPFS', async () => {
+  it('every platform where storage.ts passes a vault encryption key seals it', async () => {
     const platforms: Array<{ label: string; apply: () => void; scope: NativeVaultStorageScope }> = [
       {
         label: 'desktop',
@@ -394,26 +395,27 @@ describe('P2-2: first persisted state is signed (K-3)', () => {
         createRepository: () => createRepositoryStub(),
       });
 
-      expect(status, `${platform.label} must keep OPFS, or K-3 signing is lost`).toBe('kept-legacy-opfs');
+      expect(status, `${platform.label} must keep a backend that signs`).toBe('kept-legacy-opfs');
       expect(getVaultStorageRepository()).toBe(sqliteOPFSInstance);
       expect(typeof sqliteOPFSInstance.setupMasterWithHash).toBe('function');
     }
   });
 
-  it('the OPFS implementation is the one that signs; a presence guard cannot tell', () => {
+  it('both backends take the vault encryption key, and no backend is the odd one out', () => {
     expect(typeof SQLiteOpfsPrototype.setupMasterWithHash).toBe('function');
     expect(typeof WaSqliteVaultStorageRepository.prototype.setupMasterWithHash).toBe('function');
 
-    // Both declare the method, so `if (repo.setupMasterWithHash)` at
-    // storage.ts:415 is true on either backend and the branch looks correct
-    // while passing a fourth argument into a function that takes three.
+    // `if (repo.setupMasterWithHash)` at storage.ts:415 is true on either
+    // backend, so the branch looks correct while passing a fourth argument into
+    // a function that takes three. That is the whole failure mode.
     //
-    // Arity does happen to distinguish them (4 vs 3), and it is recorded here so
-    // that the claim stays checkable. It is not the safety net though: TS `?` is
-    // erased at runtime, `Function.length` counts every declared parameter, and
-    // a single `= undefined` default would silently drop the number to 3 and
-    // make the two implementations indistinguishable to this line.
+    // Arity happens to distinguish them, and it is recorded here so the claim
+    // stays checkable. It is not the safety net: TS `?` is erased at runtime,
+    // `Function.length` counts every declared parameter, and a single
+    // `= undefined` default would silently drop the number and make two
+    // implementations indistinguishable to this line. Equal arity plus the
+    // behavioural test in waSqliteVaultStorageRepository.test.ts is what holds.
     expect(SQLiteOpfsPrototype.setupMasterWithHash!.length).toBe(4);
-    expect(WaSqliteVaultStorageRepository.prototype.setupMasterWithHash.length).toBe(3);
+    expect(WaSqliteVaultStorageRepository.prototype.setupMasterWithHash.length).toBe(4);
   });
 });

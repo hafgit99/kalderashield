@@ -101,6 +101,7 @@ function createEngineStub(): WaSqliteEngine & {
   userSecretHash: string | null;
   vaultRows: Array<Record<string, unknown>>;
   metadata: Map<string, string>;
+  vaultState: { version_counter: number; sealed_at_version_counter: number | null; integrity_hmac: string | null } | null;
   failNextUpsert: boolean;
   failUpsertAfterCount: number | null;
 } {
@@ -108,10 +109,12 @@ function createEngineStub(): WaSqliteEngine & {
     userSecretHash: null as string | null,
     vaultRows: [] as Array<Record<string, unknown>>,
     metadata: new Map<string, string>(),
+    vaultState: null as null | { version_counter: number; sealed_at_version_counter: number | null; integrity_hmac: string | null },
     txSnapshot: null as null | {
       userSecretHash: string | null;
       vaultRows: Array<Record<string, unknown>>;
       metadata: Map<string, string>;
+      vaultState: null | { version_counter: number; sealed_at_version_counter: number | null; integrity_hmac: string | null };
     },
     failNextUpsert: false,
     failUpsertAfterCount: null as number | null,
@@ -124,6 +127,7 @@ function createEngineStub(): WaSqliteEngine & {
       userSecretHash: state.userSecretHash,
       vaultRows: state.vaultRows.map((row) => ({ ...row })),
       metadata: new Map(state.metadata),
+      vaultState: state.vaultState ? { ...state.vaultState } : null,
     };
   }
 
@@ -180,6 +184,12 @@ function createEngineStub(): WaSqliteEngine & {
     set metadata(value: Map<string, string>) {
       state.metadata = value;
     },
+    get vaultState() {
+      return state.vaultState;
+    },
+    set vaultState(value: typeof state.vaultState) {
+      state.vaultState = value;
+    },
     get failNextUpsert() {
       return state.failNextUpsert;
     },
@@ -230,6 +240,19 @@ function createEngineStub(): WaSqliteEngine & {
         state.metadata.clear();
         return { columns: [], rows: [] };
       }
+      if (normalizedSql.startsWith('DELETE FROM vault_state')) {
+        state.vaultState = null;
+        return { columns: [], rows: [] };
+      }
+      if (normalizedSql.startsWith('INSERT INTO vault_state')) {
+        const values = splitSqlValues(normalizedSql.match(/VALUES \((.*)\) ON CONFLICT/s)?.[1] ?? '');
+        state.vaultState = {
+          version_counter: Number(values[1]),
+          sealed_at_version_counter: values[2] === 'NULL' ? null : Number(values[2]),
+          integrity_hmac: values[3] === 'NULL' ? null : String(values[3]),
+        };
+        return { columns: [], rows: [] };
+      }
       if (normalizedSql.startsWith('INSERT INTO user_secrets')) {
         const values = splitSqlValues(normalizedSql.match(/VALUES \((.*)\);/s)?.[1] ?? '');
         state.userSecretHash = String(values[1]);
@@ -249,7 +272,10 @@ function createEngineStub(): WaSqliteEngine & {
     selectObjects: vi.fn(async (sql: string, params?: any) => {
       const boundSql = bindSqlParams(sql, params);
       if (boundSql.includes('FROM user_secrets')) {
-        return state.userSecretHash ? [{ argon_hash: state.userSecretHash }] : [];
+        return state.userSecretHash ? [{ username: 'owner', argon_hash: state.userSecretHash }] : [];
+      }
+      if (boundSql.includes('FROM vault_state')) {
+        return state.vaultState ? [{ ...state.vaultState }] : [];
       }
       if (boundSql.includes('FROM storage_metadata')) {
         const key = String(parseSqlValue(boundSql.match(/WHERE key = ('(?:''|[^'])*')/)?.[1] ?? "''"));
@@ -320,6 +346,149 @@ describe('wa-sqlite vault storage repository', () => {
     await expect(repository.verifyPassword('valid-master')).resolves.toBe(true);
     await expect(repository.verifyPassword('wrong-master')).resolves.toBe(false);
     expect(repository.getQueryLogs().some((entry) => entry.query.includes('valid-master'))).toBe(false);
+  });
+
+  /* ── K-3: the state seal ──────────────────────────────────────────────────
+   *
+   * `setupMasterWithHash` takes the vault encryption key as a fourth argument so
+   * the first persisted state is signed, and `storage.ts` branches on the
+   * presence of that method -- which is true on either backend. The audit found
+   * wa-sqlite declaring three parameters and owning no HMAC machinery at all,
+   * so the key was silently dropped and no browser vault was ever sealed.
+   *
+   * These assert the behaviour, not the arity: arity is a proxy that a single
+   * `= undefined` default would erase.
+   */
+  describe('K-3 state integrity', () => {
+    const VAULT_KEY = new Uint8Array(32).fill(7);
+
+    async function sealedRepository(): Promise<{
+      engine: ReturnType<typeof createEngineStub>;
+      repository: ReturnType<typeof createWaSqliteVaultStorageRepository>;
+    }> {
+      const engine = createEngineStub();
+      const repository = createWaSqliteVaultStorageRepository({ engine });
+      await repository.setupMasterWithHash!(
+        '$argon2id$mock-setup',
+        'mock-salt-12345678',
+        { memoryKiB: 32768, iterations: 3, parallelism: 1, hashLength: 32 },
+        VAULT_KEY,
+      );
+      return { engine, repository };
+    }
+
+    it('seals the first persisted state with the key it was handed', async () => {
+      const { engine } = await sealedRepository();
+
+      expect(engine.vaultState).not.toBeNull();
+      expect(engine.vaultState!.integrity_hmac).toBeTruthy();
+      expect(engine.vaultState!.version_counter).toBe(1);
+      // The tag is bound to the generation it covers, so a stale tag cannot be
+      // replayed onto a later state.
+      expect(engine.vaultState!.sealed_at_version_counter).toBe(engine.vaultState!.version_counter);
+    });
+
+    it('writes no seal when no key is available, rather than an unsigned generation', async () => {
+      const engine = createEngineStub();
+      const repository = createWaSqliteVaultStorageRepository({ engine });
+
+      await repository.setupMasterWithHash!('$argon2id$mock-setup', 'mock-salt-12345678', {});
+
+      // A counter that advances without a seal is what the OPFS backend learned
+      // the hard way: the next unlock rejects a state it can never re-verify.
+      expect(engine.vaultState).toBeNull();
+    });
+
+    it('advances the sealed generation on every keyed write', async () => {
+      const { engine, repository } = await sealedRepository();
+      expect(engine.vaultState!.version_counter).toBe(1);
+
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+      const afterFirst = engine.vaultState!.version_counter;
+
+      await repository.saveVaultItemWithKey!(createVaultItem({ id: 'item-2' }), VAULT_KEY);
+      expect(engine.vaultState!.version_counter).toBe(afterFirst + 1);
+      expect(engine.vaultState!.sealed_at_version_counter).toBe(engine.vaultState!.version_counter);
+      expect(engine.vaultState!.integrity_hmac).toBeTruthy();
+    });
+
+    it('reads its own sealed state back without complaining', async () => {
+      const { repository } = await sealedRepository();
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+
+      await expect(repository.getVaultItemsWithKey!(VAULT_KEY)).resolves.toHaveLength(1);
+    });
+
+    it('refuses to read a state whose rows were changed underneath the seal', async () => {
+      const { engine, repository } = await sealedRepository();
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+
+      // Someone edits a row directly in the database file. The rows still
+      // decrypt, so nothing else would notice.
+      engine.vaultRows[0]!.title = 'Injected Title';
+
+      await expect(repository.getVaultItemsWithKey!(VAULT_KEY)).rejects.toThrow(/vault-database-integrity-/);
+    });
+
+    it('refuses to write over a state that failed verification', async () => {
+      const { engine, repository } = await sealedRepository();
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+      // Snapshot after tampering, so the assertion is "the refused write changed
+      // nothing" rather than "the tampering was undone".
+      engine.vaultRows[0]!.title = 'Injected Title';
+      const before = engine.vaultRows.map((row) => ({ ...row }));
+
+      await expect(repository.saveVaultItemWithKey!(createVaultItem({ id: 'item-9' }), VAULT_KEY))
+        .rejects.toThrow(/vault-database-integrity-/);
+
+      // Re-signing here would turn the modification into a valid tag.
+      expect(engine.vaultRows).toEqual(before);
+    });
+
+    it('re-seals after a master password rotation, using the new key', async () => {
+      const { engine, repository } = await sealedRepository();
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+      const newKey = new Uint8Array(32).fill(9);
+
+      await repository.changeMasterPasswordWithHash!(
+        '$argon2id$mock-rotated',
+        'rotated-salt-1234',
+        { memoryKiB: 32768, iterations: 3, parallelism: 1, hashLength: 32 },
+        VAULT_KEY,
+        newKey,
+      );
+
+      expect(engine.vaultState!.integrity_hmac).toBeTruthy();
+      // The seal was written with the key the vault is now opened with; the
+      // alternative is a vault that can never be read again.
+      await expect(repository.getVaultItemsWithKey!(newKey)).resolves.toHaveLength(1);
+    });
+
+    it('drops the seal on reset, because it describes rows that no longer exist', async () => {
+      const { engine, repository } = await sealedRepository();
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+      expect(engine.vaultState).not.toBeNull();
+
+      await repository.resetAll();
+
+      expect(engine.vaultState).toBeNull();
+    });
+
+    it('seals an unsigned legacy vault on its first keyed write, instead of locking the user out', async () => {
+      const engine = createEngineStub();
+      const repository = createWaSqliteVaultStorageRepository({ engine });
+      // A vault written by a build that never sealed anything. It is readable,
+      // which is the point: it is unsealed, not corrupt.
+      await repository.setupMasterWithHash!('$argon2id$mock-setup', 'mock-salt-12345678', {});
+
+      await expect(repository.getVaultItemsWithKey!(VAULT_KEY)).resolves.toEqual([]);
+      await repository.saveVaultItemWithKey!(createVaultItem(), VAULT_KEY);
+
+      // The first write with a key is the migration: it seals, and from then on
+      // the state is covered.
+      expect(engine.vaultState!.integrity_hmac).toBeTruthy();
+      await expect(repository.getVaultItemsWithKey!(VAULT_KEY)).resolves.toHaveLength(1);
+    });
   });
 
   it('saves encrypted vault rows and decrypts them only after master password verification', async () => {
@@ -509,12 +678,19 @@ describe('wa-sqlite vault storage repository', () => {
     const engine = createEngineStub();
     const repository = createWaSqliteVaultStorageRepository({ engine });
 
-    await repository.getVaultItemsWithKey(new Uint8Array(32).fill(9));
+    await repository.getVaultItemsWithKey!(new Uint8Array(32).fill(9));
 
-    const select = vi.mocked(engine.selectObjects).mock.calls[0]?.[0];
+    // Looked up by target table rather than by call index. A keyed read now
+    // opens with the K-3 integrity check, which queries user_secrets and
+    // vault_state before it touches vault_items, so "the first select" is no
+    // longer a stable way to name the row query. The guarantee being tested is
+    // the shape of that query, not its position in the sequence.
+    const itemSelect = vi.mocked(engine.selectObjects).mock.calls
+      .map((call) => call[0] as string)
+      .find((sql) => /FROM\s+vault_items/i.test(sql));
     // The predicate is the point: filtering in JS after the fact still pays to
     // marshal and decode every corrupt row.
-    expect(select).toMatch(/WHERE\s+typeof\(id\)\s*=\s*'text'\s+AND\s+length\(id\)\s*>\s*0/i);
+    expect(itemSelect).toMatch(/WHERE\s+typeof\(id\)\s*=\s*'text'\s+AND\s+length\(id\)\s*>\s*0/i);
   });
 
   it('O-14: still drops rows whose id is not a non-empty string', async () => {
@@ -527,7 +703,7 @@ describe('wa-sqlite vault storage repository', () => {
     );
     const repository = createWaSqliteVaultStorageRepository({ engine });
 
-    const items = await repository.getVaultItemsWithKey(new Uint8Array(32).fill(9));
+    const items = await repository.getVaultItemsWithKey!(new Uint8Array(32).fill(9));
 
     // SQL filters first, the JS guard is the belt-and-braces for a stub (and for
     // any engine that ignores the WHERE clause).
@@ -560,7 +736,7 @@ describe('wa-sqlite vault storage repository', () => {
       return Buffer.from(payload.ciphertext.split(':').slice(2).join(':'), 'base64').toString('utf8');
     });
 
-    const items = await repository.getVaultItemsWithKey(key);
+    const items = await repository.getVaultItemsWithKey!(key);
 
     // Order is the property that matters. Concurrency must not reshuffle the
     // vault, or a restore would silently permute the user's records.
@@ -673,9 +849,27 @@ describe('wa-sqlite vault storage repository', () => {
     const repository = createWaSqliteVaultStorageRepository({ engine });
     await repository.setupMaster('valid-master');
     await repository.saveVaultItem(createVaultItem(), 'valid-master');
+    // Clear the seal to stand in for a vault written by a build that had no
+    // seal. Without this the state check fires first, which is the better
+    // outcome but would leave the row-decrypt path untested.
+    engine.vaultState = null;
     engine.vaultRows[0]!.enc_metadata = JSON.stringify({ ciphertext: 'tampered' });
 
     await expect(repository.getVaultItems('valid-master')).rejects.toThrow(WA_SQLITE_ROW_DECRYPT_ERROR);
+  });
+
+  it('catches a tampered ciphertext at the state seal, before any row is decrypted', async () => {
+    const engine = createEngineStub();
+    const repository = createWaSqliteVaultStorageRepository({ engine });
+    await repository.setupMaster('valid-master');
+    await repository.saveVaultItem(createVaultItem(), 'valid-master');
+    engine.vaultRows[0]!.enc_metadata = JSON.stringify({ ciphertext: 'tampered' });
+
+    // The seal covers the ciphertext, so a modified payload is caught as an
+    // integrity failure rather than surfacing as a decryption error -- which
+    // reads to the user as "your file is damaged" instead of "this database was
+    // changed".
+    await expect(repository.getVaultItems('valid-master')).rejects.toThrow(/vault-database-integrity-/);
   });
 
   it('resets all wa-sqlite tables through a transaction', async () => {

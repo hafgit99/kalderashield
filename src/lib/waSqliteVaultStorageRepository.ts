@@ -15,6 +15,14 @@ import type {
 import { createWaSqliteEngine, type WaSqliteEngine, type SqlParams } from './waSqliteEngine';
 import { reWrapPasskeysInVaultItems } from './passkey';
 import {
+  computeStateIntegrityHmac,
+  deriveVaultHmacKey,
+  evaluateIntegrityState,
+  mayReSignState,
+  type VersionedVaultDatabaseState,
+} from './vaultDatabaseFormat';
+import { logSecurityEvent, securityEventCodes } from './securityEvents';
+import {
   derivePerItemKey,
   generateSafeIv,
   webCryptoAesGcmDecrypt,
@@ -31,6 +39,11 @@ const VAULT_ITEM_KDF = 'argon2-browser' as const;
 const VAULT_ENCRYPTION_SALT_KEY = 'vault_encryption_salt';
 const VAULT_KDF_PARAMS_KEY = 'vault_kdf_params';
 const ENCRYPTED_MARKER = '[encrypted: aes-256-gcm]';
+/** Single-row table holding the K-3 seal; the id exists so it cannot multiply. */
+const VAULT_STATE_ROW_ID = 'vault';
+/** Matches the appId/schemaVersion the OPFS state document uses. */
+const VAULT_STATE_APP_ID = 'KalderaShield-Vault';
+const VAULT_STATE_SCHEMA_VERSION = 3;
 
 // O-14: per-row crypto is awaited one row at a time in the read and write
 // paths, so a 5,000 item vault serialises 5,000 rounds of async work. WebCrypto
@@ -97,6 +110,10 @@ type WaSqliteVaultItemRow = {
   created_at?: unknown;
   updated_at?: unknown;
   username_db?: unknown;
+  /* Present in the schema and written by every upsert; omitted from the read
+   * projections that predate it, which is why the K-3 state builder treats it
+   * as optional rather than assuming the column exists on every row. */
+  password_db?: unknown;
   notes_db?: unknown;
   enc_metadata?: unknown;
   enc_kdf?: unknown;
@@ -229,6 +246,10 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
 
     const oldSalt = await this.ensureVaultEncryptionSalt();
     const oldKey = await this.deriveEncryptionKey(oldPassword, oldSalt);
+    // Verified before the old key is used, and re-sealed with the new one below.
+    // Rotating without this left the vault carrying a seal made with a key it
+    // can never be opened with again.
+    await this.assertStateIntegrity(oldKey);
     const rows = await this.readVaultItemRows();
     const items = await mapWithConcurrency(rows, ROW_CRYPTO_CONCURRENCY, (row) => this.mapVaultItemRow(row, oldKey));
 
@@ -251,6 +272,7 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
         const stmt = this.createVaultItemUpsertStatement(row);
         await this.executeRequired(stmt.sql, stmt.params);
       }
+      await this.persistStateSeal(newKey, true);
     });
 
     this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', rekeyedRows.length);
@@ -271,36 +293,44 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
   }
 
   /**
-   * P2-2: this deliberately declares three parameters, not the interface's four.
+   * P2-2 resolved (2026-10-13): this declared three parameters while the
+   * interface declares four, and `storage.ts:415` branches on
+   * `if (repo.setupMasterWithHash)` and passes the vault encryption key as the
+   * fourth argument so the first persisted state is sealed (K-3). The guard was
+   * true, so `storage.ts` believed the key was delivered. It was not: this
+   * backend had no integrity-HMAC machinery at all.
    *
-   * `storage.ts:415` branches on `if (repo.setupMasterWithHash)` and passes a
-   * fourth argument — the vault encryption key — so that the first persisted
-   * state is signed (K-3). That guard is true here, so storage.ts believes the
-   * key was delivered. It was not: this backend has no integrity-HMAC machinery
-   * at all, so there is nothing for a fourth parameter to do.
+   * That was never merely latent. `vaultStorageProvider.ts:203` keeps OPFS on
+   * every desktop and Android runtime, which is what made the audit call the gap
+   * unreachable -- but the branch below it returns `activated-wa-sqlite-default`
+   * for a fresh vault in the browser, so every new browser vault was created
+   * through this path with an unsealed state, and no later write sealed it
+   * either.
    *
-   * Not a live bug today. The call site is inside `if (isDesktopRuntime())`,
-   * and `vaultStorageProvider.ts:203` keeps OPFS on every desktop and Android
-   * runtime, so the repository that actually receives the key is always
-   * `SQLiteOPFS`, which does sign.
-   *
-   * It becomes one the moment wa-sqlite is promoted to a platform that holds a
-   * real vault, which is why `vaultStorageBackendAuthority.test.ts` asserts both
-   * the platform mapping and this arity. Closing the gap properly means adding
-   * sealed-at-version and integrity-HMAC columns to this backend's schema and
-   * writing them on the first persist — a migration, not a signature.
+   * The fourth parameter is taken and used, and the schema gained a
+   * `vault_state` row carrying `version_counter`, `sealed_at_version_counter`
+   * and `integrity_hmac`. The canonical string and the evaluation come from
+   * `vaultDatabaseFormat`, shared with the OPFS backend, so the two agree on
+   * what a signature means.
    */
-  public async setupMasterWithHash(argonHash: string, salt: string, kdfParams: unknown): Promise<void> {
+  public async setupMasterWithHash(
+    argonHash: string,
+    salt: string,
+    kdfParams: unknown,
+    vaultKeyBytes?: Uint8Array,
+  ): Promise<void> {
     await this.hydrate();
     await this.runTransaction(async () => {
       await this.executeRequired('DELETE FROM user_secrets;');
       await this.executeRequired('DELETE FROM vault_items;');
+      await this.executeRequired('DELETE FROM vault_state;');
       await this.upsertStorageMetadata(VAULT_ENCRYPTION_SALT_KEY, salt);
       await this.upsertStorageMetadata(VAULT_KDF_PARAMS_KEY, JSON.stringify(kdfParams));
       await this.executeRequired(
         'INSERT INTO user_secrets (username, argon_hash) VALUES (?, ?);',
         ['owner', argonHash],
       );
+      await this.persistStateSeal(vaultKeyBytes, false);
     });
 
     this.logQuery('INSERT INTO user_secrets (username, argon_hash) VALUES ("owner", "[argon2id verification hash]");', 'SUCCESS', 1);
@@ -313,6 +343,7 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
     oldVaultKey: Uint8Array,
     newVaultKey: Uint8Array,
   ): Promise<void> {
+    await this.assertStateIntegrity(oldVaultKey);
     const items = await this.getVaultItemsWithKey(oldVaultKey);
     const reWrappedItems = await reWrapPasskeysInVaultItems(items, oldVaultKey, newVaultKey);
     const rekeyedRows = await Promise.all(reWrappedItems.map((item) => this.createEncryptedRow(item, newVaultKey)));
@@ -330,6 +361,10 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
         const stmt = this.createVaultItemUpsertStatement(row);
         await this.executeRequired(stmt.sql, stmt.params);
       }
+      // Re-sealed with the NEW key. The stored state was signed with the key
+      // that was current when it was written, which is not `newVaultKey` during
+      // a rotation -- sealing with the old one would make the next read fail.
+      await this.persistStateSeal(newVaultKey, true);
     });
 
     this.logQuery('UPDATE user_secrets SET argon_hash = "[rotated argon2id verification hash]"; REKEY vault_items;', 'SUCCESS', rekeyedRows.length);
@@ -347,6 +382,7 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
   }
 
   public async getVaultItemsWithKey(key: Uint8Array): Promise<VaultItem[]> {
+    await this.assertStateIntegrity(key);
     const rows = await this.readVaultItemRows();
     const items = await mapWithConcurrency(rows, ROW_CRYPTO_CONCURRENCY, (row) => this.mapVaultItemRow(row, key));
 
@@ -366,11 +402,13 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
   }
 
   public async saveVaultItemWithKey(item: VaultItem, key: Uint8Array): Promise<VaultItem[]> {
+    await this.assertStateIntegrity(key);
     const row = await this.createEncryptedRow(item, key);
 
     await this.runTransaction(async () => {
       const stmt = this.createVaultItemUpsertStatement(row);
       await this.executeRequired(stmt.sql, stmt.params);
+      await this.persistStateSeal(key, true);
     });
 
     this.logQuery(`INSERT OR REPLACE INTO vault_items (id, title, category, enc_metadata) VALUES (${this.sqlStringForLog(this.optionalString(row.id) || '')}, ${this.sqlStringForLog(this.optionalString(row.title) || 'Imported Record')}, ${this.sqlStringForLog(this.optionalString(row.category) || 'login')}, "[encrypted metadata]");`, 'SUCCESS', 1);
@@ -403,12 +441,14 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
     // would double-count every item and make the bar advance past the real work.
     const rows = await mapWithConcurrency(items, ROW_CRYPTO_CONCURRENCY, (item) => this.createEncryptedRow(item, key));
 
+    await this.assertStateIntegrity(key);
     await this.runTransaction(async () => {
       for (const [index, row] of rows.entries()) {
         const stmt = this.createVaultItemUpsertStatement(row);
         await this.executeRequired(stmt.sql, stmt.params);
         onProgress?.(index + 1);
       }
+      await this.persistStateSeal(key, true);
     });
 
     this.logQuery(`INSERT OR REPLACE INTO vault_items (${rows.length} records);`, 'SUCCESS', rows.length);
@@ -430,6 +470,10 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
       await this.executeRequired('DELETE FROM vault_items;');
       await this.executeRequired('DELETE FROM user_secrets;');
       await this.executeRequired('DELETE FROM storage_metadata;');
+      // The seal describes rows that no longer exist. Leaving it behind would
+      // make the next keyed read fail verification against a state it can never
+      // reconstruct.
+      await this.executeRequired('DELETE FROM vault_state;');
     });
     this.logQuery('DELETE FROM vault_items; DELETE FROM user_secrets; DELETE FROM storage_metadata;', 'SUCCESS', 1);
     // A reset deletes the schema metadata the open was initialised against, so
@@ -466,9 +510,11 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
       return this.getVaultItemsWithKey(key);
     }
 
+    await this.assertStateIntegrity(key);
     await this.runTransaction(async () => {
       const placeholders = ids.map(() => '?').join(', ');
       await this.executeRequired(`DELETE FROM vault_items WHERE id IN (${placeholders});`, ids);
+      await this.persistStateSeal(key, true);
     });
 
     this.logQuery(`DELETE FROM vault_items WHERE id IN (${ids.map((id) => this.sqlStringForLog(id)).join(', ')});`, 'SUCCESS', ids.length);
@@ -489,12 +535,14 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
   public async reseedDemoWithKey(key: Uint8Array, demoItems: VaultItem[]): Promise<VaultItem[]> {
     const rows = await Promise.all(demoItems.map((item) => this.createEncryptedRow(item, key)));
 
+    await this.assertStateIntegrity(key);
     await this.runTransaction(async () => {
       await this.executeRequired('DELETE FROM vault_items;');
       for (const row of rows) {
         const stmt = this.createVaultItemUpsertStatement(row);
         await this.executeRequired(stmt.sql, stmt.params);
       }
+      await this.persistStateSeal(key, true);
     });
 
     this.logQuery(`RESEED: INSERT ${rows.length} rows into vault_items;`, 'SUCCESS', rows.length);
@@ -527,8 +575,149 @@ export class WaSqliteVaultStorageRepository implements VaultStorageRepository {
     throw new Error(WA_SQLITE_WRITE_NOT_READY_ERROR);
   }
 
-  private async readVaultItemRows(): Promise<WaSqliteVaultItemRow[]> {
-    // The id guard used to be a JavaScript `.filter` over every row, so a
+  /* ── K-3: state integrity ────────────────────────────────────────────────── */
+
+  /**
+   * Builds the same state document the OPFS backend signs, from SQL rows.
+   *
+   * The canonical string is produced by `computeCanonicalStateString`, so both
+   * backends sign an identical structure. That is the whole point: a second
+   * canonical form would mean a signature that verifies on one backend means
+   * nothing on the other, and the reader would have to know which it had.
+   */
+  private async buildStateForSealing(): Promise<VersionedVaultDatabaseState> {
+    const [secretRows, itemRows, salt, kdfRaw, sealRows] = await Promise.all([
+      this.engine.selectObjects("SELECT username, argon_hash FROM user_secrets WHERE username != '';"),
+      this.readVaultItemRows(),
+      this.ensureVaultEncryptionSalt(),
+      this.getStorageMetadata(VAULT_KDF_PARAMS_KEY),
+      this.engine.selectObjects(
+        'SELECT version_counter, sealed_at_version_counter, integrity_hmac FROM vault_state WHERE id = ?;',
+        [VAULT_STATE_ROW_ID],
+      ),
+    ]);
+
+    let kdfParams: Record<string, unknown> | undefined;
+    if (kdfRaw) {
+      try {
+        kdfParams = JSON.parse(kdfRaw) as Record<string, unknown>;
+      } catch {
+        kdfParams = undefined;
+      }
+    }
+
+    const seal = sealRows[0];
+    return {
+      appId: VAULT_STATE_APP_ID,
+      schemaVersion: VAULT_STATE_SCHEMA_VERSION,
+      encryption_salt: salt,
+      kdfParams: kdfParams as VersionedVaultDatabaseState['kdfParams'],
+      versionCounter: typeof seal?.version_counter === 'number' ? seal.version_counter : 0,
+      sealedAtVersionCounter:
+        typeof seal?.sealed_at_version_counter === 'number' ? seal.sealed_at_version_counter : undefined,
+      integrityHmac: typeof seal?.integrity_hmac === 'string' ? seal.integrity_hmac : undefined,
+      user_secrets: (secretRows as Array<{ username?: unknown; argon_hash?: unknown }>).map((row) => ({
+        username: this.optionalString(row.username) ?? '',
+        argon_hash: this.optionalString(row.argon_hash) ?? '',
+      })),
+      vault_items: itemRows.map((row) => ({
+        id: row.id,
+        title: this.optionalString(row.title) ?? '',
+        category: this.optionalString(row.category) ?? '',
+        favorite: Number(row.favorite ?? 0),
+        deleted: Number(row.deleted ?? 0),
+        deleted_at: this.optionalString(row.deleted_at) ?? null,
+        username: this.optionalString(row.username_db) ?? '',
+        username_db: this.optionalString(row.username_db) ?? '',
+        password_db: this.optionalString(row.password_db) ?? '',
+        notes_db: this.optionalString(row.notes_db) ?? '',
+        enc_metadata: this.optionalString(row.enc_metadata) ?? '',
+        enc_kdf: this.optionalString(row.enc_kdf) ?? '',
+      })),
+    } as VersionedVaultDatabaseState;
+  }
+
+  /**
+   * Signs the current state and writes the seal.
+   *
+   * `advanceGeneration` is false for a write that cannot be sealed (a hydrate
+   * before the key is known, or a keyless setup path). That distinction is the
+   * one the OPFS backend learned the hard way: a counter that advances without
+   * a matching seal leaves a state that `evaluateIntegrityState` rejects on the
+   * next load -- intact on disk, permanently unreadable.
+   *
+   * Must be called inside the caller's transaction so the seal commits with the
+   * rows it covers, or rolls back with them.
+   */
+  private async persistStateSeal(key: Uint8Array | undefined, advanceGeneration: boolean): Promise<void> {
+    if (!key) {
+      return;
+    }
+
+    const state = await this.buildStateForSealing();
+    if (advanceGeneration) {
+      state.versionCounter = (state.versionCounter ?? 0) + 1;
+      state.sealedAtVersionCounter = state.versionCounter;
+    } else if (state.versionCounter === 0) {
+      state.versionCounter = 1;
+      state.sealedAtVersionCounter = 1;
+    }
+
+    try {
+      const hmacKey = await deriveVaultHmacKey(key);
+      state.integrityHmac = await computeStateIntegrityHmac(state, hmacKey);
+    } catch (err) {
+      logSecurityEvent(
+        securityEventCodes.storageLegacyMigrationFailed,
+        'Failed to compute wa-sqlite vault state integrity HMAC.',
+        'warning',
+        { error: err instanceof Error ? err.message : String(err) },
+      );
+      return;
+    }
+
+    await this.executeRequired(
+      'INSERT INTO vault_state (id, version_counter, sealed_at_version_counter, integrity_hmac) '
+      + 'VALUES (?, ?, ?, ?) '
+      + 'ON CONFLICT(id) DO UPDATE SET '
+      + 'version_counter = excluded.version_counter, '
+      + 'sealed_at_version_counter = excluded.sealed_at_version_counter, '
+      + 'integrity_hmac = excluded.integrity_hmac;',
+      [VAULT_STATE_ROW_ID, state.versionCounter ?? 0, state.sealedAtVersionCounter ?? null, state.integrityHmac],
+    );
+  }
+
+  /**
+   * Refuses a keyed read or write whose stored seal does not verify.
+   *
+   * A vault written before this change has no seal at all. That is not
+   * tampering: `evaluateIntegrityState` reports it as unsigned and
+   * `mayReSignState` allows the next write to seal it. What must never be
+   * allowed is re-signing a state that *failed* verification, which would
+   * launder the modification into a valid tag.
+   */
+  private async assertStateIntegrity(key: Uint8Array): Promise<void> {
+    const state = await this.buildStateForSealing();
+    if (!state.integrityHmac) {
+      return;
+    }
+
+    const verdict = await evaluateIntegrityState(state, key);
+    if (mayReSignState(verdict)) {
+      return;
+    }
+
+    logSecurityEvent(
+      securityEventCodes.storageLegacyMigrationFailed,
+      `Refusing wa-sqlite vault operation: stored state failed integrity (${verdict.status}). ` +
+      'Re-signing unverified state would launder the modification.',
+      'critical',
+      { detail: verdict.status === 'tampered' ? verdict.detail : String(verdict.status) },
+    );
+    throw new Error(`vault-database-integrity-${verdict.status}`);
+  }
+
+  private async readVaultItemRows(): Promise<WaSqliteVaultItemRow[]> {    // The id guard used to be a JavaScript `.filter` over every row, so a
     // corrupt row with a blank id was still marshalled across the bridge and
     // decoded before being thrown away. Pushing the predicate into SQL keeps
     // `typeof` semantics exactly (a numeric id is rejected, not just an empty
