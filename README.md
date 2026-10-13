@@ -16,21 +16,26 @@
 
 <br />
 
-![Security Score](https://img.shields.io/badge/Security_Audit-92%2F100_(A%2B)-brightgreen?style=flat-square&logo=shield)
-![Tests](https://img.shields.io/badge/Unit_Tests-2243_Passed-success?style=flat-square&logo=vitest)
+![Vault Score](https://img.shields.io/badge/In_App_Vault_Score-92%2F100-brightgreen?style=flat-square&logo=shield)
+![Tests](https://img.shields.io/badge/Unit_Tests-2%2C356_Passed-success?style=flat-square&logo=vitest)
 ![Fuzz Tests](https://img.shields.io/badge/Fuzz_Tests-37_Passed-success?style=flat-square&logo=vitest)
-![Coverage](https://img.shields.io/badge/Coverage-91.1%25_Lines_·_82.2%25_Branches-brightgreen?style=flat-square&logo=vitest)
+![Coverage](https://img.shields.io/badge/Coverage-91.5%25_Lines_·_82.3%25_Branches-brightgreen?style=flat-square&logo=vitest)
 ![Mutation Testing](https://img.shields.io/badge/Mutation_Testing-8_Stryker_Suites_·_90.8%25_Peak-blue?style=flat-square&logo=stryker)
 ![TypeScript](https://img.shields.io/badge/TypeScript-0_Errors-blue?style=flat-square&logo=typescript)
 ![License](https://img.shields.io/badge/License-Apache_2.0-orange?style=flat-square)
-![i18n](https://img.shields.io/badge/i18n-12_Languages-purple?style=flat-square)
+![i18n](https://img.shields.io/badge/i18n-12_Languages_·_1%2C222_Keys-purple?style=flat-square)
+
+<sub>Badges are measured from this repository, not asserted. Unit, fuzz, coverage and
+Rust numbers come from the commands in [Verification &amp; Testing](#verification--testing) run on
+the current commit; the vault score is computed on-device from your own vault contents
+and is not a third-party assessment.</sub>
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14390/badge)](https://www.bestpractices.dev/projects/14390)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hafgit99/kalderashield/badge)](https://scorecard.dev/viewer/?uri=github.com/hafgit99/kalderashield)
 [![CodeQL](https://github.com/hafgit99/kalderashield/actions/workflows/codeql.yml/badge.svg)](https://github.com/hafgit99/kalderashield/actions/workflows/codeql.yml)
 [![CI](https://github.com/hafgit99/kalderashield/actions/workflows/ci.yml/badge.svg)](https://github.com/hafgit99/kalderashield/actions/workflows/ci.yml)
 
-[Features](#-key-features) • [Security Architecture](#-security-architecture) • [Security Review Status](#-security-review-and-external-audit-status) • [Platforms](#-platform-matrix) • [Build & Verification](#-build--verification) • [Documentation](#-documentation)
+[Key Features](#-key-features) • [Security Review Status](#-security-review-and-external-audit-status) • [Platforms](#-platform-matrix) • [Test Metrics](#test-metrics-summary) • [Build & Verify](#verification--testing) • [Documentation](#-documentation-index)
 
 </div>
 
@@ -46,9 +51,11 @@ Unlike cloud-dependent password managers vulnerable to server breaches and key-e
 
 ## 🛡️ Security Review and External Audit Status
 
-KalderaShield publishes its threat model, security notes, quality gates, and a scope document prepared for a future independent assessment. **As of September 23, 2026, this repository does not publish a completed independent third-party security audit report.** The scope document is preparation material, not an audit result.
+KalderaShield publishes its threat model, security notes, quality gates, and a scope document prepared for a future independent assessment. **As of October 13, 2026, this repository does not publish a completed independent third-party security audit report.** The scope document is preparation material, not an audit result.
 
-Earlier numerical scores and closure counts were maintainer assessments of older code snapshots. They are not independent ratings, certifications, or a current assessment of release `v7.0.20.0`; they are not presented here as evidence of external assurance. See [Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md) and the [External Audit Scope](docs/EXTERNAL_AUDIT_SCOPE_EN.md).
+Earlier numerical scores and closure counts were maintainer assessments of older code snapshots. They are not independent ratings, certifications, or a current assessment of release `v7.0.20`; they are not presented here as evidence of external assurance. The `In-App Vault Score` badge above is the password-hygiene score the app computes from your own vault on your own device — it is not a code audit. See [Security Review Status](docs/SECURITY_REVIEW_STATUS_2026.md) and the [External Audit Scope](docs/EXTERNAL_AUDIT_SCOPE_EN.md).
+
+What *is* independently reproducible is the engineering evidence below: every number in the [Test Metrics Summary](#test-metrics-summary) comes from a command you can run in this repository, and CI re-runs them on every push and pull request.
 
 ---
 
@@ -80,7 +87,7 @@ Earlier numerical scores and closure counts were maintainer assessments of older
 - **Design invariant — hardware binding is a convenience layer**: Vault key derivation always remains **master password + Secret Key via Argon2id**. Device loss, TPM reset, or authenticator replacement degrades only convenience — never access to the vault. The vault file stays fully portable (sync, encrypted backups, sharing).
 
 ### 🌐 Internationalization (i18n)
-Full localization across 12 languages:  
+Full localization across 12 languages, verified at **100% key parity (1,222 keys × 12 locales)** by `npm run i18n:audit`:  
 **Turkish (TR) • English (EN) • German (DE) • French (FR) • Spanish (ES) • Italian (IT) • Portuguese (PT) • Russian (RU) • Japanese (JA) • Chinese (ZH) • Korean (KO) • Arabic (AR)**.
 
 ---
@@ -89,11 +96,11 @@ Full localization across 12 languages:
 
 | Platform | Published Artifacts | Security Status |
 |---|---|---|
-| **Windows Desktop** | *Unsigned preview only* — NSIS installer, MSI and portable EXE, published as a GitHub **pre-release**. Not code-signed: SmartScreen will warn, verify the SHA-256 digest before running. See the [code signing policy](CODE_SIGNING_POLICY.md) | 🔒 Build-verified (Tauri 2.11). Updater signature verification is implemented but inactive until signed Windows artifacts ship |
-| **Linux Desktop** | AppImage, DEB | 🔒 Verified (PipeWire / D-Bus screen recording shield active, Tauri updater signatures verified) |
+| **Windows Desktop** | *Unsigned preview only* — NSIS installer, MSI and portable EXE, published under the `v7.0.20-unsigned-preview` GitHub **pre-release**. Not code-signed: SmartScreen will warn, verify the SHA-256 digest before running. See the [code signing policy](CODE_SIGNING_POLICY.md) | 🔒 Build-verified (Tauri 2.11). Updater signature verification is implemented but inactive until signed Windows artifacts ship |
+| **Linux Desktop** | AppImage, DEB (+ detached signatures) | 🔒 Verified (PipeWire / D-Bus screen recording shield active, Tauri updater signatures verified) |
 | **macOS Desktop** | *Not published* — awaiting Apple notarization | 🔒 Build-verified (Native WebExtension bridge) |
-| **Android Mobile** | Signed APK, App Bundle (AAB) | 🔒 Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
-| **Browser Extension** | Chrome (MV3 CRX), Firefox (XPI), Safari (WebExt) | 🔒 Verified (Closed Shadow DOM, 30s clipboard auto-clear, eTLD+1) |
+| **Android Mobile** | Signed APKs: `arm64-v8a`, `armeabi-v7a`, `x86_64`, universal. An App Bundle is produced by `npm run android:build`, but is **not** attached to the release | 🔒 Verified (Multi-ABI, AndroidKeyStore, Autofill Service, FLAG_SECURE) |
+| **Browser Extension** | Chromium/Edge ZIP, Firefox XPI, Safari WebExtension ZIP | 🔒 Verified (Closed Shadow DOM, 30s clipboard auto-clear, eTLD+1) |
 
 **Why some rows have no artifacts.** v7.0.20 publishes Linux, Android and the
 browser extensions only. The release pipeline fails closed on unsigned desktop
@@ -121,31 +128,46 @@ KalderaShield maintains rigorous automated testing standards with defense-in-dep
 
 ### Test Metrics Summary
 
+Measured on the current commit (`npm run test:unit`, `npm run test:coverage`, `npm run test:fuzz`,
+`npm run test:e2e:chromium`, `npm run i18n:audit`, `cargo test`).
+
 | Metric | Result | Status | Framework / Tool |
 |---|---|---|---|
 | **TypeScript Typecheck** | **`0 errors`** | ✅ 100% Clean | `tsc --noEmit` |
-| **Unit & Integration Test Suite** | **`253 test files passed (253/253)`** | ✅ 100% Green | Vitest 4.1 |
-| **Unit Tests Executed** | **`2,243 tests passed (2,243/2,243)`** | ✅ 100% Green | Vitest / React Testing Library |
+| **ESLint** | **`0 errors, 22 warnings`** | ✅ Clean (warnings are React Hooks / consistent-type-imports, all pre-existing) | ESLint 9 flat config |
+| **Unit & Integration Test Suite** | **`258 test files passed (258/258)`** | ✅ 100% Green | Vitest 4.1.11 |
+| **Unit Tests Executed** | **`2,356 tests passed (2,356/2,356)`** | ✅ 100% Green | Vitest / React Testing Library |
 | **Property-Based Fuzz Tests** | **`37 tests across 9 files passed`** | ✅ 100% Green | fast-check v4 |
-| **End-to-End (E2E) Suites** | **`34 scenarios x 3 browsers = 102/102 passed`** | ✅ 100% Green | Playwright (Chromium, Firefox, WebKit) |
+| **End-to-End (E2E) Suites** | **`34 scenarios · Chromium 34/34 (1.6 min)`** | ✅ Green — runs as the `e2e-smoke` CI job | Playwright (Chromium) |
 | **Mutation Testing** | **`8 specialized Stryker suites - 90.8% peak gate score`** | ✅ Measured & Gated | @stryker-mutator/core v9 |
-| **Rust Backend Tests** | **`18 tests passed (18/18)`** | ✅ 100% Green | `cargo test` (Tauri 2) |
-| **Lines Coverage** | **`91.12%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
-| **Statements Coverage** | **`89.56%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
-| **Functions Coverage** | **`88.98%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
-| **Branches Coverage** | **`82.18%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
+| **Rust Backend Tests** | **`74 tests passed (74/74)`** | ✅ 100% Green | `cargo test` (Tauri 2) |
+| **Lines Coverage** | **`91.47%`** | ✅ Exceeds Global Target (>= 90%) | Vitest V8 Coverage |
+| **Statements Coverage** | **`89.91%`** | ✅ Exceeds Global Target (>= 88%) | Vitest V8 Coverage |
+| **Functions Coverage** | **`89.37%`** | ✅ Exceeds Global Target (>= 85%) | Vitest V8 Coverage |
+| **Branches Coverage** | **`82.30%`** | ✅ Exceeds Global Target (>= 80%) | Vitest V8 Coverage |
+| **Localization Parity** | **`12 locales × 1,222 keys — 100% parity`** | ✅ PASS | `npm run i18n:audit` |
+
+**What CI actually runs** (`.github/workflows/ci.yml`): `typecheck`, `unit-tests` (coverage run,
+report uploaded as a 7-day artifact), `e2e-smoke`, `rust-tests`, `security`, `website-gates`.
+There is no `lint` job and no separate e2e job per browser — the PR gate is Chromium-only on
+purpose; cross-browser parity (Firefox, WebKit) is a release checklist item, not a claim made
+here. `playwright.config.ts` defines all three projects, so `npm run test:e2e` still runs
+Firefox and WebKit locally.
+
+> Playwright is configured with `retries: 2` in CI. A retried test that only passes on the
+> second attempt is a flaky test wearing a green badge — treat the first red run as the signal.
 
 ---
 
 ### 🎭 End-to-End (E2E) Cryptographic & Workflow Testing (`Playwright`)
 
-Comprehensive browser-level integration testing verifies client-side zero-knowledge cryptography, SQLite persistence, and UI interaction states in real browser engines:
+Comprehensive browser-level integration testing verifies client-side zero-knowledge cryptography, SQLite persistence, and UI interaction states in a real browser engine (Chromium is the CI gate; Firefox and WebKit projects are configured and run locally with `npm run test:e2e`):
 
 | E2E Feature Scenario | Target Flow & Security Verification | Status |
 |---|---|---|
 | **Payment Cards & Field Masking** | AES-256-GCM encryption of card numbers, CVV/PIN masking with unmask toggle, cardholder data persistence across reloads | ✅ 100% Passed |
 | **Passkeys & WebAuthn Credentials** | Hardware passkey credential ID storage, service domain association, and detail panel rendering | ✅ 100% Passed |
-| **Zero-Knowledge Share URLs** | Client-side ephemeral URL generation (`#share=...&k=...`), hash-fragment decryption, and one-click import into local vault | ✅ 100% Passed |
+| **Zero-Knowledge Share URLs** | Client-side ephemeral URL generation (`#share=<ciphertext>&s=<salt>`), hash-fragment decryption, password prompt on the receiving side, and one-click import into the local vault. The key is derived from the share password and never travels in the URL | ✅ 100% Passed |
 | **Custom Tagging & Categorization** | Dynamic multi-tag creation, visual chip indicators, and tag-based vault filtering | ✅ 100% Passed |
 | **Theme & UI Preferences** | Dynamic palette switching (Emerald, Sapphire, Amber, Rose, etc.) and state persistence across full browser reloads | ✅ 100% Passed |
 
@@ -165,6 +187,7 @@ Fuzz testing executes hundreds of randomized, property-bounded iterations per te
 | `encryption.fuzz.test.ts` | `src/lib/encryption.ts` | Arbitrary JSON envelopes, malformed KDF params, portable memory floor enforcement |
 | `importer.fuzz.test.ts` | `src/lib/importer.ts` | CSV & Universal JSON round-trip import integrity, malformed array normalization |
 | `attachments.fuzz.test.ts` | `src/lib/attachments.ts` | Non AES-256-GCM algorithms rejection, missing cryptographic metadata handling |
+| `syncProviders.fuzz.test.ts` | `src/lib/sync/s3Provider.ts`, `src/lib/sync/webdavProvider.ts` | Arbitrary S3/WebDAV configuration records, strict origin enforcement, HTTPS/loopback policy, typed `SyncError` failures |
 
 ---
 

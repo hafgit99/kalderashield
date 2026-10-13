@@ -222,6 +222,7 @@ export const ar = {
   'vaultForm.field.url': 'عنوان URL آمن',
   'vaultForm.placeholder.url': 'على سبيل المثال github.com',
   'vaultForm.validation.titleRequired': 'الرجاء إدخال عنوان وصفي لهذا السجل.',
+  'vaultForm.validation.notesTooLong': 'الملاحظات محدودة بـ {limit} حرف. اختصر الملاحظة قبل الحفظ — KalderaShield لا يقصّها نيابةً عنك.',
   'vaultForm.saveFailed': 'العنصر لم يتم حفظه. حاول مرة أخرى.',
   'vaultForm.attachment.fallbackName': 'الملف المرفق',
   'vaultForm.footer.cancel': 'يلغي',

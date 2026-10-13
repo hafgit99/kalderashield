@@ -223,6 +223,7 @@ export const tr = {
     'vaultForm.field.url': 'GÜVENLİ BAĞLANTI (URL)',
     'vaultForm.placeholder.url': 'örn. github.com',
     'vaultForm.validation.titleRequired': 'Lütfen kayıt için açıklayıcı bir başlık belirleyin.',
+    'vaultForm.validation.notesTooLong': 'Notlar en fazla {limit} karakter olabilir. Kaydetmeden önce kısaltın — KalderaShield sizin yerinize kısaltmaz.',
     'vaultForm.saveFailed': 'Öğe kaydedilemedi. Lütfen tekrar deneyin.',
     'vaultForm.attachment.fallbackName': 'Ekli Dosya',
     'vaultForm.footer.cancel': 'İptal',

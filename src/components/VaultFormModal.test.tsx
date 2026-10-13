@@ -217,6 +217,41 @@ describe('VaultFormModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('N-1: refuses an over-long note with a visible message instead of saving it shortened', async () => {
+    const onSave = vi.fn();
+    render(
+      <VaultFormModal
+        isOpen={true}
+        editingItem={null}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('örn. Geliştirici Portalı, Fatura Kasası, Nüfus Cüzdanı'), {
+      target: { value: 'GitHub' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('örn. github.com'), {
+      target: { value: 'https://github.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('örn. user@example.com'), {
+      target: { value: 'hafgit99' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Şifrenizi belirleyin'), {
+      target: { value: 'secret-password' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Kurtarma ipuçları, ek bilgiler vb.'), {
+      target: { value: 'a'.repeat(100_001) },
+    });
+
+    fireEvent.click(screen.getByText('Güvenle Kaydet'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Notlar en fazla 100000 karakter olabilir/)).toBeTruthy();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('hydrates existing item fields in edit mode', () => {
     render(
       <VaultFormModal

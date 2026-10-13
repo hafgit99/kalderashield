@@ -43,8 +43,15 @@ vi.mock('./sqlite_opfs', () => ({
   sqliteOPFSInstance,
 }));
 
+const purgeUnreferencedAttachments = vi.hoisted(() => vi.fn(async (..._args: any[]) => ({
+  purged: 0,
+  skippedForMissingReferences: false,
+  missingIds: [] as string[],
+})));
+
 vi.mock('./attachments', () => ({
   migrateLegacyAttachmentsToAesGcm,
+  purgeUnreferencedAttachments,
   reencryptAttachmentsForVaultKeyChange,
 }));
 
@@ -798,6 +805,79 @@ describe('vault session storage', () => {
     expect(sqliteOPFSInstance.reseedDemoWithKey).toHaveBeenCalledWith(expect.any(Uint8Array), expect.arrayContaining([
       expect.objectContaining({ id: '1', title: 'Demo Developer Portal' }),
     ]));
+  });
+
+  it('N-1: sanitizes notes on the way into storage, so no write path can skip the policy', async () => {    openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+    await saveVaultItem(sampleItem({ notes: 'invoice\u202Egnp.exe\u0000' }));
+    expect(sqliteOPFSInstance.saveVaultItemWithKey).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'invoicegnp.exe' }),
+      expect.any(Uint8Array),
+    );
+
+    await saveVaultItems([sampleItem({ notes: 'clean' }), sampleItem({ id: 'item-2', notes: 'a\u200Eb' })]);
+    expect(sqliteOPFSInstance.saveVaultItemsWithKey).toHaveBeenCalledWith(
+      [expect.objectContaining({ notes: 'clean' }), expect.objectContaining({ notes: 'ab' })],
+      expect.any(Uint8Array),
+    );
+  });
+
+  it('N-1: does not shorten an over-long note at the storage boundary', async () => {
+    openVaultSession('master-pass', 'master-pass', testVaultKey);
+    const long = 'a'.repeat(100_001);
+
+    await saveVaultItem(sampleItem({ notes: long }));
+
+    expect(sqliteOPFSInstance.saveVaultItemWithKey).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: long }),
+      expect.any(Uint8Array),
+    );
+  });
+
+  describe('N-1 attachment cleanup wiring', () => {
+    it('purges unreferenced attachments after a permanent delete, using the returned item list', async () => {
+      sqliteOPFSInstance.deletePermanently.mockResolvedValue([sampleItem({ attachmentId: 'att-kept' })]);
+      openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+      await deletePermanently('item-1');
+
+      expect(purgeUnreferencedAttachments).toHaveBeenCalledWith([expect.objectContaining({ attachmentId: 'att-kept' })]);
+    });
+
+    it('keeps trashed items in the list it hands to cleanup', async () => {
+      sqliteOPFSInstance.getVaultItemsWithKey.mockResolvedValue([
+        sampleItem({ id: 'live', attachmentId: 'att-live' }),
+        sampleItem({ id: 'trashed', attachmentId: 'att-trashed', deleted: true }),
+      ]);
+      sqliteOPFSInstance.deletePermanentlyBatch.mockResolvedValue([sampleItem({ id: 'live', attachmentId: 'att-live' })]);
+      openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+      await emptyTrashComplete();
+
+      // A trashed item's blob must survive emptying the trash: the item itself
+      // is gone, but a restore elsewhere -- or a snapshot restore that includes
+      // it -- would otherwise hand back an item with no file.
+      expect(purgeUnreferencedAttachments).toHaveBeenCalledWith([expect.objectContaining({ id: 'live' })]);
+    });
+
+    it('runs after a save, so removing an attachment from an item frees its blob', async () => {
+      sqliteOPFSInstance.saveVaultItem.mockResolvedValue([sampleItem({ id: 'item-1' })]);
+      openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+      await saveVaultItem(sampleItem({ id: 'item-1', attachmentId: 'att-new' }));
+
+      expect(purgeUnreferencedAttachments).toHaveBeenCalledWith([expect.objectContaining({ id: 'item-1' })]);
+    });
+
+    it('does not fail the delete when cleanup raises', async () => {
+      purgeUnreferencedAttachments.mockRejectedValueOnce(new Error('indexeddb unavailable'));
+      sqliteOPFSInstance.deletePermanently.mockResolvedValue([]);
+      openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+      // The row is already gone by the time cleanup runs; turning a cleanup
+      // failure into a failed delete would misreport what happened to the user.
+      await expect(deletePermanently('item-1')).resolves.toEqual([]);
+    });
   });
 
   it('moves items to trash and restores them through the targeted update', async () => {

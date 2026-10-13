@@ -25,6 +25,18 @@ export const securityEventCodes = {
    */
   storageTrashRetentionPurged: 'storage.trashRetention.purged',
   attachmentLegacyMigrationFailed: 'attachment.legacyMigration.failed',
+  /**
+   * Attachment blobs that no vault item references any more were deleted.
+   * Recorded so a cleanup that removes the user's encrypted bytes is never
+   * silent — the trigger is a permanent delete or a removed attachment.
+   */
+  attachmentOrphanPurged: 'attachment.orphan.purged',
+  /**
+   * Attachment cleanup was refused because an item points at a blob that is
+   * already absent. The item list and the store disagree, so the list cannot be
+   * treated as complete and nothing is deleted.
+   */
+  attachmentCleanupSkipped: 'attachment.cleanup.skipped',
   networkBlocked: 'network.blocked',
   passkeyCreateFailed: 'passkey.create.failed',
   passkeyAuthenticateFailed: 'passkey.authenticate.failed',

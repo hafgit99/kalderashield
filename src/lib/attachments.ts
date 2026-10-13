@@ -528,26 +528,14 @@ export async function getAttachmentBlob(id: string): Promise<{ blob: Blob, name:
 }
 
 /**
- * Removes an attachment from IndexedDB.
+ * Removes a single attachment from IndexedDB.
+ *
+ * Removed 2026-10-13: `deleteAttachments([id])` already does this in one
+ * transaction, so this was a second way to perform the same delete -- and the
+ * one with no production caller. Deleting it is deliberate: leaving an export
+ * that only its own test uses is exactly what let the orphan cleanup below stay
+ * unwired and invisible.
  */
-export async function deleteAttachment(id: string): Promise<void> {
-  const db = await initDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    store.delete(id);
-
-    transaction.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    transaction.onerror = () => {
-      db.close();
-      reject(transaction.error);
-    };
-  });
-}
 
 export interface AttachmentBackupRecord {
   id: string;
@@ -698,22 +686,47 @@ export interface AttachmentIntegrityReport {
 }
 
 /**
- * Performs a referential integrity audit comparing wa-sqlite vault item attachment IDs
- * against IndexedDB attachment records.
+ * A vault item, reduced to the field that identifies its attachment.
+ *
+ * `VaultItem` carries a *single* attachment (`attachmentId`), not an array.
+ * That is why `auditAttachmentIntegrity` and `purgeOrphanedAttachments` had no
+ * production caller for as long as they did: both were written against an
+ * `attachments: [{ id }]` shape that only ever existed in backup payloads, so
+ * there was no live item for either of them to read.
  */
-export async function auditAttachmentIntegrity(items: Array<{ attachments?: Array<{ id: string }> }>): Promise<AttachmentIntegrityReport> {
+type AttachmentReferencingItem = { attachmentId?: string };
+
+/**
+ * Collects every attachment id the given items still point at.
+ *
+ * Trashed items must be included. A trashed item can be restored, and restoring
+ * one whose blob had already been purged hands the user an item that silently
+ * lost its file. The caller passes the complete item set; see
+ * {@link purgeUnreferencedAttachments}.
+ */
+export function collectReferencedAttachmentIds(items: AttachmentReferencingItem[]): string[] {
+  const referenced = new Set<string>();
+  for (const item of items) {
+    if (item.attachmentId) {
+      referenced.add(item.attachmentId);
+    }
+  }
+  return Array.from(referenced);
+}
+
+/**
+ * Performs a referential integrity audit comparing the attachment ids carried by
+ * the given items against the records present in IndexedDB.
+ *
+ * `missingIds` are attachments an item points at that are not in the store:
+ * the item is unopenable, and it means the two sides already disagree.
+ */
+export async function auditAttachmentIntegrity(items: AttachmentReferencingItem[]): Promise<AttachmentIntegrityReport> {
   if (typeof indexedDB === 'undefined') {
     return { referencedCount: 0, availableCount: 0, missingIds: [] };
   }
 
-  const referencedIds = new Set<string>();
-  items.forEach((item) => {
-    if (item.attachments && Array.isArray(item.attachments)) {
-      item.attachments.forEach((att) => {
-        if (att.id) referencedIds.add(att.id);
-      });
-    }
-  });
+  const referencedIds = new Set<string>(collectReferencedAttachmentIds(items));
 
   const db = await initDB();
   try {
@@ -780,5 +793,81 @@ export async function purgeOrphanedAttachments(activeAttachmentIds: string[]): P
   } finally {
     db.close();
   }
+}
+
+/**
+ * Result of a cleanup pass, kept separate from the count so the caller can tell
+ * "nothing to do" from "refused to act" without parsing a number.
+ */
+export interface AttachmentCleanupResult {
+  /** Records actually deleted from IndexedDB. */
+  purged: number;
+  /** True when the audit found items pointing at absent records, so nothing was deleted. */
+  skippedForMissingReferences: boolean;
+  missingIds: string[];
+}
+
+/**
+ * Deletes attachment blobs that no vault item points at any more.
+ *
+ * ## What "no longer referenced" means here
+ *
+ * Referenced means: some item in `items` carries this `attachmentId`. Trashed
+ * items count as referencing. The distinction the report asked for —
+ * "no longer linked" versus "was never linked" — resolves like this:
+ *
+ * - An attachment was uploaded, then the user removed it from the item and saved.
+ *   The blob is now unreferenced and is deleted. This is the intended case.
+ * - An item is permanently deleted, or the trash is emptied. Its attachment is
+ *   unreferenced and is deleted. Intended.
+ * - An item was never linked to a blob that exists (an interrupted upload, a
+ *   half-finished save). There is nothing to delete, and the audit reports it as
+ *   a missing reference instead.
+ *
+ * ## Why the audit runs first
+ *
+ * Purging is the only destructive thing this module does, and it is driven by a
+ * list the caller supplies. If that list disagrees with the store — an item
+ * pointing at a blob that is already gone — then the list cannot be trusted to
+ * be complete either, and deleting on its word could take a blob that a not-yet-
+ * loaded item still needs. So a mismatch means: change nothing, report it.
+ *
+ * ## Caller contract
+ *
+ * `items` must be the **complete** vault item set, trashed items included, read
+ * after the mutation. A filtered subset would make every excluded item's
+ * attachment look orphaned. `storage.ts` only calls this from functions that
+ * already return that full list.
+ */
+export async function purgeUnreferencedAttachments(items: AttachmentReferencingItem[]): Promise<AttachmentCleanupResult> {
+  if (typeof indexedDB === 'undefined') {
+    return { purged: 0, skippedForMissingReferences: false, missingIds: [] };
+  }
+
+  const audit = await auditAttachmentIntegrity(items);
+  if (audit.missingIds.length > 0) {
+    logSecurityEvent(
+      securityEventCodes.attachmentCleanupSkipped,
+      'Attachment cleanup skipped: items reference attachment records that are absent.',
+      'warning',
+      { missingIds: audit.missingIds },
+    );
+    return {
+      purged: 0,
+      skippedForMissingReferences: true,
+      missingIds: audit.missingIds,
+    };
+  }
+
+  const purged = await purgeOrphanedAttachments(collectReferencedAttachmentIds(items));
+  if (purged > 0) {
+    logSecurityEvent(
+      securityEventCodes.attachmentOrphanPurged,
+      `Purged ${purged} attachment(s) no longer referenced by any vault item.`,
+      'info',
+      { purged },
+    );
+  }
+  return { purged, skippedForMissingReferences: false, missingIds: [] };
 }
 
