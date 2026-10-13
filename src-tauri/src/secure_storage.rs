@@ -127,34 +127,65 @@ mod platform {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Platform implementation: Linux Secret Service D-Bus
+// Platform implementation: Linux Secret Service D-Bus (GNOME Keyring / KDE Wallet)
 // ──────────────────────────────────────────────────────────────────────────────
 
 #[cfg(target_os = "linux")]
 mod platform {
     use std::collections::HashMap;
+    use keyring::Entry;
 
-    // TODO(Commit 2): Implement via libsecret / D-Bus Secret Service API.
-    // For now, Linux falls back to "unavailable" — Faz 1 behaviour.
+    const SERVICE_NAME: &str = "KalderaShield";
 
+    /// Checks if a Secret Service daemon (GNOME Keyring / KDE Wallet) is active.
+    ///
+    /// If no Secret Service provider is available over D-Bus, this returns false
+    /// and the app gracefully falls back to single-factor operation (Faz 1 behaviour).
     pub fn is_available() -> bool {
-        false
+        match Entry::new(SERVICE_NAME, "__probe__") {
+            Ok(entry) => match entry.get_password() {
+                Ok(_) => true,
+                Err(keyring::Error::NoEntry) => true,
+                Err(_) => false,
+            },
+            Err(_) => false,
+        }
     }
 
-    pub fn get_item(_key: &str) -> Option<String> {
-        None
+    pub fn get_item(key: &str) -> Option<String> {
+        let entry = Entry::new(SERVICE_NAME, key).ok()?;
+        match entry.get_password() {
+            Ok(pwd) => Some(pwd),
+            Err(_) => None,
+        }
     }
 
-    pub fn set_item(_key: &str, _value: &str) -> bool {
-        false
+    pub fn set_item(key: &str, value: &str) -> bool {
+        let Ok(entry) = Entry::new(SERVICE_NAME, key) else {
+            return false;
+        };
+        entry.set_password(value).is_ok()
     }
 
-    pub fn remove_item(_key: &str) -> bool {
-        false
+    pub fn remove_item(key: &str) -> bool {
+        let Ok(entry) = Entry::new(SERVICE_NAME, key) else {
+            return false;
+        };
+        match entry.delete_credential() {
+            Ok(_) => true,
+            Err(keyring::Error::NoEntry) => true,
+            Err(_) => false,
+        }
     }
 
-    pub fn load_all(_known_keys: &[&str]) -> HashMap<String, String> {
-        HashMap::new()
+    pub fn load_all(known_keys: &[&str]) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        for key in known_keys {
+            if let Some(value) = get_item(key) {
+                map.insert((*key).to_string(), value);
+            }
+        }
+        map
     }
 }
 
