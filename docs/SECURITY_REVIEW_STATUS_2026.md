@@ -1,8 +1,8 @@
 # KalderaShield — Security Review and External Audit Status
 
-**Status date:** September 23, 2026
+**Status date:** October 13, 2026
 
-**Release context:** `v7.0.7.0`
+**Release context:** `v7.0.20`
 **Purpose:** Clarify the difference between maintainer-led review material and independent third-party assurance.
 
 ## Current public status
@@ -13,7 +13,7 @@ As of the date above, this repository does **not** publish a completed independe
 
 ## Earlier review scores
 
-Numerical scores and finding-closure counts previously shown in project material were maintainer-generated assessments of earlier code snapshots. They were not produced by an independent auditor, were not calibrated against an external scoring standard, and do not represent the current `v7.0.7.0` release. They should not be interpreted as a certification, guarantee, or independent security rating.
+Numerical scores and finding-closure counts previously shown in project material were maintainer-generated assessments of earlier code snapshots. They were not produced by an independent auditor, were not calibrated against an external scoring standard, and do not represent the current `v7.0.20` release. They should not be interpreted as a certification, guarantee, or independent security rating. The `In-App Vault Score` badge in the README is the password-hygiene score the application computes from the user's own vault on the user's own device; it is not a code audit and carries no external assurance.
 
 ## KDF profiles in the current source
 

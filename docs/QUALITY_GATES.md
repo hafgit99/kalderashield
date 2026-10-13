@@ -15,18 +15,18 @@ Current measured baseline from the latest local run:
 | Metric | Baseline |
 | --- | ---: |
 | Lines | 91.23% |
-| Statements | 90.05% |
-| Functions | 90.49% |
-| Branches | 82.16% |
+| Statements | 89.68% |
+| Functions | 89.11% |
+| Branches | 82.33% |
 
-Coverage thresholds are intentionally strict and currently pass at the measured baseline:
+Coverage thresholds live in `vitest.config.ts:45-50` and currently pass at the measured baseline:
 
 | Metric | Current threshold | Current status |
 | --- | ---: | --- |
 | Lines | 90% | PASS at 91.23% |
-| Statements | 90% | PASS at 90.05% |
-| Functions | 85% | PASS at 90.49% |
-| Branches | 80% | PASS at 82.16% |
+| Statements | 88% | PASS at 89.68% |
+| Functions | 85% | PASS at 89.11% |
+| Branches | 80% | PASS at 82.33% |
 
 These thresholds prevent meaningful regressions while keeping the release-quality bar visible and repeatable.
 
@@ -590,9 +590,9 @@ Recently improved:
   - `npm run desktop:release:evidence:summary -- --platform <windows|linux|macos> --final` to print a desktop PASS/BLOCKED evidence summary.
   - `npm run desktop:release:gate -- --final` is the distribution gate: it requires a clean tree, completed checklist evidence, release hardening, and verified signatures for every Windows/macOS executable or installer. Linux publication requires matching SHA-256 evidence; detached package signing remains platform/distribution specific.
   - Rust release binaries use thin LTO, one codegen unit, `panic = "abort"`, symbol stripping, disabled debug info, and disabled incremental compilation. `npm run security:release-hardening` enforces this profile so a debug-oriented binary cannot silently enter release evidence.
-- Continue smoke E2E expansion beyond the current 24 Chromium scenarios, with next focus on Android-specific manual parity checks and wa-sqlite UI-level backup/import smoke.
+- Continue smoke E2E expansion beyond the current 34 Chromium scenarios (the `e2e-smoke` CI job runs exactly these), with next focus on Android-specific manual parity checks and wa-sqlite UI-level backup/import smoke.
 - Push importer helper and storage orchestration mutation scores toward the 90% high threshold, then expand mutation testing into SQLite migration modules.
-- Keep global coverage thresholds at or above 90% lines/statements, 85% functions, and 80% branches; raise them again after the current priority targets improve.
+- Keep global coverage thresholds at or above 90% lines, 88% statements, 85% functions, and 80% branches (matching `vitest.config.ts:45-50`); raise them again after the current priority targets improve.
 
 ## wa-sqlite Final Gate
 
