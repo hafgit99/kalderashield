@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "Il comportamento dei componenti di terze parti che incid sugli utenti è coperto da LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Scarica l'anteprima non firmata da GitHub Releases",
   "win-preview-assets": "Programma di installazione NSIS (.exe), pacchetto MSI ed EXE portatile: tutti non firmati.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.22-unsigned-preview",
   "promo-video-fallback": "Il tuo browser non supporta il tag video.",
   "promo-video-fallback-link": "Scarica il video"
 }

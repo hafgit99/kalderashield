@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "ويُغطّى سلوك مكوّنات الأطراف الثالثة التي تؤثر في المستخدمين في LICENSE-3RD-PARTY.md.",
   "win-preview-link": "نزّل الإعاينة غير الموقّعة من GitHub Releases",
   "win-preview-assets": "مُثبِّت NSIS (.exe) وحزمة MSI وملف EXE المحمول — جميعها غير موقَّعة.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.22-unsigned-preview",
   "promo-video-fallback": "متصفحك لا يدعم علم video.",
   "promo-video-fallback-link": "نزّل الفيديو"
 }

@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "利用者に影響する第三者コンポーネントの挙動は LICENSE-3RD-PARTY.md に記載されています。",
   "win-preview-link": "GitHub Releases から未署名プレビューをダウンロード",
   "win-preview-assets": "NSIS インストーラー (.exe)、MSI パッケージ、ポータブル EXE — いずれも未署名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.22-unsigned-preview",
   "promo-video-fallback": "このブラウザは video タグに対応していません。",
   "promo-video-fallback-link": "ビデオをダウンロード"
 }

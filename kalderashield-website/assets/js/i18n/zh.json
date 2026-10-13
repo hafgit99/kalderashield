@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。",
   "win-preview-link": "从 GitHub Releases 下载未签名预览版",
   "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.22-unsigned-preview",
   "promo-video-fallback": "您的浏览器不支持 video 标签。",
   "promo-video-fallback-link": "下载视频"
 }
