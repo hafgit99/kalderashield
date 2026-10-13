@@ -115,13 +115,30 @@ function runKnip() {
  * resolves them to paths, which is enough for this repo's own relative imports
  * and deliberately does not attempt to follow barrels or aliases.
  */
-function listSourceFiles(dir, out = []) {
+function listFiles(dir, extensions, out = []) {
+  if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) listSourceFiles(full, out);
-    else if (/\.(ts|tsx)$/.test(entry.name)) out.push(full);
+    if (entry.isDirectory()) listFiles(full, extensions, out);
+    else if (extensions.some((ext) => entry.name.endsWith(ext))) out.push(full);
   }
   return out;
+}
+
+function listSourceFiles(dir, out = []) {
+  return listFiles(dir, ['.ts', '.tsx'], out);
+}
+
+/* Everything a production symbol could legitimately be used from.
+ * Scoping this to src/ alone would report every export that only the extension
+ * or a build script touches as dead, which is the same kind of wrong answer as
+ * counting a hand-rolled export list. */
+function listProductionFiles() {
+  return [
+    ...listSourceFiles(path.join(root, 'src')),
+    ...listSourceFiles(path.join(root, 'src-extension')),
+    ...listFiles(path.join(root, 'scripts'), ['.ts', '.mjs', '.cjs', '.js']),
+  ].filter((file) => !/\.(test|spec)\.(ts|tsx|mjs|cjs|js)$/.test(file));
 }
 
 const IMPORT_RE = /(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+['"]([^'"]+)['"]/g;
@@ -195,6 +212,93 @@ function findTestOnlyModules() {
   return testOnly.sort((a, b) => a.file.localeCompare(b.file));
 }
 
+/* ── 2b. Test-only exports ───────────────────────────────────────────────────── */
+
+/* The module check above is the wrong granularity for the same problem, and
+ * the gap is not theoretical. `purgeOrphanedAttachments`, `deleteAttachment`
+ * and `auditAttachmentIntegrity` all lived in attachments.ts -- a module with
+ * dozens of live callers -- so the module check never looked at them, and knip
+ * never reported them either because it counts test files as entry points.
+ * Each had passing tests, no production caller, and a green gate.
+ *
+ * One of them was the orphan attachment cleanup: a user's encrypted file,
+ * deleted from an item, stayed in IndexedDB forever and rode along in every
+ * backup export. Nothing in CI was red.
+ *
+ * ## Why the rule is narrow on purpose
+ *
+ * "Exported and only used inside its own file" is NOT reported. That class is
+ * real but harmless -- an unnecessary `export` keyword -- and this repo has
+ * already decided how it wants to treat it: knip.json sets
+ * `ignoreExportsUsedInFile: true`, and the P2-5 write-up names the four symbols
+ * it deliberately stops reporting (`getAndroidSecureStorageBridge`,
+ * `clearImportedAesGcmKeyCache`, `isTauriRewrittenHtml`,
+ * `sanitizeAutoLockDuration`) with the reason. Re-reporting them here would undo
+ * that decision and bury the signal that matters.
+ *
+ * What is reported is the sharper question: does *anything* outside a test file
+ * reference this symbol -- the declaring file included? A symbol whose only
+ * non-declaration occurrence is inside a `.test.ts` has no production path at
+ * all, and its tests are measuring something the product never calls.
+ */
+const EXPORT_DECL_RE = [
+  /* function/async function/class/const/let/var, with or without `declare`. */
+  /^export\s+(?:declare\s+)?(?:async\s+)?(?:function\*?|class|const|let|var)\s+([A-Za-z_$][\w$]*)/gm,
+  /* interface/type/enum */
+  /^export\s+(?:declare\s+)?(?:interface|type|enum)\s+([A-Za-z_$][\w$]*)/gm,
+  /* export { a, b as c } -- including re-exports from a barrel. */
+  /^export\s+(?:type\s+)?\{([^}]*)\}/gm,
+];
+
+function collectExportedSymbols(file) {
+  const source = fs.readFileSync(file, 'utf8');
+  const names = new Set();
+  for (const re of EXPORT_DECL_RE) {
+    re.lastIndex = 0;
+    let match;
+    while ((match = re.exec(source)) !== null) {
+      for (const part of match[1].split(',')) {
+        const name = part.trim().split(/\s+as\s+/).pop()?.trim();
+        if (name && /^[A-Za-z_$][\w$]*$/.test(name)) names.add(name);
+      }
+    }
+  }
+  return names;
+}
+
+/* Counts references to `name`, treating the declaration itself as one. */
+function countReferences(source, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /* Word boundaries, plus negative lookarounds so `createReadOnlyAdapter` is not
+   * a use of `ReadOnlyAdapter`. */
+  const re = new RegExp(`(?<![A-Za-z0-9_$])${escaped}(?![A-Za-z0-9_$])`, 'g');
+  return (source.match(re) ?? []).length;
+}
+
+function findTestOnlyExports() {
+  const declared = listSourceFiles(path.join(root, 'src')).filter(
+    (file) => !/\.(test|spec)\.(ts|tsx)$/.test(file),
+  );
+  const consumers = listProductionFiles();
+  const rel = (file) => path.relative(root, file).replace(/\\/g, '/');
+
+  /* One read per production file, reused for every symbol. */
+  const sources = consumers.map((file) => [file, fs.readFileSync(file, 'utf8')]);
+  const ownSource = new Map(declared.map((file) => [file, fs.readFileSync(file, 'utf8')]));
+
+  const findings = [];
+  for (const file of declared) {
+    for (const name of [...collectExportedSymbols(file)].sort()) {
+      /* Used elsewhere in production? One non-declaration hit is enough. */
+      const usedElsewhere = sources.some(([other, source]) => other !== file && countReferences(source, name) > 0);
+      /* Used inside its own module beyond the declaration? */
+      const usedInOwnFile = countReferences(ownSource.get(file), name) > 1;
+      if (!usedElsewhere && !usedInOwnFile) findings.push({ file: rel(file), symbol: name });
+    }
+  }
+  return findings;
+}
+
 /* ── 3. Flatten to stable keys ──────────────────────────────────────────────── */
 
 /* Line numbers are deliberately not part of a key: inserting a line above an
@@ -224,13 +328,19 @@ const key = (item) => `${item.kind}:${item.file}:${item.symbol ?? ''}`;
 
 const knipIssues = flattenKnip(runKnip());
 const testOnly = findTestOnlyModules();
-const current = [...knipIssues.map((i) => ({ ...i, kind: i.kind })), ...testOnly.map((m) => ({ kind: 'test-only', file: m.file, symbol: '' }))];
+const testOnlyExports = findTestOnlyExports();
+const current = [
+  ...knipIssues.map((i) => ({ ...i, kind: i.kind })),
+  ...testOnly.map((m) => ({ kind: 'test-only', file: m.file, symbol: '' })),
+  ...testOnlyExports.map((e) => ({ kind: 'test-export', file: e.file, symbol: e.symbol })),
+];
 
 const byKind = new Map();
 for (const item of current) byKind.set(item.kind, (byKind.get(item.kind) ?? 0) + 1);
 
 console.log(`knip (${INCLUDE.join(', ')}): ${knipIssues.length}`);
 console.log(`test-only modules:            ${testOnly.length}`);
+console.log(`test-only exports:            ${testOnlyExports.length}`);
 for (const [kind, count] of [...byKind.entries()].sort()) console.log(`  ${kind.padEnd(12)} ${count}`);
 
 if (testOnly.length) {
@@ -239,6 +349,11 @@ if (testOnly.length) {
     console.log(`  ${mod.file}`);
     console.log(`      ${mod.consumers.join(', ')}`);
   }
+}
+
+if (testOnlyExports.length) {
+  console.log('\n--- Yalnizca testlerden cagrilan export ---');
+  for (const exp of testOnlyExports) console.log(`  ${exp.file} -> ${exp.symbol}`);
 }
 
 if (current.length) {
@@ -253,19 +368,50 @@ function readBaseline() {
   return JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
 }
 
+/* Why each class of baseline entry is tolerated at all. Per-entry reasoning
+ * lives in the baseline's `notes` map; this is the part that would otherwise be
+ * re-explained from scratch every time the file is regenerated. */
+const BASELINE_RATIONALE = {
+  'test-only':
+    'A module nothing but its own test imports. Either wire it, delete it, or say here why it stays.',
+  'test-export':
+    'An exported symbol with no reference from any non-test file -- not even from its own module. Its tests pass, so the suite looks healthy, but nothing the product ships calls it. Clearing one means: wire it into a real code path, or drop the export and move the test with it. Three entries in this class were the reason the check exists -- purgeOrphanedAttachments, deleteAttachment and auditAttachmentIntegrity, the last two of which were removed rather than baselined.',
+};
+
 const args = process.argv.slice(2);
 
 if (args.includes('--write-baseline')) {
-  fs.writeFileSync(
-    BASELINE,
-    JSON.stringify(
-      { generatedBy: 'scripts/audit-dead-code.cjs', entries: current.map(key).sort() },
-      null,
-      2,
-    ) + '\n',
-    'utf8',
-  );
-  console.log(`\nTaban yazildi: ${current.length} kayit -> ${path.relative(root, BASELINE)}`);
+  /* Reasons are the only record of why a pile of dead code is acceptable, and
+   * the first version of this script overwrote the whole file -- silently
+   * deleting every one of them the next time anyone ran the flag. That is the
+   * same class of bug this gate exists to find: the artifact that explained the
+   * debt was less durable than the debt.
+   *
+   * So: notes for surviving entries are kept, notes for entries that no longer
+   * exist are dropped (and reported), and notes for new entries have to be
+   * written by hand. */
+  const previous = readBaseline();
+  const keys = current.map(key).sort();
+  const previousNotes = previous?.notes ?? {};
+  const notes = {};
+  const droppedNotes = [];
+  for (const [entry, reason] of Object.entries(previousNotes)) {
+    if (keys.includes(entry)) notes[entry] = reason;
+    else droppedNotes.push(entry);
+  }
+
+  const payload = { generatedBy: 'scripts/audit-dead-code.cjs', rationale: BASELINE_RATIONALE, notes, entries: keys };
+  fs.writeFileSync(BASELINE, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+  console.log(`\nTaban yazildi: ${keys.length} kayit -> ${path.relative(root, BASELINE)}`);
+  if (droppedNotes.length) {
+    console.log(`Tumden cikan ${droppedNotes.length} gerekce silindi (kayit artik yok):`);
+    for (const entry of droppedNotes) console.log(`  - ${entry}`);
+  }
+  const unexplained = keys.filter((k) => !notes[k]);
+  if (unexplained.length) {
+    console.log(`\nGerekcesi olmayan ${unexplained.length} kayit. Her birine neden`);
+    console.log('kabul edildigini yazin -- "bilerek tutuldu" bile yeterlidir.');
+  }
   process.exit(0);
 }
 
@@ -280,6 +426,20 @@ if (args.includes('--strict')) {
 }
 
 const baseline = readBaseline();
+
+/* A note whose key is not in `entries` is a note nobody will ever read again,
+ * and the cause is silent: notes and entries have to be spelled identically,
+ * including the trailing colon on module-level keys. The first hand-written
+ * baseline in this repo got it wrong, and regenerating it dropped the reason
+ * for the only entry that had one without saying anything. */
+if (baseline) {
+  const orphaned = Object.keys(baseline.notes ?? {}).filter((k) => !(baseline.entries ?? []).includes(k));
+  if (orphaned.length) {
+    console.error(`\nUYARI: ${orphaned.length} gerekce, kayit listesinde olmayan bir anahtara bagli:`);
+    for (const k of orphaned) console.error(`  - ${k}`);
+    console.error('Gerekce anahtarlari "entries" ile ayni yazimda olmali.');
+  }
+}
 
 if (baseline === null) {
   console.log(`\nDurum: raporlandi - ${current.length} kayit. Taban dosyasi yok,`);
@@ -310,3 +470,11 @@ if (added.length) {
 }
 
 console.log(`\nDurum: PASS - yeni olu kod yok (${current.length} eski kayit tabanda).`);
+
+if (baseline.rationale) {
+  console.log('\n--- Taban gerekceleri ---');
+  for (const [kind, reason] of Object.entries(baseline.rationale)) {
+    const count = current.filter((i) => i.kind === kind).length;
+    if (count) console.log(`  ${kind} (${count}): ${reason}`);
+  }
+}

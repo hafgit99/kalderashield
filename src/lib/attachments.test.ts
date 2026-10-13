@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AttachmentError,
   attachmentErrorCodes,
-  deleteAttachment,
   decryptAttachmentData,
   encryptAttachmentData,
   getAttachmentBlob,
@@ -21,7 +20,9 @@ import {
   importAttachments,
   deleteAttachments,
   auditAttachmentIntegrity,
+  collectReferencedAttachmentIds,
   purgeOrphanedAttachments,
+  purgeUnreferencedAttachments,
   type AttachmentRecord,
 } from './attachments';
 import { closeVaultSession, openVaultSession } from './vaultSession';
@@ -282,7 +283,7 @@ describe('attachment encryption', () => {
     expect(result?.name).toBe('secret.txt');
     await expect(blobText(result?.blob)).resolves.toBe('private file');
 
-    await deleteAttachment('attachment-1');
+    await deleteAttachments(['attachment-1']);
     await expect(getAttachmentBlob('attachment-1')).resolves.toBeNull();
   });
 
@@ -525,8 +526,7 @@ describe('attachment encryption', () => {
     expect(atob(att2!.dataBase64)).toBe('file 2 content');
 
     // 3. Clear Database
-    await deleteAttachment('attachment-1');
-    await deleteAttachment('attachment-2');
+    await deleteAttachments(['attachment-1', 'attachment-2']);
     await expect(getAttachmentBlob('attachment-1')).resolves.toBeNull();
     await expect(getAttachmentBlob('attachment-2')).resolves.toBeNull();
 
@@ -597,12 +597,22 @@ describe('attachment encryption', () => {
     await saveAttachment('att-exist', new File([bytes('test')], 'test.txt', { type: 'text/plain' }));
 
     const report = await auditAttachmentIntegrity([
-      { attachments: [{ id: 'att-exist' }, { id: 'att-missing' }] },
-      { attachments: [] },
+      { attachmentId: 'att-exist' },
+      { attachmentId: 'att-missing' },
+      {},
     ]);
 
     expect(report.referencedCount).toBe(2);
     expect(report.missingIds).toEqual(['att-missing']);
+  });
+
+  it('collects referenced ids from the singular attachment field items actually carry', () => {
+    expect(collectReferencedAttachmentIds([
+      { attachmentId: 'a' },
+      { attachmentId: 'a' },
+      { attachmentId: 'b' },
+      {},
+    ])).toEqual(['a', 'b']);
   });
 
   it('purges orphaned attachments not present in active vault items', async () => {
@@ -615,5 +625,61 @@ describe('attachment encryption', () => {
 
     const remaining = await exportAllAttachments();
     expect(remaining.map((r) => r.id)).toEqual(['att-active']);
+  });
+
+  describe('purgeUnreferencedAttachments', () => {
+    it('deletes the blob of an item that was removed from a vault item and saved', async () => {
+      openTestVaultSession();
+      await saveAttachment('att-kept', new File([bytes('kept')], 'kept.txt', { type: 'text/plain' }));
+      await saveAttachment('att-detached', new File([bytes('detached')], 'detached.txt', { type: 'text/plain' }));
+
+      const result = await purgeUnreferencedAttachments([{ attachmentId: 'att-kept' }]);
+
+      expect(result).toEqual({ purged: 1, skippedForMissingReferences: false, missingIds: [] });
+      const remaining = await exportAllAttachments();
+      expect(remaining.map((r) => r.id)).toEqual(['att-kept']);
+    });
+
+    it('keeps a trashed item attachment, because the item can be restored', async () => {
+      openTestVaultSession();
+      await saveAttachment('att-trashed', new File([bytes('trashed')], 'trashed.txt', { type: 'text/plain' }));
+
+      // `deleted` is not part of the shape the cleanup reads, and that is the
+      // point: a trashed item still carries its attachmentId, so the blob stays.
+      const result = await purgeUnreferencedAttachments([
+        { attachmentId: 'att-trashed' } as { attachmentId?: string },
+      ]);
+
+      expect(result.purged).toBe(0);
+      expect((await exportAllAttachments()).map((r) => r.id)).toEqual(['att-trashed']);
+    });
+
+    it('deletes nothing when an item points at a blob that is already absent', async () => {
+      openTestVaultSession();
+      await saveAttachment('att-present', new File([bytes('present')], 'present.txt', { type: 'text/plain' }));
+
+      const result = await purgeUnreferencedAttachments([
+        { attachmentId: 'att-present' },
+        { attachmentId: 'att-vanished' },
+      ]);
+
+      // The two sides disagree, so the list cannot be trusted to be complete:
+      // `att-present` would look orphaned next time, and the real cause would
+      // go unrecorded.
+      expect(result.purged).toBe(0);
+      expect(result.skippedForMissingReferences).toBe(true);
+      expect(result.missingIds).toEqual(['att-vanished']);
+      expect((await exportAllAttachments()).map((r) => r.id)).toEqual(['att-present']);
+    });
+
+    it('is a no-op when there is nothing stored', async () => {
+      openTestVaultSession();
+
+      expect(await purgeUnreferencedAttachments([])).toEqual({
+        purged: 0,
+        skippedForMissingReferences: false,
+        missingIds: [],
+      });
+    });
   });
 });

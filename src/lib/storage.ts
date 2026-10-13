@@ -5,7 +5,7 @@
 
 import type { VaultItem } from '../types';
 import { getDefaultKdfProfile } from './argon2id';
-import { migrateLegacyAttachmentsToAesGcm, reencryptAttachmentsForVaultKeyChange } from './attachments';
+import { migrateLegacyAttachmentsToAesGcm, purgeUnreferencedAttachments, reencryptAttachmentsForVaultKeyChange } from './attachments';
 import {
   combineMasterPasswordAndSecretKey,
   normalizeAccountSecretKey,
@@ -919,6 +919,10 @@ export async function purgeExpiredTrashItems(): Promise<{ items: VaultItem[]; pu
       { purgedCount: expiredIds.length, retentionDays: TRASH_RETENTION_DAYS },
     );
 
+    // Retention purge drops references without the user asking for it, so their
+    // attachment blobs go with it.
+    await purgeUnreferencedAttachmentsQuietly(remaining);
+
     return { items: remaining, purgedCount: expiredIds.length };
   });
 }
@@ -933,16 +937,23 @@ export async function purgeExpiredTrashItems(): Promise<{ items: VaultItem[]; pu
  */
 export async function saveVaultItem(item: VaultItem): Promise<VaultItem[]> {
   const [policyApplied] = applyNotePolicyToItems([item]);
-  return withSessionVaultKey([], (vaultKey) => getVaultStorageRepository().saveVaultItemWithKey!(policyApplied!, vaultKey));
+  return withSessionVaultKey([], async (vaultKey) => {
+    const items = await getVaultStorageRepository().saveVaultItemWithKey!(policyApplied!, vaultKey);
+    // Removing the attachment from an item is the other way a reference is
+    // dropped, and it is the one that happens without any delete happening.
+    await purgeUnreferencedAttachmentsQuietly(items);
+    return items;
+  });
 }
 
 export async function saveVaultItems(items: VaultItem[], onProgress?: (count: number) => void): Promise<VaultItem[]> {
-  return withSessionVaultKey([], (vaultKey) => {
+  return withSessionVaultKey([], async (vaultKey) => {
     const policyApplied = applyNotePolicyToItems(items);
-    if (onProgress) {
-      return getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey, onProgress);
-    }
-    return getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey);
+    const saved = onProgress
+      ? await getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey, onProgress)
+      : await getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey);
+    await purgeUnreferencedAttachmentsQuietly(saved);
+    return saved;
   });
 }
 
@@ -964,7 +975,10 @@ export async function replaceVaultItems(items: VaultItem[]): Promise<VaultItem[]
     const policyApplied = applyNotePolicyToItems(items);
 
     if (repository.replaceAllVaultItemsWithKey) {
-      return repository.replaceAllVaultItemsWithKey(policyApplied, vaultKey);
+      const replaced = await repository.replaceAllVaultItemsWithKey(policyApplied, vaultKey);
+      // A snapshot restore can drop references wholesale, in either branch.
+      await purgeUnreferencedAttachmentsQuietly(replaced);
+      return replaced;
     }
 
     const currentItems = await repository.getVaultItemsWithKey!(vaultKey);
@@ -974,7 +988,9 @@ export async function replaceVaultItems(items: VaultItem[]): Promise<VaultItem[]
         await repository.deletePermanentlyWithKey!(current.id, vaultKey);
       }
     }
-    return repository.saveVaultItemsWithKey!(policyApplied, vaultKey);
+    const saved = await repository.saveVaultItemsWithKey!(policyApplied, vaultKey);
+    await purgeUnreferencedAttachmentsQuietly(saved);
+    return saved;
   });
 }
 
@@ -1034,10 +1050,49 @@ export async function restoreFromTrash(id: string): Promise<VaultItem[]> {
 }
 
 /**
+ * Deletes attachment blobs nothing points at any more, after a mutation that
+ * could have dropped a reference.
+ *
+ * Best-effort by design: the user's delete has already succeeded by the time
+ * this runs, so a cleanup failure is logged and swallowed rather than turned
+ * into a failed delete. Leaving an orphan behind costs storage; failing the
+ * delete after the row is gone would cost the user their intent.
+ *
+ * `currentItems` must be the complete item list the mutation returned, trashed
+ * items included -- see `purgeUnreferencedAttachments` for why a filtered list
+ * would be dangerous.
+ */
+async function purgeUnreferencedAttachmentsQuietly(currentItems: VaultItem[]): Promise<void> {
+  try {
+    const result = await purgeUnreferencedAttachments(currentItems);
+    if (result.skippedForMissingReferences) {
+      console.warn(
+        `Attachment cleanup skipped: ${result.missingIds.length} item(s) reference missing attachment records.`,
+      );
+    }
+  } catch (err) {
+    console.error('Attachment cleanup failed after a vault mutation:', err);
+    logSecurityEvent(
+      securityEventCodes.attachmentCleanupSkipped,
+      'Attachment cleanup raised after a vault mutation; orphans may remain.',
+      'warning',
+      { error: err instanceof Error ? err.message : String(err) },
+    );
+  }
+}
+
+/**
  * Permanently deletes a vault item from the database.
+ *
+ * The item's attachment blob is unreferenced once this returns, so it is
+ * purged with the rest of the unreferenced set.
  */
 export async function deletePermanently(id: string): Promise<VaultItem[]> {
-  return withSessionVaultKey([], (vaultKey) => getVaultStorageRepository().deletePermanentlyWithKey!(id, vaultKey));
+  return withSessionVaultKey([], async (vaultKey) => {
+    const items = await getVaultStorageRepository().deletePermanentlyWithKey!(id, vaultKey);
+    await purgeUnreferencedAttachmentsQuietly(items);
+    return items;
+  });
 }
 
 /**
@@ -1049,7 +1104,9 @@ export async function emptyTrashComplete(): Promise<VaultItem[]> {
     const deletedIds = items.filter(item => item.deleted).map(item => item.id);
 
     if (deletedIds.length > 0) {
-      return getVaultStorageRepository().deletePermanentlyBatchWithKey!(deletedIds, vaultKey);
+      const remaining = await getVaultStorageRepository().deletePermanentlyBatchWithKey!(deletedIds, vaultKey);
+      await purgeUnreferencedAttachmentsQuietly(remaining);
+      return remaining;
     }
     return items;
   });

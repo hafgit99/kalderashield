@@ -528,26 +528,14 @@ export async function getAttachmentBlob(id: string): Promise<{ blob: Blob, name:
 }
 
 /**
- * Removes an attachment from IndexedDB.
+ * Removes a single attachment from IndexedDB.
+ *
+ * Removed 2026-10-13: `deleteAttachments([id])` already does this in one
+ * transaction, so this was a second way to perform the same delete -- and the
+ * one with no production caller. Deleting it is deliberate: leaving an export
+ * that only its own test uses is exactly what let the orphan cleanup below stay
+ * unwired and invisible.
  */
-export async function deleteAttachment(id: string): Promise<void> {
-  const db = await initDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    store.delete(id);
-
-    transaction.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    transaction.onerror = () => {
-      db.close();
-      reject(transaction.error);
-    };
-  });
-}
 
 export interface AttachmentBackupRecord {
   id: string;
