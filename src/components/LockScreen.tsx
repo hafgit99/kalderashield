@@ -46,6 +46,7 @@ import {
   generateAccountSecretKey,
   isAccountSecretKeyFormatValid,
 } from '../lib/secretKey';
+import { subscribeDesktopSecureStorage } from '../lib/secureStorage';
 import KalderaShieldLogo from '../../assets/KalderaShield-app-icon.png';
 import { saveEmergencyKit } from '../lib/emergencyKit';
 import { validateMasterPassword } from '../lib/security';
@@ -127,6 +128,27 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const [lockoutRemainingMs, setLockoutRemainingMs] = useState(() => getLockoutRemainingMs());
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+
+  // Subscribe to desktop secure storage completion (hydrates rememberedSecretKey if delayed)
+  useEffect(() => {
+    return subscribeDesktopSecureStorage(() => {
+      if (isSetup) {
+        const remembered = getRememberedAccountSecretKey();
+        if (remembered) {
+          setSecretKey(remembered);
+        }
+      } else if (isRememberSecretKeySupported()) {
+        setSecretKey((prev) => (prev && isAccountSecretKeyFormatValid(prev) ? prev : generateAccountSecretKey()));
+      }
+    });
+  }, [isSetup]);
+
+  // Defensive fallback: if first-time setup offers a secret key, ensure it is generated and never empty
+  useEffect(() => {
+    if (!isSetup && offersSecretKeyAtSetup && (!secretKey || !isAccountSecretKeyFormatValid(secretKey))) {
+      setSecretKey(generateAccountSecretKey());
+    }
+  }, [isSetup, offersSecretKeyAtSetup, secretKey]);
 
   // Micro-interaction UI states
   const [isShaking, setIsShaking] = useState(false);
@@ -345,7 +367,12 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
 
   const handleDownloadEmergencyKit = async () => {
     try {
-      const saved = await saveEmergencyKit(secretKey);
+      let keyToSave = secretKey;
+      if (!isSetup && (!keyToSave || !isAccountSecretKeyFormatValid(keyToSave))) {
+        keyToSave = generateAccountSecretKey();
+        setSecretKey(keyToSave);
+      }
+      const saved = await saveEmergencyKit(keyToSave);
       if (!saved) {
         setError(t('lock.error.emergencyKitCancelled'));
       }

@@ -30,6 +30,26 @@ let desktopCache: Map<string, string> | null = null;
 let isDesktopStorageSupported = false;
 let desktopInitPromise: Promise<void> | null = null;
 
+type DesktopSecureStorageListener = () => void;
+const secureStorageListeners = new Set<DesktopSecureStorageListener>();
+
+export function subscribeDesktopSecureStorage(listener: DesktopSecureStorageListener): () => void {
+  secureStorageListeners.add(listener);
+  return () => {
+    secureStorageListeners.delete(listener);
+  };
+}
+
+function notifyDesktopSecureStorageListeners(): void {
+  secureStorageListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error('Error in secure storage listener:', err);
+    }
+  });
+}
+
 export function getAndroidSecureStorageBridge(): AndroidSecureStorageBridge | null {
   if (typeof window === 'undefined') return null;
   const bridge = window.KalderaShieldAndroidSecureStorage;
@@ -74,6 +94,8 @@ export async function initializeDesktopSecureStorage(): Promise<void> {
       console.warn('Failed to initialize desktop secure storage:', e);
       isDesktopStorageSupported = false;
       desktopCache = null;
+    } finally {
+      notifyDesktopSecureStorageListeners();
     }
   })();
 
@@ -84,11 +106,13 @@ export function resetDesktopSecureStorageForTests(): void {
   desktopCache = null;
   isDesktopStorageSupported = false;
   desktopInitPromise = null;
+  secureStorageListeners.clear();
 }
 
 export function setDesktopSecureStorageCacheForTests(items: Record<string, string>): void {
   desktopCache = new Map(Object.entries(items));
   isDesktopStorageSupported = true;
+  notifyDesktopSecureStorageListeners();
 }
 
 export type SecureStorageResult<T> =
