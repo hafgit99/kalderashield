@@ -16,6 +16,7 @@ import {
   type WaSqliteActiveBackendMigrationResult,
 } from './vaultStorageActiveMigration';
 import { logSecurityEvent, securityEventCodes } from './securityEvents';
+import { applyNotePolicyToItems } from './notes';
 import {
   closeVaultSession,
   openVaultSession,
@@ -924,17 +925,24 @@ export async function purgeExpiredTrashItems(): Promise<{ items: VaultItem[]; pu
 
 /**
  * Saves or updates a vault item inside SQLite row.
+ *
+ * Note policy is applied here rather than at each caller (see
+ * `applyNotePolicyToItems`): every write path — form, importer, share
+ * recipient, backup import — funnels through one of the three functions below,
+ * so a future caller cannot skip the policy by forgetting it.
  */
 export async function saveVaultItem(item: VaultItem): Promise<VaultItem[]> {
-  return withSessionVaultKey([], (vaultKey) => getVaultStorageRepository().saveVaultItemWithKey!(item, vaultKey));
+  const [policyApplied] = applyNotePolicyToItems([item]);
+  return withSessionVaultKey([], (vaultKey) => getVaultStorageRepository().saveVaultItemWithKey!(policyApplied!, vaultKey));
 }
 
 export async function saveVaultItems(items: VaultItem[], onProgress?: (count: number) => void): Promise<VaultItem[]> {
   return withSessionVaultKey([], (vaultKey) => {
+    const policyApplied = applyNotePolicyToItems(items);
     if (onProgress) {
-      return getVaultStorageRepository().saveVaultItemsWithKey!(items, vaultKey, onProgress);
+      return getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey, onProgress);
     }
-    return getVaultStorageRepository().saveVaultItemsWithKey!(items, vaultKey);
+    return getVaultStorageRepository().saveVaultItemsWithKey!(policyApplied, vaultKey);
   });
 }
 
@@ -953,19 +961,20 @@ export async function saveVaultItems(items: VaultItem[], onProgress?: (count: nu
 export async function replaceVaultItems(items: VaultItem[]): Promise<VaultItem[]> {
   return withSessionVaultKey([], async (vaultKey) => {
     const repository = getVaultStorageRepository();
+    const policyApplied = applyNotePolicyToItems(items);
 
     if (repository.replaceAllVaultItemsWithKey) {
-      return repository.replaceAllVaultItemsWithKey(items, vaultKey);
+      return repository.replaceAllVaultItemsWithKey(policyApplied, vaultKey);
     }
 
     const currentItems = await repository.getVaultItemsWithKey!(vaultKey);
-    const targetIds = new Set(items.map((item) => item.id));
+    const targetIds = new Set(policyApplied.map((item) => item.id));
     for (const current of currentItems) {
       if (!targetIds.has(current.id)) {
         await repository.deletePermanentlyWithKey!(current.id, vaultKey);
       }
     }
-    return repository.saveVaultItemsWithKey!(items, vaultKey);
+    return repository.saveVaultItemsWithKey!(policyApplied, vaultKey);
   });
 }
 

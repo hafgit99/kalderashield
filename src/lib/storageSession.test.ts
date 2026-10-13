@@ -800,6 +800,34 @@ describe('vault session storage', () => {
     ]));
   });
 
+  it('N-1: sanitizes notes on the way into storage, so no write path can skip the policy', async () => {
+    openVaultSession('master-pass', 'master-pass', testVaultKey);
+
+    await saveVaultItem(sampleItem({ notes: 'invoice\u202Egnp.exe\u0000' }));
+    expect(sqliteOPFSInstance.saveVaultItemWithKey).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'invoicegnp.exe' }),
+      expect.any(Uint8Array),
+    );
+
+    await saveVaultItems([sampleItem({ notes: 'clean' }), sampleItem({ id: 'item-2', notes: 'a\u200Eb' })]);
+    expect(sqliteOPFSInstance.saveVaultItemsWithKey).toHaveBeenCalledWith(
+      [expect.objectContaining({ notes: 'clean' }), expect.objectContaining({ notes: 'ab' })],
+      expect.any(Uint8Array),
+    );
+  });
+
+  it('N-1: does not shorten an over-long note at the storage boundary', async () => {
+    openVaultSession('master-pass', 'master-pass', testVaultKey);
+    const long = 'a'.repeat(100_001);
+
+    await saveVaultItem(sampleItem({ notes: long }));
+
+    expect(sqliteOPFSInstance.saveVaultItemWithKey).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: long }),
+      expect.any(Uint8Array),
+    );
+  });
+
   it('moves items to trash and restores them through the targeted update', async () => {
     const activeItem = sampleItem();
     sqliteOPFSInstance.setItemTrashedWithKey.mockResolvedValue([activeItem]);

@@ -222,6 +222,7 @@ export const ja = {
   'vaultForm.field.url': '安全な URL',
   'vaultForm.placeholder.url': '例えばgithub.com',
   'vaultForm.validation.titleRequired': 'このレコードのわかりやすいタイトルを入力してください。',
+  'vaultForm.validation.notesTooLong': 'ノートは {limit} 文字までです。保存前にご自身で短縮してください。KalderaShield が自動で切り詰めることはありません。',
   'vaultForm.saveFailed': 'アイテムを保存できませんでした。もう一度お試しください。',
   'vaultForm.attachment.fallbackName': '添付ファイル',
   'vaultForm.footer.cancel': 'キャンセル',

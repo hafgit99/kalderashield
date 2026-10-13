@@ -15,6 +15,7 @@ import { generatePassword } from '../lib/security';
 import { recordPasswordHistory } from '../lib/passwordHistory';
 import { saveAttachment, getAttachmentBlob } from '../lib/attachments';
 import { secureRandomIndex, secureRandomToken } from '../lib/random';
+import { MAX_NOTE_LENGTH, validateNoteSecurity } from '../lib/notes';
 import { useLanguage } from '../i18n/LanguageContext';
 import { VaultFormCategoryTabs, type VaultFormCategory } from './vault-form/VaultFormCategoryTabs';
 import { VaultFormGeneralFields } from './vault-form/VaultFormGeneralFields';
@@ -298,6 +299,15 @@ export default function VaultFormModal({
     // Dynamic field validation per category
     if (!title.trim()) {
       setErrorMessage(t('vaultForm.validation.titleRequired'));
+      return;
+    }
+
+    // N-1: the note length limit is enforced here, visibly, instead of by the
+    // sanitizer slicing the text. Saving 100,001 characters silently would lose
+    // the user's data with nothing on screen saying so.
+    const noteCheck = validateNoteSecurity(notes);
+    if (!noteCheck.valid && noteCheck.code === 'too-long') {
+      setErrorMessage(t('vaultForm.validation.notesTooLong', { limit: MAX_NOTE_LENGTH }));
       return;
     }
 

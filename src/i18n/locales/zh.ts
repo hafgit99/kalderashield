@@ -223,6 +223,7 @@ export const zh = {
     'vaultForm.field.url': '安全链接',
     'vaultForm.placeholder.url': '例如 github.com',
     'vaultForm.validation.titleRequired': '请为此记录输入一个描述性标题。',
+    'vaultForm.validation.notesTooLong': '笔记最多 {limit} 个字符。请在保存前自行缩短 — KalderaShield 不会自动截断。',
     'vaultForm.saveFailed': '保存条目失败，请重试。',
     'vaultForm.attachment.fallbackName': '附件文件',
     'vaultForm.footer.cancel': '取消',

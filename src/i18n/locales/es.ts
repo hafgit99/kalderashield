@@ -222,6 +222,7 @@ export const es = {
   'vaultForm.field.url': 'URL SEGURA',
   'vaultForm.placeholder.url': 'p.ej. github.com',
   'vaultForm.validation.titleRequired': 'Introduzca un título descriptivo para este registro.',
+  'vaultForm.validation.notesTooLong': 'Las notas están limitadas a {limit} caracteres. Acorte la nota antes de guardar: KalderaShield no la recorta por usted.',
   'vaultForm.saveFailed': 'No se pudo guardar el elemento. Inténtalo de nuevo.',
   'vaultForm.attachment.fallbackName': 'Archivo adjunto',
   'vaultForm.footer.cancel': 'Cancelar',
