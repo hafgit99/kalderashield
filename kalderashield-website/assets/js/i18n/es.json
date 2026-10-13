@@ -532,7 +532,7 @@
   "donate-spotlight-title": "Apoya el desarrollo independiente y de código abierto",
   "donate-spotlight-desc": "KalderaShield se desarrolla 100% impulsado por la comunidad, sin capital de riesgo, anuncios ni rastreo. Las donaciones financian auditorías independientes e infraestructura.",
   "win-store-title": "Vista previa sin firmar — publicada",
-  "win-store-desc": "<strong>Estos archivos no están firmados.</strong> Windows SmartScreen mostrará \"Tu PC está protegido\" y tendrás que hacer clic en \"Más información\" → \"Ejecutar de todas formas\" para ejecutar el instalador. Es lo esperado y no significa que el archivo sea malware. Verifica el resumen SHA-256 en SHA256SUMS.txt antes de ejecutarlo. Esta es una <em>versión preliminar</em>: no es una versión estable, y <code>latest</code> no apunta a ella. Por qué sin firmar: la cadena de publicación trata una versión de escritorio sin firmar como un fallo, así que todavía no hay certificado con el que firmar. Se ha preparado una solicitud al programa de SignPath Foundation <strong>todavía no se ha enviado</strong>. Cuando la firma esté disponible, las siguientes versiones de Windows irán firmadas y este aviso se eliminará.",
+  "win-store-desc": "<strong>Estos archivos no están firmados.</strong> Windows SmartScreen mostrará \"Tu PC está protegido\" y tendrás que hacer clic en \"Más información\" → \"Ejecutar de todas formas\" para ejecutar el instalador. Es lo esperado y no significa que el archivo sea malware. Verifica el resumen SHA-256 en SHA256SUMS.txt antes de ejecutarlo. Esta es una <em>versión preliminar</em>: no es una versión estable, y <code>latest</code> no apunta a ella. Por qué sin firmar: la cadena de publicación trata una versión de escritorio sin firmar como un fallo, así que todavía no hay certificado con el que firmar. Se ha preparado una solicitud al programa de SignPath Foundation pero no se ha enviado. Cuando la firma esté disponible, las siguientes versiones de Windows irán firmadas y este aviso se eliminará.",
   "win-store-cta": "Sigue esta página",
   "win-pinned-note": "Este paquete de Windows no está firmado: sin certificado de firma de código, Windows puede mostrar una advertencia de SmartScreen durante la instalación. La suma de comprobación SHA-256 le permite comprobar que el archivo no ha cambiado.",
   "privacy-eyebrow": "Legal",
@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "El comportamiento de componentes de terceros que afecta a los usuarios está cubierto por LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Descargar la vista previa sin firmar desde GitHub Releases",
   "win-preview-assets": "Instalador NSIS (.exe), paquete MSI y EXE portátil: los tres sin firmar.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
   "promo-video-fallback": "Su navegador no admite la etiqueta de vídeo.",
   "promo-video-fallback-link": "Descargar el vídeo"
 }

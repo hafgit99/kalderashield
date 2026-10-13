@@ -532,7 +532,7 @@
   "donate-spotlight-title": "支持独立的开源软件开发",
   "donate-spotlight-desc": "KalderaShield 完全由社区驱动开发，没有任何风险投资、商业广告或用户追踪。所有捐助均用于独立安全审计与基础设施维护。",
   "win-store-title": "未签名预览 — 已发布",
-  "win-store-desc": "<strong>这些文件未签名。</strong>Windows SmartScreen 会显示\"已保护你的电脑\"，需要点击\"更多信息\"→\"仍要运行\"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>：不是稳定发行版，<code>latest</code> 也不会指向它。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。",
+  "win-store-desc": "<strong>这些文件未签名。</strong>Windows SmartScreen 会显示\"已保护你的电脑\"，需要点击\"更多信息\"→\"仍要运行\"才能启动安装程序。这是预期行为，不代表该文件是恶意软件。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。这是一份<em>预发行版</em>：不是稳定发行版，<code>latest</code> 也不会指向它。未签名的原因是：发布流水线把未签名的桌面发行版视为失败，因此目前没有可用于签名的证书。已准备好向 SignPath Foundation 提交申请，但尚未提交。签名可用后，后续 Windows 发行版将签名，届时本提示会被移除。",
   "win-store-cta": "请关注此页面",
   "win-pinned-note": "这个 Windows 安装包未签名：因为没有代码签名证书，安装时 Windows 可能会显示 SmartScreen 警告。您可以通过 SHA-256 校验和确认文件未被修改。",
   "privacy-eyebrow": "法律",
@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。",
   "win-preview-link": "从 GitHub Releases 下载未签名预览版",
   "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.20-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.21-unsigned-preview",
   "promo-video-fallback": "您的浏览器不支持 video 标签。",
   "promo-video-fallback-link": "下载视频"
 }
