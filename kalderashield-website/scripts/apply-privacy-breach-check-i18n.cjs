@@ -23,7 +23,6 @@
  * prose: matching prose means matching Turkish through a console that mangles
  * it, which is how a wrong character ends up in a legal page.
  */
-const fs = require('fs');
 const path = require('path');
 
 const { updateFile, updateJsonFile } = require('./lib/safe-file.cjs');
@@ -92,21 +91,27 @@ const problems = [];
 
 for (const [locale, texts] of Object.entries(TEXT)) {
   const file = path.join(I18N, `${locale}.json`);
-  if (!fs.existsSync(file)) {
-    problems.push(`${locale}.json yok`);
-    continue;
-  }
-  // Throws rather than writing a dictionary without the anchor key: a silently
-  // replaced file here is a legal page that has lost a section, in a language
-  // nobody on the project reads.
-  updateJsonFile(file, (dict) => {
-    if (typeof dict['privacy-p1-2'] !== 'string') {
-      throw new Error(`${locale}.json privacy-p1-2 yok`);
+  try {
+    // Throws rather than writing a dictionary without the anchor key: a
+    // silently replaced file here is a legal page that has lost a section, in a
+    // language nobody on the project reads.
+    updateJsonFile(file, (dict) => {
+      if (typeof dict['privacy-p1-2'] !== 'string') {
+        throw new Error(`${locale}.json privacy-p1-2 yok`);
+      }
+      dict[KEYS[0]] = texts[0];
+      dict[KEYS[1]] = texts[1];
+      return dict;
+    });
+  } catch (err) {
+    // Reported rather than thrown, so one missing dictionary does not stop the
+    // eleven that are present from being fixed.
+    if (err && err.code === 'ENOENT') {
+      problems.push(`${locale}.json yok`);
+      continue;
     }
-    dict[KEYS[0]] = texts[0];
-    dict[KEYS[1]] = texts[1];
-    return dict;
-  });
+    throw err;
+  }
   dictionaries++;
 }
 

@@ -47,42 +47,53 @@ const KEYS = {
  * source code that ships, and this runs in a working tree -- it is to stop
  * naming the file twice. One descriptor means the bytes that were read and the
  * bytes that replace them belong to the same file, whatever happens to the
- * directory in between.
+ * directory in between. Reading through that same descriptor matters as much as
+ * writing through it: a `readFileSync(file)` followed by an `openSync(file)` is
+ * the same check-then-use pair with the check moved.
  *
  * `truncate` plus an explicit write position matter: the descriptor is still
  * positioned at the end of what it read, so writing without them leaves the tail
  * of the old content after the new, and a source file that still parses is a
  * file that silently lost everything after the edit point.
+ *
+ * The transform returns the new text, or nothing to leave the file alone.
  */
-function writeThrough(file, next) {
+function updateLocaleFile(file, transform) {
   const fd = fs.openSync(file, 'r+');
   try {
+    const current = fs.readFileSync(fd, 'utf8');
+    const next = transform(current);
+    if (!next || next === current) return false;
+
     fs.ftruncateSync(fd, 0);
     fs.writeSync(fd, next, 0, 'utf8');
+    return true;
   } finally {
     fs.closeSync(fd);
   }
 }
 
 let changed = 0;
-let missing = [];
+const missing = [];
 
 for (const [locale, values] of Object.entries(VALUES)) {
   const file = path.join(DIR, `${locale}.ts`);
-  let text = fs.readFileSync(file, 'utf8');
 
-  for (const [key, index] of Object.entries(KEYS)) {
-    const re = new RegExp(`('${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*)'([^']*)'`);
-    if (!re.test(text)) {
-      missing.push(`${locale}: ${key}`);
-      continue;
+  const rewrote = updateLocaleFile(file, (text) => {
+    let next = text;
+    for (const [key, index] of Object.entries(KEYS)) {
+      const re = new RegExp(`('${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*)'([^']*)'`);
+      if (!re.test(next)) {
+        missing.push(`${locale}: ${key}`);
+        continue;
+      }
+      next = next.replace(re, (_, prefix) => `${prefix}'${values[index].replace(/'/g, "\\'")}'`);
     }
-    const next = text.replace(re, (_, prefix) => `${prefix}'${values[index].replace(/'/g, "\\'")}'`);
-    if (next !== text) {
-      writeThrough(file, next);
-      text = next;
-      changed++;
-    }
+    return next;
+  });
+
+  if (rewrote) {
+    changed += Object.keys(KEYS).length - missing.filter((m) => m.startsWith(`${locale}:`)).length;
   }
 }
 
