@@ -36,7 +36,7 @@ function pageHref(page) {
 }
 const VERSION =
   (fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/data-site-version="([^"]+)"/) || [])[1] ||
-  '7.0.22';
+  '7.0.23';
 
 const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
