@@ -316,6 +316,14 @@ test('reports pwned passwords from a mocked HIBP range response', async ({ page 
 
   await page.getByTestId('nav-audit-button').click();
   await expect(page.getByTestId('audit-workspace')).toBeVisible();
+
+  // The breach check is opt-in, so this test has to opt in the way a user does.
+  // It used to arrive here and simply find the check already running, because
+  // the default was on — which is what let the default change go unnoticed by
+  // an end-to-end suite as well as by the unit tests.
+  await page.getByTestId('security-audit-hibp-toggle').click();
+  await expect(page.getByTestId('security-audit-hibp-toggle')).toHaveText('OPT-IN ON');
+
   await expect(page.getByTestId('security-audit-pwned-count')).toHaveText('1', { timeout: 20000 });
 
   const pwnedItem = page.getByTestId('security-audit-pwned-item').filter({ hasText: 'E2E Pwned Audit Item' });
