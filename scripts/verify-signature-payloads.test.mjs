@@ -20,7 +20,7 @@
  * against a copy that no longer matches.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -117,5 +117,60 @@ describe('release signature payload gate', () => {
     const workflow = require('node:fs').readFileSync(WORKFLOW, 'utf8');
     // The root cause: `*.rpm` was never in the copy list.
     expect(workflow).toMatch(/-name '\*\.rpm' -exec cp/);
+  });
+});
+
+/**
+ * The v7.0.22 instance: two orphaned signatures on Linux.
+ *
+ * `KalderaShield_7.0.22_amd64.deb.sig` and
+ * `KalderaShield_7.0.22_amd64.AppImage.sig` were both staged with no payload
+ * beside them, and the gate added for v7.0.20 failed the release because of
+ * them. Nothing was wrong with the signatures -- they were real Tauri
+ * signatures of real packages. What was wrong was the name they were staged
+ * under.
+ *
+ * Tauri names its own bundles `Product_Version_arch.ext`. The collect step
+ * copies the same file as `Product-Version-platform-arch.ext` and renames the
+ * signature to match. A step that then copies `*.sig` from the bundle tree by
+ * suffix stages the raw-name signature of a payload that is already in the
+ * directory under a different name. The orphan is produced by the very step
+ * written to prevent orphans, so the gate alone cannot catch it: it has to not
+ * be created in the first place.
+ */
+describe('signature staging never orphans a payload', () => {
+  let workflow;
+
+  beforeEach(() => {
+    workflow = readFileSync(WORKFLOW, 'utf8');
+  });
+
+  it('no platform copies signatures from the bundle tree by suffix alone', () => {
+    // The exact v7.0.22 shape: `-name '*.sig'` inside a `-exec cp` find.
+    expect(workflow).not.toMatch(/-name '\*\.sig'[^\\]*-exec cp/);
+  });
+
+  it.each([
+    ['linux', 'release-local/linux'],
+    ['macos', 'release-local/macos'],
+    ['windows', 'release-local/windows'],
+  ])('%s stages a signature only when its payload is already present', (platform, dir) => {
+    // The directory has to be named somewhere in the copy logic itself: a check
+    // against some other platform's staging directory would satisfy a much
+    // weaker assertion than the one being made here.
+    const gate = new RegExp(`${dir}/\\$\\{name%\\.sig\\}|Test-Path \\$payload`);
+    expect(workflow).toMatch(gate);
+    // ...and every skip has to say what it dropped, so a release operator can
+    // see that a signature was deliberately left behind rather than missed.
+    expect(workflow).toMatch(/no staged payload/);
+    // The step must still run the payload gate, per platform.
+    expect(workflow).toContain(`verify-signature-payloads.cjs --dir ${dir}`);
+  });
+
+  it('still lets the verifier fail the build', () => {
+    // Conditional copying is a staging rule, not a licence to relax the gate:
+    // an orphan found by any other route must still stop the release.
+    expect(workflow).toMatch(/node scripts\/verify-signature-payloads\.cjs --dir release-local\/linux/);
+    expect(readFileSync(SCRIPT, 'utf8')).toContain('orphaned signature(s) with no payload');
   });
 });
