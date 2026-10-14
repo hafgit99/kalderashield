@@ -116,12 +116,34 @@ export async function checkPasswordAgainstHibp(password: string): Promise<HibpPa
   }
 }
 
+/**
+ * Opt-in, and the opt-in has to be explicit.
+ *
+ * The breach check was on by default: `isHibpCheckEnabled()` read
+ * `stored !== 'false'`, so an installation that had never been asked anything
+ * answered yes, and the Security Audit screen sent a request for every
+ * password in the vault the moment it was opened.
+ *
+ * The request itself is built so that no password can leave the device — only
+ * the first five hex characters of a SHA-1 digest go out, and `Add-Padding`
+ * pads the response so its size cannot be correlated back. That is a strong
+ * property and it is why the feature is worth having. It is not, though, a
+ * reason to make the decision for the user: a password manager is the one
+ * category of software where "it contacts a server" has to be earned rather
+ * than assumed, and the published privacy policy did not mention this request
+ * at all. Defaulting it on meant the shipped product and the shipped policy
+ * described two different programs.
+ *
+ * Installations that already made the choice are unaffected: the key is only
+ * written by `setHibpCheckEnabled`, so anyone who turned this on before has
+ * `'true'` stored and keeps it, and anyone who turned it off has `'false'`.
+ * Only the never-asked case moves, which is the case this change is about.
+ */
 export const HIBP_STORAGE_KEY = 'KalderaShield_hibp_audit_enabled';
 
 export function isHibpCheckEnabled(): boolean {
-  if (typeof localStorage === 'undefined') return true;
-  const stored = localStorage.getItem(HIBP_STORAGE_KEY);
-  return stored !== 'false';
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem(HIBP_STORAGE_KEY) === 'true';
 }
 
 export function setHibpCheckEnabled(enabled: boolean): void {

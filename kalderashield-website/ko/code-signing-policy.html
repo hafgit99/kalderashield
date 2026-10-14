@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ko" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -109,7 +109,7 @@
 
       <h2 data-i18n="csp-h2-2">2. Windows</h2>
       <p data-i18n="csp-p1-3">Free code signing provided by SignPath.io, certificate by SignPath Foundation.</p>
-      <p data-i18n="csp-p1-4"><strong>상태: 아직 신청하지 않음.</strong> KalderaShield는 SignPath Foundation에 신청할 예정이며, THEIR 조건이 신청 전에 이 정책의 존재를 요구하므로 미리 준비했습니다. <strong>신청서는 제출되지 않았고 대기 중인 결정도 없습니다</strong>. 이 절에서 어떤 Windows 산출물이 현재 서명되어 있다는 주장을 읽어서는 안 됩니다. <strong>서명되어 있지 않습니다.</strong> 첫 서명 릴리스가 실제로 출시될 때까지 정직한 서술은 아래 상태 표이며, 이 절은 그 릴리스의 <em>이전</em>에 갱신됩니다.</p>
+      <p data-i18n="csp-p1-4"><strong>상태: 신청 준비 완료, 사전 조건 충족.</strong>KalderaShield는 SignPath Foundation 프로그램에 신청할 준비를 하고 있으며, 상대가 명시한 사전 조건을 모두 충족했습니다. 서명될 형식의 Windows 설치 관리자가 이미 공개되어 있고, 프로젝트 페이지가 운영 중이며, 이 정책은 홈페이지와 다운로드 페이지에서 모두 링크되어 있습니다. 남은 일은 신청서 제출, 계정의 다중 인증 확인, 그리고 보안 연락처 주소에 회신이 있는지 확인하는 것입니다. <strong>이 절의 어떤 문장도 현재 Windows 산출물이 서명되어 있다는 뜻이 아닙니다</strong> — 현재 서명된 산출물은 하나도 없으며, 이 문단은 첫 서명 릴리스가 나온 뒤가 아니라 그 전에 갱신됩니다.</p>
       <p data-i18n="csp-p1-5">서명될 파일은 NSIS 설치 관리자(<code>KalderaShield_&lt;버전&gt;_x64-setup.exe</code>), 관리형 배포용 MSI 패키지(<code>KalderaShield_&lt;버전&gt;_x64.msi</code>), 그리고 설치가 필요 없는 휴대형 실행 파일(<code>KalderaShield_&lt;버전&gt;_x64-portable.exe</code>)입니다. 셋 다 이 저장소에서 빌드되어 <a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">릴리스 페이지</a>에 게시됩니다. 이 저장소에서 빌드되지 않은 산출물은 이 프로젝트의 인증서로 서명되지 않으며, 제3자 바이너리를 이 인증서로 재서명하지도 않습니다.</p>
       <p data-i18n="csp-p1-6"><strong>키 관리:</strong> 개인 키는 SignPath의 HSM에서 생성되고 보관됩니다. 이 프로젝트는 그 키를 보유하지도, 내보내지도, 빌드 러너나 개발자 컴퓨터로 전달하지도 않습니다. 서명은 이 저장소의 CI가 제출하고 사람이 승인한 서명 요청에 따라 SignPath 측에서 이루어집니다.</p>
       <p data-i18n="csp-p1-7"><strong>쇄도:</strong> 버전 태그를 푸시함 → GitHub Actions가 파일을 빌드함(워크플로는 공개이고, 타사 액션은 커밋 SHA로 고정되어 있으며, 토큰 권한은 읽기 전용) → 빌드가 SignPath에 업로드하고 서명 요청을 열며, 서명하지는 않음 → 승인자가 승인 또는 거부 → SignPath가 Foundation 인증서로 서명 → 서명된 파일을 <code>SHA256SUMS.txt</code>와 함께 게시. 모든 릴리스에는 수동 승인이 필요하며, 무인 서명 경로는 없고 앞으로도 추가하지 않습니다.</p>

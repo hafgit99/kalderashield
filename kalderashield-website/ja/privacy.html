@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ja" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. 保管庫データ：一切収集されません</h2>
       <p data-i18n="privacy-p1-2">KalderaShield のゼロ知識・オフラインファースト設計により、保管庫に保存されたパスワード、ユーザー名、メモ、パスキー、添付ファイルは<strong>いかなる場合においても収集・処理・共有されません</strong>。データはデバイス上にのみ保存され、マスターパスワードから導出された鍵によって暗号化されます。当方がマスターパスワードおよびそこから導出された鍵のコピーを保持することは一切ありません。</p>
+<p data-i18n="privacy-p1-2b">保管庫の内容がサーバーへ送信されることはありません。パスワードから導出され、端末の外へ出る可能性があるデータは、任意の「既知の漏洩チェック」だけであり、あなたが有効化しない限りオフのままです（第5節で説明します）。</p>
 
       <h2 data-i18n="privacy-h2-3">3. 本ウェブサイト：Cookie を使わずトラッキングもありません</h2>
       <p data-i18n="privacy-p1-3">本ウェブサイトは、<strong>トラッキング Cookie、広告 Cookie、フィンガープリント、アクセス解析スクリプトを一切使用しません。</strong>訪問者の行動は測定されず、第三者へのリクエストも発生しません。本サイト上に保存されるデータは、ブラウザの localStorage に保持されるインターフェース言語の設定のみです。このデータがデバイスの外に出ることはありません。</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. 第三者サービス</h2>
       <p data-i18n="privacy-p1-5">アプリケーションおよび拡張機能のパッケージは GitHub Releases から配布されます。ダウンロードの際には GitHub/Microsoft 固有のプライバシー慣行が適用され、当方にデータが送信されることはありません。<code>install.sh</code> スクリプトは、整合性の検証のみを目的として、GitHub Releases からバージョン番号と SHA-256 ダイジェストを読み取ります。メールでお問い合わせいただいた場合、そのメッセージはあなたのメールプロバイダーのシステムを経由しますが、返信の送信以外の目的で処理されることはありません。</p>
+<p data-i18n="privacy-p1-5b">アプリの「セキュリティ監査」画面は、Have I Been Pwned の k-匿名性レンジ API を利用して、パスワードが既知の漏洩データセットに含まれているかを確認できます。この場合送信されるのはパスワードの SHA-1 ダイジェストの先頭5文字のみで、パスワード自体もダイジェストの残りも送信されず、応答はサイズから推測できないようパディングされます。このチェックは<strong>既定でオフ</strong>であり、この画面のボタンで有効にした場合のみ実行されます。オフにするとリクエストはまったく送信されません。</p>
 
       <h2 data-i18n="privacy-h2-6">6. あなたの権利</h2>
       <p data-i18n="privacy-p1-6">個人データが処理されるのは、メールでご連絡いただく場合など、限定的なケースのみです。その場合、あなたはトルコ法 KVKK（第6698号）第11条、および欧州連合においては GDPR に基づき、自身のデータの処理について把握、開示、訂正、削除および処理への異議申し立てを行う権利を有します。請求は <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a> 宛に送信してください。請求には遅くとも30日以内に回答いたします。</p>

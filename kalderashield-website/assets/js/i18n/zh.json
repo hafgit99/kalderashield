@@ -975,7 +975,7 @@
   "p-denetim-durumu-secondary": "阅读威胁模型",
   "p-denetim-durumu-what-label": "这一说法的现状",
   "p-denetim-durumu-what-title": "哪些内容被自动化验证，由谁验证",
-  "p-denetim-durumu-p1": "如今存在的是自动化、可复现的验证：覆盖 259 个文件的 2381 个单元测试、针对导入解析、备份封装和附件元数据的基于属性的模糊测试门禁、使用 Stryker 进行的变异测试、在 CI 中运行的 CodeQL 分析和 OpenSSF Scorecard、gitleaks 机密扫描，以及一项遇到任何高危或严重 npm 安全公告就会失败的依赖策略。",
+  "p-denetim-durumu-p1": "如今存在的是自动化、可复现的验证：覆盖 259 个文件的 2383 个单元测试、针对导入解析、备份封装和附件元数据的基于属性的模糊测试门禁、使用 Stryker 进行的变异测试、在 CI 中运行的 CodeQL 分析和 OpenSSF Scorecard、gitleaks 机密扫描，以及一项遇到任何高危或严重 npm 安全公告就会失败的依赖策略。",
   "p-denetim-durumu-p2": "尚不存在的是外部独立专家对密码学设计和实现的审查。内部评审报告记录了数百项发现和修复，但它们是由项目自身撰写的。这是另一类别的保证，本站也不会把它当作独立的保证来呈现。",
   "p-denetim-durumu-p3": "计划中的是外部审计：范围文件草案已经存在，列出了纳入范围的组件——密码学、密码库持久化、扩展桥接、Tauri IPC 层——因此一旦聘请审计方，工作即可启动。在合同存在之前，不会承诺任何日期。",
   "p-denetim-durumu-steps-title": "不依靠我们也能完成的验证",
@@ -1239,7 +1239,7 @@
   "p-kaynak-kodu-p2": "浏览器扩展是面向 Chromium 和 Firefox 的 Manifest V3 TypeScript 构建；Android 应用是带有 AndroidKeyStore 生物识别绑定的 Tauri Android 项目。原生消息宿主和 IPC 桥接位于 Rust 工作区中，配对令牌、租约和帧加密逻辑在那里最容易被审计。",
   "p-kaynak-kodu-p3": "本网站本身是直接提交的纯 HTML——部署不需要构建步骤——生成脚本和质量门禁与它们产出的页面一起存放在仓库中。",
   "p-kaynak-kodu-steps-title": "每次变更都要通过的门禁",
-  "p-kaynak-kodu-step1-title": "类型检查与 2381 个单元测试",
+  "p-kaynak-kodu-step1-title": "类型检查与 2383 个单元测试",
   "p-kaynak-kodu-step1-desc": "259 个测试文件，强制覆盖率阈值：行覆盖率 90%、语句覆盖率 90%、函数覆盖率 85%、分支覆盖率 80%。低于阈值的回退会让构建失败，而不是只体现在某个面板上。",
   "p-kaynak-kodu-step2-title": "模糊测试、变异测试与安全门禁",
   "p-kaynak-kodu-step2-desc": "fast-check 属性测试用格式错误的输入反复锤击导入器、备份和附件路径。Stryker 变异测试为测试质量评级。专用门禁检查 CSP 加固、发布产物、调试标记和机密泄露。",
@@ -1380,7 +1380,7 @@
   "csp-p1-1": "本页说明 KalderaShield 的哪些发布产物由谁签名、采用何种密钥保管方式，以及每份签名由谁负责批准。仓库中同一文档的源版本：<a href=\"https://github.com/hafgit99/kalderashield/blob/main/CODE_SIGNING_POLICY.md\" rel=\"noopener noreferrer\">CODE_SIGNING_POLICY.md</a>",
   "csp-h2-2": "2. Windows",
   "csp-p1-3": "Free code signing provided by SignPath.io, certificate by SignPath Foundation.",
-  "csp-p1-4": "<strong>状态：<strong>尚未提交</strong>申请。</strong> KalderaShield 计划向 SignPath Foundation 提交申请，并已提前准备好本政策，因为对方条款要求本政策在提交申请之前就已存在。申请尚未提交，也没有待决结论。本节不得被理解为任何 Windows 产物目前已签名。<strong>它并未签名。</strong>在首个已签名版本真正发布之前，诚实的表述就是下面的状态表；本节会在该版本发布<em>之前</em>更新。",
+  "csp-p1-4": "<strong>状态：申请已准备，前置条件已满足。</strong>KalderaShield 正在申请 SignPath Foundation 项目，并已满足对方列出的全部前置条件：Windows 安装程序已以应被签名的形式发布，项目页面已上线，且本政策在首页和下载页都有链接。剩下的工作是提交表单、确认账号已启用多因素认证，以及确认安全联系邮箱有人回复。<strong>本节内容不表示任何 Windows 文件目前已签名</strong>——目前一个都没有签名，本段文字会在第一个签名版本发布之前更新，而不是之后。",
   "csp-p1-5": "将被签名的文件是 NSIS 安装程序（<code>KalderaShield_&lt;版本&gt;_x64-setup.exe</code>）、用于受管部署的 MSI 包（<code>KalderaShield_&lt;版本&gt;_x64.msi</code>）以及无需安装的便携可执行文件（<code>KalderaShield_&lt;版本&gt;_x64-portable.exe</code>）。三者均由本仓库构建，并在<a href=\"https://github.com/hafgit99/kalderashield/releases\" rel=\"noopener noreferrer\">发行页面</a>发布。凡非由本仓库构建的产物，一律不以本项目证书签名；也不会用该证书对任何第三方二进制文件重新签名。",
   "csp-p1-6": "<strong>密钥保管：</strong>私钥在 SignPath 的 HSM 中生成并保存。本项目从不持有该密钥，从不导出，也绝不将其传递给构建运行器或开发人员机器。签名在 SignPath 一侧进行，响应的是本仓库 CI 提交并由人工批准的签名请求。",
   "csp-p1-7": "<strong>链条：</strong>推送版本标签 → GitHub Actions 构建这些文件（工作流是公开的，第三方 action 按 commit SHA 固定，令牌权限为只读）→ 构建将文件上传至 SignPath 并发起签名请求，但自身不签名 → 一位 Approver 批准或拒绝 → SignPath 使用 Foundation 证书签名 → 已签名文件与 <code>SHA256SUMS.txt</code> 一并发布。每个发行版都需要人工批准；不存在无人值守的签名路径，也不会新增。",
@@ -1409,5 +1409,8 @@
   "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
   "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
   "promo-video-fallback": "您的浏览器不支持 video 标签。",
-  "promo-video-fallback-link": "下载视频"
+  "promo-video-fallback-link": "下载视频",
+  "privacy-p1-2b": "您的密码库内容不会传输到任何服务器。唯一可能离开设备的、由密码派生出的数据，是可选的已知泄露检查；除非您主动启用，否则它保持关闭，详见第5节。",
+  "privacy-p1-5b": "应用的「安全审计」界面可以通过 Have I Been Pwned 的 k-匿名范围 API 查询您的密码是否出现在已知的泄露数据集中。在这种情况下，仅会发送密码 SHA-1 摘要的前五个十六进制字符；密码本身及其余摘要内容均不会传输，响应也会进行填充处理，以避免通过响应大小进行关联。该检查<strong>默认关闭</strong>，只有在您通过该界面的按钮启用后才会运行；关闭后不会发送任何请求。",
+  "footer-link-code-signing": "代码签名政策"
 }

@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="es" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. Los datos de su bóveda: nunca se recopilan</h2>
       <p data-i18n="privacy-p1-2">El diseño de conocimiento cero y de enfoque local de KalderaShield implica que las contraseñas, nombres de usuario, notas, passkeys y archivos adjuntos almacenados en su bóveda <strong>nunca se recopilan, procesan ni comparten bajo ninguna circunstancia</strong>. Sus datos se almacenan únicamente en su dispositivo, cifrados con claves derivadas de su contraseña maestra. Nunca conservamos una copia de su contraseña maestra ni de las claves derivadas de esta.</p>
+<p data-i18n="privacy-p1-2b">Nada de tu bóveda se transmite a ningún servidor. El único dato derivado de tus contraseñas que puede salir del dispositivo es la comprobación opcional de filtraciones conocidas, que permanece desactivada salvo que la actives, y que se describe en la sección 5.</p>
 
       <h2 data-i18n="privacy-h2-3">3. Este sitio web: sin cookies ni seguimiento</h2>
       <p data-i18n="privacy-p1-3">Este sitio web <strong>no utiliza cookies de seguimiento, cookies publicitarias, huella digital ni scripts de analítica.</strong> No se mide el comportamiento de los visitantes y no se realizan solicitudes a terceros. El único dato almacenado en el sitio es su preferencia de idioma de la interfaz, guardada en el localStorage de su navegador. Este dato nunca sale de su dispositivo.</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. Servicios de terceros</h2>
       <p data-i18n="privacy-p1-5">Los paquetes de la aplicación y de la extensión se distribuyen a través de GitHub Releases; durante una descarga se aplican las prácticas de privacidad propias de GitHub/Microsoft y no se nos transmite ningún dato. El script <code>install.sh</code> lee el número de versión y los resúmenes SHA-256 de GitHub Releases únicamente para verificar la integridad. Cuando nos contacta por correo electrónico, su mensaje pasa por los sistemas de su proveedor de correo; más allá de entregarle una respuesta, no se procesa con ningún otro fin.</p>
+<p data-i18n="privacy-p1-5b">La pantalla « Auditoría de seguridad » de la aplicación puede consultar a Have I Been Pwned, mediante su API de rangos con k-anonimato, si tus contraseñas aparecen en un corpus de filtraciones conocido. En ese caso solo se envían los cinco primeros caracteres hexadecimales de la huella SHA-1 de una contraseña; ni la contraseña ni el resto de la huella se transmiten, y las respuestas se rellenan para que su tamaño no pueda correlacionarse. Esta comprobación está <strong>desactivada de forma predeterminada</strong> y solo se ejecuta si la activas con el botón de esa pantalla; una vez desactivada, no se envía ninguna solicitud.</p>
 
       <h2 data-i18n="privacy-h2-6">6. Sus derechos</h2>
       <p data-i18n="privacy-p1-6">Los datos personales solo se tratan en casos limitados —por ejemplo, cuando nos envía un correo electrónico. En ese caso, usted tiene derecho a informarse, acceder, rectificar, suprimir y oponerse al tratamiento de sus datos en virtud del artículo 11 de la ley turca KVKK (n.º 6698) y, en la Unión Europea, del GDPR. Envíe sus solicitudes a <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a>; se responderán en un plazo máximo de 30 días.</p>

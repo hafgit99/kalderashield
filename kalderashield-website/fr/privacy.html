@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="fr" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. Vos données de coffre : jamais collectées</h2>
       <p data-i18n="privacy-p1-2">L'architecture à connaissance nulle et hors ligne d'abord de KalderaShield signifie que les mots de passe, identifiants, notes, passkeys (clés d'accès) et pièces jointes stockés dans votre coffre ne sont <strong>jamais collectés, traités ni partagés, en aucune circonstance</strong>. Vos données sont stockées uniquement sur votre appareil, chiffrées au moyen de clés dérivées de votre mot de passe principal. Nous ne détenons jamais de copie de votre mot de passe principal ni des clés qui en sont dérivées.</p>
+<p data-i18n="privacy-p1-2b">Aucune donnée de votre coffre n’est transmise à un serveur. Les seules données dérivées de vos mots de passe susceptibles de quitter l’appareil sont la vérification facultative des fuites connues, qui reste désactivée sauf si vous l’activez, et qui est décrite à la section 5.</p>
 
       <h2 data-i18n="privacy-h2-3">3. Ce site web : sans cookies ni pistage</h2>
       <p data-i18n="privacy-p1-3">Ce site web n'utilise <strong>aucun cookie de pistage, aucun cookie publicitaire, aucun pistage par empreinte numérique et aucun script d'analyse d'audience.</strong> Le comportement des visiteurs n'est pas mesuré ; aucune requête vers des tiers n'est effectuée. La seule donnée conservée sur le site est votre préférence de langue d'interface, stockée dans le localStorage de votre navigateur. Cette donnée ne quitte jamais votre appareil.</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. Services tiers</h2>
       <p data-i18n="privacy-p1-5">Les paquets de l'application et de l'extension sont distribués via GitHub Releases ; pendant un téléchargement, les pratiques de confidentialité propres à GitHub/Microsoft s'appliquent et aucune donnée ne nous est transmise. Le script <code>install.sh</code> lit le numéro de version et les empreintes SHA-256 depuis GitHub Releases uniquement à des fins de vérification de l'intégrité. Lorsque vous nous contactez par courriel, votre message transite par les systèmes de votre fournisseur de messagerie ; au-delà de l'envoi d'une réponse, il ne fait l'objet d'aucun autre traitement.</p>
+<p data-i18n="privacy-p1-5b">L’écran « Audit de sécurité » de l’application peut interroger Have I Been Pwned, via son API de plages à k-anonymat, pour savoir si vos mots de passe figurent dans un corpus de violations connu. Dans ce cas, seuls les cinq premiers caractères hexadécimaux de l’empreinte SHA-1 d’un mot de passe sont envoyés ; ni le mot de passe ni le reste de l’empreinte ne le sont, et les réponses sont complétées afin que leur taille ne puisse pas être corrélée. Cette vérification est <strong>désactivée par défaut</strong> et ne s’exécute que si vous l’activez avec le bouton de cet écran ; une fois désactivée, aucune requête n’est envoyée.</p>
 
       <h2 data-i18n="privacy-h2-6">6. Vos droits</h2>
       <p data-i18n="privacy-p1-6">Les données personnelles ne sont traitées que dans des cas limités — par exemple lorsque vous nous écrivez par courriel. Dans ce cas, vous disposez, en vertu de l'article 11 de la loi turque KVKK (n° 6698) et, dans l'Union européenne, du « RGPD (GDPR) », du droit d'être informé, d'accéder à vos données, de les rectifier, de les faire supprimer et de vous opposer à leur traitement. Envoyez vos demandes à <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a> ; elles reçoivent une réponse dans un délai maximal de 30 jours.</p>

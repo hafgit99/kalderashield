@@ -13,10 +13,13 @@ Public version of this document:
 **Free code signing provided by [SignPath.io](https://signpath.io), certificate
 by [SignPath Foundation](https://signpath.org).**
 
-Status: **not yet applied.** KalderaShield intends to apply to the SignPath
-Foundation and has prepared this policy in advance, because their terms require
-it to exist before an application is made. The application has not been submitted
-and no decision is pending.
+Status: **application prepared, preconditions met.** KalderaShield is applying to
+the SignPath Foundation program and has met every stated precondition: Windows
+installers are published in the form that should be signed, the project page is
+live, and this policy is linked from the home page and the download page in
+every language. What remains is submitting the form, confirming multi-factor
+authentication on the accounts, and confirming that the security contact
+address is answered.
 
 Nothing in this section should be read as a claim that a Windows artifact is
 currently signed. It is not signed. Until the first signed release actually
@@ -202,8 +205,9 @@ Each signature request must be approved before the artifact is signed:
 **Known gap:** with one person holding all three roles, the person who writes
 the code also approves its signature. SignPath's model assumes an Approver is
 "trusted by the entire team", which presumes more than one team member. Adding a
-second Approver is planned and not yet done. A reviewer who considers this
-disqualifying should say so now rather than after approval.
+second Approver is the one remaining structural item on the application, and it
+is named as such rather than left to be discovered during review. A reviewer who
+considers this disqualifying should say so now rather than after approval.
 
 ## Privacy policy
 
@@ -216,8 +220,29 @@ person installing or operating it.**
 KalderaShield is an offline-first, zero-knowledge password manager. Vault
 contents are encrypted on the device with keys derived from the master password
 and are never transmitted. There is no account, no sync service, no telemetry and
-no analytics. The Windows binaries contain no network client of any kind beyond
-the operating system's own component.
+no analytics.
+
+The application does not have unrestricted network access to begin with. An
+air-gap policy wraps `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource` and
+`navigator.sendBeacon` (`src/lib/airgapNetworkPolicy.ts`) and allows a request
+only to the app's own origin, to a sync server the user has configured
+themselves, and to one further origin described below. WebRTC is blocked
+entirely. There is exactly one exception, and it is opt-in:
+
+**Breach checking (optional, off by default).** The Security Audit screen can
+ask Have I Been Pwned whether a password appears in a known breach corpus. It
+uses the k-anonymity range API: the app sends the first five hex characters of
+the SHA-1 digest of the password and nothing else, and requests response
+padding so the answer's size cannot be correlated back to the query. No
+password, and no material derived from it beyond that five-character prefix,
+reaches the third party or this project.
+
+This check is **off unless the user turns it on**. That is a change, not a
+description of an accident: it used to be on by default, which meant opening
+the Security Audit screen contacted a third-party server for every password in
+the vault, and the privacy policy did not mention it. Both the default and the
+policy text were corrected together — the policy is only worth publishing if it
+is true, and a certificate issuer reads it closely.
 
 Third-party components whose behaviour affects users are covered by
 [License-3rd-PARTY.md](LICENSE-3RD-PARTY.md) and by the privacy policy, which
@@ -258,14 +283,16 @@ separate from Authenticode and is unaffected by anything on this page.
 | Android | Yes | Yes | Release keystore |
 | Browser extension | Yes | Yes | Sigstore keyless (store signatures for Chrome/Firefox) |
 | Desktop auto-updater manifest | Yes | Yes | Tauri minisign (see the updater section) |
-| Windows | **Preview only** | **No** | Application not yet submitted |
+| Windows | **Preview only** | **No** | Application prepared; no decision pending |
 | macOS | No | No | Certificate not yet issued |
 
 Windows artifacts are published as an explicitly labelled **unsigned preview**,
-not as a normal release. The reason is a stated precondition of the SignPath
-application: their terms require the project to have already released the software
-in the form that should be signed, so one unsigned release has to exist before the
-application can be made at all.
+not as a normal release. That shape was chosen because of a stated precondition
+of the SignPath application: their terms require the project to have already
+released the software in the form that should be signed, so one release in that
+form had to exist before an application could be made at all. Five now do
+(v7.0.20 through v7.0.24), which is the precondition being satisfied — not a
+workaround, and not a channel that outlives signing.
 
 The fail-closed gate in `release-desktop.yml` is unchanged and still blocks any
 unsigned artifact from a normal release tag, and there is no workflow in

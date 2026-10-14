@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="zh" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -109,7 +109,7 @@
 
       <h2 data-i18n="csp-h2-2">2. Windows</h2>
       <p data-i18n="csp-p1-3">Free code signing provided by SignPath.io, certificate by SignPath Foundation.</p>
-      <p data-i18n="csp-p1-4"><strong>状态：<strong>尚未提交</strong>申请。</strong> KalderaShield 计划向 SignPath Foundation 提交申请，并已提前准备好本政策，因为对方条款要求本政策在提交申请之前就已存在。申请尚未提交，也没有待决结论。本节不得被理解为任何 Windows 产物目前已签名。<strong>它并未签名。</strong>在首个已签名版本真正发布之前，诚实的表述就是下面的状态表；本节会在该版本发布<em>之前</em>更新。</p>
+      <p data-i18n="csp-p1-4"><strong>状态：申请已准备，前置条件已满足。</strong>KalderaShield 正在申请 SignPath Foundation 项目，并已满足对方列出的全部前置条件：Windows 安装程序已以应被签名的形式发布，项目页面已上线，且本政策在首页和下载页都有链接。剩下的工作是提交表单、确认账号已启用多因素认证，以及确认安全联系邮箱有人回复。<strong>本节内容不表示任何 Windows 文件目前已签名</strong>——目前一个都没有签名，本段文字会在第一个签名版本发布之前更新，而不是之后。</p>
       <p data-i18n="csp-p1-5">将被签名的文件是 NSIS 安装程序（<code>KalderaShield_&lt;版本&gt;_x64-setup.exe</code>）、用于受管部署的 MSI 包（<code>KalderaShield_&lt;版本&gt;_x64.msi</code>）以及无需安装的便携可执行文件（<code>KalderaShield_&lt;版本&gt;_x64-portable.exe</code>）。三者均由本仓库构建，并在<a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">发行页面</a>发布。凡非由本仓库构建的产物，一律不以本项目证书签名；也不会用该证书对任何第三方二进制文件重新签名。</p>
       <p data-i18n="csp-p1-6"><strong>密钥保管：</strong>私钥在 SignPath 的 HSM 中生成并保存。本项目从不持有该密钥，从不导出，也绝不将其传递给构建运行器或开发人员机器。签名在 SignPath 一侧进行，响应的是本仓库 CI 提交并由人工批准的签名请求。</p>
       <p data-i18n="csp-p1-7"><strong>链条：</strong>推送版本标签 → GitHub Actions 构建这些文件（工作流是公开的，第三方 action 按 commit SHA 固定，令牌权限为只读）→ 构建将文件上传至 SignPath 并发起签名请求，但自身不签名 → 一位 Approver 批准或拒绝 → SignPath 使用 Foundation 证书签名 → 已签名文件与 <code>SHA256SUMS.txt</code> 一并发布。每个发行版都需要人工批准；不存在无人值守的签名路径，也不会新增。</p>

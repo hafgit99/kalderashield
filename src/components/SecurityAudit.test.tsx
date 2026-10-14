@@ -9,13 +9,25 @@ import { LanguageProvider } from '../i18n/LanguageContext';
 import { languageStorageKey } from '../i18n/translations';
 import type { VaultItem } from '../types';
 import SecurityAudit from './SecurityAudit';
-import { checkPasswordAgainstHibp } from '../lib/hibp';
+import { checkPasswordAgainstHibp, HIBP_STORAGE_KEY } from '../lib/hibp';
 
-vi.mock('../lib/hibp', () => ({
-  checkPasswordAgainstHibp: vi.fn(async () => ({ status: 'clean', count: 0 })),
-  isHibpCheckEnabled: vi.fn(() => true),
-  setHibpCheckEnabled: vi.fn(),
-}));
+import type * as HibpModule from '../lib/hibp';
+
+/**
+ * The real toggle, not a stub.
+ *
+ * The previous mock answered "enabled" to every call, so the rendered state
+ * came from the mock and no test could tell whether the screen started on or
+ * off — which is the question the default change turned on. Delegating to the
+ * actual module keeps the component honest about what storage says.
+ */
+vi.mock('../lib/hibp', async () => {
+  const actual: typeof HibpModule = await vi.importActual('../lib/hibp');
+  return {
+    ...actual,
+    checkPasswordAgainstHibp: vi.fn(async () => ({ status: 'clean', count: 0 })),
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -44,7 +56,12 @@ describe('SecurityAudit', () => {
     render(<SecurityAudit items={[]} onSelectItem={vi.fn()} />);
 
     expect(screen.getByText('%100')).toBeTruthy();
-    expect(screen.getAllByText('0')).toHaveLength(4);
+    // Three metrics, not four. The breach panel's counter used to be a fourth
+    // zero; with the check off it renders a dash instead of a number, because a
+    // zero there would claim "checked every password, found nothing" when
+    // nothing was checked.
+    expect(screen.getAllByText('0')).toHaveLength(3);
+    expect(screen.getByText('—')).toBeTruthy();
     expect(screen.getByText(/Kritik derecede/)).toBeTruthy();
     expect(screen.getByText(/tekrar eden parola yoktur/)).toBeTruthy();
   });
@@ -120,7 +137,7 @@ describe('SecurityAudit', () => {
     expect(screen.getByText(/ZAYIF VE RİSKLİ HESAPLAR \(1\)/)).toBeTruthy();
     expect(screen.getByText(/TEKRAR EDEN ŞİFRELER/)).toBeTruthy();
     expect(screen.getByText('SSH Profile')).toBeTruthy();
-    expect(screen.getAllByText('0')).toHaveLength(3);
+    expect(screen.getAllByText('0')).toHaveLength(2);
 
     fireEvent.click(screen.getByText('SSH Profile'));
 
@@ -153,6 +170,10 @@ describe('SecurityAudit', () => {
   });
 
   it('renders HIBP pwned password findings without exposing the password', async () => {
+    // The check is opt-in, so a test that wants its results has to opt in the
+    // way a user does. Without this the panel renders empty and the assertion
+    // below would pass for the wrong reason if the label ever changed.
+    window.localStorage.setItem(HIBP_STORAGE_KEY, 'true');
     vi.mocked(checkPasswordAgainstHibp).mockImplementation(async (password) => {
       if (password === 'PwnedPass123!') return { status: 'pwned', count: 42 };
       return { status: 'clean', count: 0 };
@@ -231,7 +252,19 @@ describe('SecurityAudit', () => {
     expect(onSelectItem).toHaveBeenCalledWith(httpItem);
   });
 
-  it('allows user to toggle HIBP check offline/online', () => {
+  /**
+   * The breach check starts off.
+   *
+   * It used to render enabled on a fresh installation, because
+   * `isHibpCheckEnabled()` treated "never asked" as yes — so the screen showed
+   * "OPT-IN ON" for an opt-in the user had not given. The first click now turns
+   * it on and the second turns it off, which is the same two-state control
+   * described from the other direction.
+   */
+  it('starts the breach check off and lets the user turn it on', () => {
+    window.localStorage.setItem(languageStorageKey, 'en');
+    window.localStorage.removeItem(HIBP_STORAGE_KEY);
+
     render(
       <LanguageProvider>
         <SecurityAudit
@@ -250,13 +283,13 @@ describe('SecurityAudit', () => {
 
     const toggleBtn = screen.getByTestId('security-audit-hibp-toggle');
     expect(toggleBtn).toBeTruthy();
-    expect(toggleBtn.textContent).toBe('OPT-IN ON');
-
-    fireEvent.click(toggleBtn);
-    expect(toggleBtn.textContent).toBe('OFFLINE');
+    expect(toggleBtn.textContent).toBe('OFF');
 
     fireEvent.click(toggleBtn);
     expect(toggleBtn.textContent).toBe('OPT-IN ON');
+
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn.textContent).toBe('OFF');
   });
 
   it('renders and selects missing TOTP and old password items', () => {
