@@ -4,7 +4,7 @@
   "i18n": {
     "en": {
       "title": "Source Code — KalderaShield",
-      "description": "KalderaShield is Apache-2.0 open source. Architecture, real quality-gate numbers - 2371 unit tests, fuzz gate, CodeQL, OpenSSF Scorecard - and how to contribute.",
+      "description": "KalderaShield is Apache-2.0 open source. Architecture, real quality-gate numbers - 2381 unit tests, fuzz gate, CodeQL, OpenSSF Scorecard - and how to contribute.",
       "eyebrow": "Project / Source code",
       "h1": "The whole thing is on GitHub",
       "lead": "KalderaShield is Apache-2.0 licensed open source: the desktop app, the Android app, the browser extension, the native messaging host and this site. Every security claim on this website can be traced to code or to a test that runs in public CI.",
@@ -21,8 +21,8 @@
       "stepsTitle": "The gates every change passes",
       "steps": [
         {
-          "title": "Typecheck and 2371 unit tests",
-          "desc": "258 test files with enforced coverage thresholds: 90% lines, 90% statements, 85% functions, 80% branches. A regression below the threshold fails the build, not a dashboard."
+          "title": "Typecheck and 2381 unit tests",
+          "desc": "259 test files with enforced coverage thresholds: 90% lines, 90% statements, 85% functions, 80% branches. A regression below the threshold fails the build, not a dashboard."
         },
         {
           "title": "Fuzz, mutation and security gates",
@@ -86,7 +86,7 @@
     },
     "tr": {
       "title": "Kaynak Kodu — KalderaShield",
-      "description": "KalderaShield Apache-2.0 açık kaynaktır. Mimari, gerçek kalite-kapısı sayıları — 2371 birim testi, fuzz kapısı, mutasyon testi, CodeQL, OpenSSF Scorecard — ve katkı yolları.",
+      "description": "KalderaShield Apache-2.0 açık kaynaktır. Mimari, gerçek kalite-kapısı sayıları — 2381 birim testi, fuzz kapısı, mutasyon testi, CodeQL, OpenSSF Scorecard — ve katkı yolları.",
       "eyebrow": "Proje / Kaynak kodu",
       "h1": "Bütün proje GitHub'da",
       "lead": "KalderaShield Apache-2.0 lisanslı açık kaynaktır: masaüstü uygulaması, Android uygulaması, tarayıcı eklentisi, native messaging host ve bu site. Bu sitedeki her güvenlik iddiası, koda ya da herkese açık CI'da çalışan bir teste kadar izlenebilir.",
@@ -103,8 +103,8 @@
       "stepsTitle": "Her değişikliğin geçtiği kapılar",
       "steps": [
         {
-          "title": "Tip denetimi ve 2371 birim testi",
-          "desc": "Uygulanan kapsam eşikleriyle 258 test dosyası: %90 satır, %90 ifade, %85 fonksiyon, %80 dal. Eşiğin altına düşen gerileme, panoyu değil derlemeyi düşürür."
+          "title": "Tip denetimi ve 2381 birim testi",
+          "desc": "Uygulanan kapsam eşikleriyle 259 test dosyası: %90 satır, %90 ifade, %85 fonksiyon, %80 dal. Eşiğin altına düşen gerileme, panoyu değil derlemeyi düşürür."
         },
         {
           "title": "Fuzz, mutasyon ve güvenlik kapıları",

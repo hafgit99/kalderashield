@@ -14,7 +14,7 @@
       "whatLabel": "Where the claim stands",
       "whatTitle": "What is verified automatically, and by whom",
       "what": [
-        "What exists today is automated, reproducible verification: 2371 unit tests across 258 files, a property-based fuzz gate over import parsing, backup envelopes and attachment metadata, mutation testing with Stryker, CodeQL analysis and OpenSSF Scorecard in CI, gitleaks secret scanning, and a dependency policy that fails on any high or critical npm advisory.",
+        "What exists today is automated, reproducible verification: 2381 unit tests across 259 files, a property-based fuzz gate over import parsing, backup envelopes and attachment metadata, mutation testing with Stryker, CodeQL analysis and OpenSSF Scorecard in CI, gitleaks secret scanning, and a dependency policy that fails on any high or critical npm advisory.",
         "What does not exist is an external, independent expert review of the cryptographic design and implementation. Internal review reports document hundreds of findings and fixes, but they were written by the project itself. That is a different class of assurance and it is not presented as one.",
         "The plan is an external audit: a draft scope document already exists, listing the components in scope — cryptography, vault persistence, the extension bridge, the Tauri IPC surface — so the work can start as soon as an auditor is engaged. No date is promised before a contract exists."
       ],
@@ -38,9 +38,9 @@
       "secBody": "An unfinished audit marketed as an achievement is how trust products lose trust. The absence of an external audit is a real limitation: it means no independent expert has hunted for the flaw the automation misses. Stating it plainly lets you weigh the risk yourself, and gives the project a public commitment to be held to.",
       "tech": [
         {
-          "tag": "2371 tests",
+          "tag": "2381 tests",
           "title": "Unit suite",
-          "desc": "258 test files with coverage thresholds enforced at 90% lines and 80% branches; the measured baseline runs above them."
+          "desc": "259 test files with coverage thresholds enforced at 90% lines and 80% branches; the measured baseline runs above them."
         },
         {
           "tag": "fast-check",
@@ -96,7 +96,7 @@
       "whatLabel": "İddia nerede duruyor",
       "whatTitle": "Neyi otomatik doğruluyoruz ve kim doğruluyor",
       "what": [
-        "Bugün var olan şey otomatik, yeniden üretilebilir doğrulamadır: 258 dosyada 2371 birim testi, içe aktarma ayrıştırması, yedek zarfları ve ek üst verisi üzerinde özellik-tabanlı fuzz kapısı, Stryker ile mutasyon testi, CI'da CodeQL analizi ve OpenSSF Scorecard, gitleaks sır taraması ve yüksek ya da kritik npm danışmanlığında başarısız olan bağımlılık politikası.",
+        "Bugün var olan şey otomatik, yeniden üretilebilir doğrulamadır: 259 dosyada 2381 birim testi, içe aktarma ayrıştırması, yedek zarfları ve ek üst verisi üzerinde özellik-tabanlı fuzz kapısı, Stryker ile mutasyon testi, CI'da CodeQL analizi ve OpenSSF Scorecard, gitleaks sır taraması ve yüksek ya da kritik npm danışmanlığında başarısız olan bağımlılık politikası.",
         "Var olmayan şey, kriptografik tasarım ve uygulamanın harici, bağımsız uzman incelemesidir. İç inceleme raporları yüzlerce bulgu ve düzeltmeyi belgeler, ama onları projenin kendisi yazdı. Bu, farklı bir güvence sınıfıdır ve öyle sunulmaz.",
         "Plan bir dış denetimdir: kapsam taslağı zaten yayımlandı ve kapsamdeki bileşenleri — kriptografi, kasa kalıcılığı, eklenti köprüsü, Tauri IPC yüzeyi — listeler; böylece bir denetçiyle anlaşılır anılmaz iş başlayabilir. Sözleşme var olmadan tarih vaat edilmez."
       ],
@@ -120,9 +120,9 @@
       "secBody": "Tamamlanmamış bir denetimi başarı gibi pazarlamak, güven ürünlerinin güveni nasıl kaybettiğidir. Dış denetimin yokluğu gerçek bir sınırdır: otomasyonun gözden kaçırdığı kusuru bağımsız bir uzmanın aramadığı anlamına gelir. Bunu açıkça yazmak, riski kendiniz tartışmanızı sağlar ve projeye uyulacak herkese açık bir taahhüt verir.",
       "tech": [
         {
-          "tag": "2371 test",
+          "tag": "2381 test",
           "title": "Birim paketi",
-          "desc": "258 test dosyası; kapsam eşikleri %90 satır ve %80 dal olarak uygulanır, ölçülen taban bunların üzerinde çalışır."
+          "desc": "259 test dosyası; kapsam eşikleri %90 satır ve %80 dal olarak uygulanır, ölçülen taban bunların üzerinde çalışır."
         },
         {
           "tag": "fast-check",
