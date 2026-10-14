@@ -73,6 +73,30 @@ function updateLocaleFile(file, transform) {
   }
 }
 
+/**
+ * Write a value as a single-quoted TypeScript string literal.
+ *
+ * This replaces a one-liner that escaped only the quote, which CodeQL flagged
+ * as `js/incomplete-sanitization` (CWE-116) and which was genuinely broken: a
+ * value ending in a backslash produced `'...\'` and swallowed the closing
+ * quote of the line it was written into, and a value containing both a
+ * backslash and a quote came out as something that was neither.
+ *
+ * The order is the whole point. Backslash has to be escaped first, or the
+ * backslashes this function adds are themselves escaped and the value is
+ * rewritten by its own escaping. Then the quote. Then the control characters,
+ * which have no place in a one-line literal at all — a newline in a locale
+ * string is a bug in the value, and silently writing a broken file hides it.
+ */
+function singleQuoted(value) {
+  return `'${String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t')}'`;
+}
+
 let changed = 0;
 const missing = [];
 
@@ -87,7 +111,7 @@ for (const [locale, values] of Object.entries(VALUES)) {
         missing.push(`${locale}: ${key}`);
         continue;
       }
-      next = next.replace(re, (_, prefix) => `${prefix}'${values[index].replace(/'/g, "\\'")}'`);
+      next = next.replace(re, (_, prefix) => `${prefix}${singleQuoted(values[index])}`);
     }
     return next;
   });
