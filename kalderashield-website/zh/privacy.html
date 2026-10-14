@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="zh" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. 你的保管库数据：绝不收集</h2>
       <p data-i18n="privacy-p1-2">KalderaShield 采用零知识、离线优先的设计，因此保管库中保存的密码、用户名、备注、通行密钥和附件在任何情况下都<strong>绝不会被收集、处理或共享</strong>。数据仅存储在你的设备上，并使用由主密码派生的密钥加密。我们绝不持有你的主密码或由其派生的任何密钥的副本。</p>
+<p data-i18n="privacy-p1-2b">您的密码库内容不会传输到任何服务器。唯一可能离开设备的、由密码派生出的数据，是可选的已知泄露检查；除非您主动启用，否则它保持关闭，详见第5节。</p>
 
       <h2 data-i18n="privacy-h2-3">3. 本网站：无 Cookie、无跟踪</h2>
       <p data-i18n="privacy-p1-3">本网站<strong>不使用任何跟踪 Cookie、广告 Cookie，不进行指纹识别，也不包含任何分析脚本。</strong>访客行为不被度量，也不向第三方发起任何请求。本网站唯一存储的数据是你的界面语言偏好，保存在浏览器的 localStorage 中，绝不会离开你的设备。</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. 第三方服务</h2>
       <p data-i18n="privacy-p1-5">应用程序和浏览器扩展的安装包通过 GitHub Releases 分发；下载过程中适用 GitHub/Microsoft 自身的隐私实践，不会向我们传输任何数据。<code>install.sh</code> 脚本仅出于完整性校验的目的，从 GitHub Releases 读取版本号和 SHA-256 摘要。当你通过电子邮件与我们联系时，你的邮件会经过你的电子邮件服务商的系统；除送达回复之外，该邮件不会被用于任何其他目的。</p>
+<p data-i18n="privacy-p1-5b">应用的「安全审计」界面可以通过 Have I Been Pwned 的 k-匿名范围 API 查询您的密码是否出现在已知的泄露数据集中。在这种情况下，仅会发送密码 SHA-1 摘要的前五个十六进制字符；密码本身及其余摘要内容均不会传输，响应也会进行填充处理，以避免通过响应大小进行关联。该检查<strong>默认关闭</strong>，只有在您通过该界面的按钮启用后才会运行；关闭后不会发送任何请求。</p>
 
       <h2 data-i18n="privacy-h2-6">6. 你的权利</h2>
       <p data-i18n="privacy-p1-6">个人数据仅在有限的情形下被处理——例如你向我们发送电子邮件时。在此情形下，依据土耳其《个人数据保护法》（KVKK，第6698号）第 11 条以及欧盟的 GDPR，你有权了解、访问、更正、删除你的数据并反对对其处理。请将请求发送至 <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a>；我们最迟会在 30 天内予以答复。</p>

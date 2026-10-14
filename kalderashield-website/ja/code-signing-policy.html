@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ja" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -109,7 +109,7 @@
 
       <h2 data-i18n="csp-h2-2">2. Windows</h2>
       <p data-i18n="csp-p1-3">Free code signing provided by SignPath.io, certificate by SignPath Foundation.</p>
-      <p data-i18n="csp-p1-4"><strong>状態: 未申請。</strong> KalderaShield は SignPath Foundation への申請を予定しており THEIR の条件が申請前に本ポリシーの存在を求めるため、先に用意しました。<strong>申請は提出されておらず、保留中の決定もありません</strong>。この節から、現在の Windows 成果物が署名済みであるとは読み取ってはなりません。<strong>署名はされていません。</strong>最初の署名済みリリースが実際に公開されるまで、正しい記述は下のステータス表であり、この節はそのリリースの<em>前</em>に更新されます。</p>
+      <p data-i18n="csp-p1-4"><strong>状態：申請は準備完了、前提条件を満たしています。</strong>KalderaShield は SignPath Foundation プログラムに申請する準備を目的としており、给对方の定めた前提条件をすべて満たしています。署名される形式の Windows インストーラーが公開済みで、プロジェクトのページは公開中であり、このポリシーはトップページおよびダウンロードページからリンクされています。残っているのはフォームの送信、アカウントの多要素認証の確認、そしてセキュリティ連絡先用メールアドレスに返信があることの確認です。<strong>この節の記述は、現在のところ Windows のファイルに署名があることを意味しません</strong>—署名は一切されておらず、この文は最初の署名済みリリースの前に、 事後ではなく、更新されます。</p>
       <p data-i18n="csp-p1-5">署名されるファイルは、NSIS インストーラー（<code>KalderaShield_&lt;バージョン&gt;_x64-setup.exe</code>）、一元管理パッケージ向け MSI パッケージ（<code>KalderaShield_&lt;バージョン&gt;_x64.msi</code>）、そしてインストール不要のポータブル実行ファイル（<code>KalderaShield_&lt;バージョン&gt;_x64-portable.exe</code>）です。三つともこのリポジトリからビルドされ、<a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">リリースページ</a>で公開されます。このリポジトリからビルドされていない成果物が本プロジェクトの証明書で署名されることはなく、第三者のバイナリをこの証明書で再署名することもありません。</p>
       <p data-i18n="csp-p1-6"><strong>鍵の管理:</strong>秘密鍵は SignPath の HSM 上で生成され、保管されます。本プロジェクトは鍵を一切保持せず、エクスポートもせず、ビルドランナーや開発者マシンに送信することもありません。署名は、本リポジトリの CI が送信し、責任者が承認した署名リクエストに応えて、SignPath 側で行われます。</p>
       <p data-i18n="csp-p1-7"><strong>連鎖:</strong> バージョンタグを push → GitHub Actions がファイルをビルド（ワークフローは公開、第三者アクションはコミット SHA で固定、トークン権限は読み取り専用）→ ビルドが SignPath へアップロードして署名リクエストを発行（署名はしない）→ 承認者が承認または却下 → SignPath が Foundation 証明書で署名 → 署名済みファイルを <code>SHA256SUMS.txt</code> と共に公開。すべてのリリースで人手による承認が必要です。無人の署名経路は存在せず、近い将来も追加されません。</p>

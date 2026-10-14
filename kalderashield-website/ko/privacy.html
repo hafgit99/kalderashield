@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ko" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. 볼트 데이터: 수집하지 않습니다</h2>
       <p data-i18n="privacy-p1-2">KalderaShield의 제로 지식·오프라인 우선 설계에 따라, 볼트에 저장된 비밀번호, 사용자 이름, 노트, 패스키 및 첨부 파일은 <strong>어떠한 경우에도 수집, 처리 또는 공유되지 않습니다</strong>. 데이터는 귀하의 기기에만 저장되며 마스터 비밀번호에서 파생된 키로 암호화됩니다. 당사는 귀하의 마스터 비밀번호와 그로부터 파생된 키의 사본을 보관하지 않습니다.</p>
+<p data-i18n="privacy-p1-2b">보관함의 어떤 내용도 서버로 전송되지 않습니다. 비밀번호에서 파생되어 기기를 벗어날 수 있는 데이터는 선택적 알려진 유출 검사뿐이며, 직접 켜지 않으면 꺼져 있고 5절에서 설명합니다.</p>
 
       <h2 data-i18n="privacy-h2-3">3. 본 웹사이트: 쿠키 및 추적 없음</h2>
       <p data-i18n="privacy-p1-3">본 웹사이트는 <strong>추적 쿠키, 광고 쿠키, 핑거프린팅, 분석 스크립트를 일절 사용하지 않습니다.</strong> 방문자 행동을 측정하지 않으며, 제3자 요청도 발생하지 않습니다. 사이트에 저장되는 유일한 데이터는 브라우저의 localStorage에 보관되는 인터페이스 언어 설정으로, 이 데이터는 기기 밖으로 나가지 않습니다.</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. 제3자 서비스</h2>
       <p data-i18n="privacy-p1-5">애플리케이션 및 확장 프로그램 패키지는 GitHub Releases를 통해 배포됩니다. 다운로드 과정에서는 GitHub/Microsoft 자체의 개인정보 처리 방침이 적용되며, 당사로는 어떠한 데이터도 전송되지 않습니다. <code>install.sh</code> 스크립트는 무결성 검증을 위해서만 GitHub Releases에서 버전 번호와 SHA-256 다이제스트를 읽어옵니다. 이메일로 문의하시면 해당 메시지는 귀하의 이메일 제공자 시스템을 경유하며, 회신 전달 외의 목적으로는 처리되지 않습니다.</p>
+<p data-i18n="privacy-p1-5b">앱의 「보안 감사」 화면은 k-익명성 range API를 통해 Have I Been Pwned에 비밀번호가 알려진 유출 데이터셋에 포함되어 있는지 확인할 수 있습니다. 이때 전송되는 것은 비밀번호 SHA-1 다이제스트의 앞 5자뿐이며 비밀번호 자체나 나머지 다이제스트는 전송되지 않고, 응답은 크기로 추적할 수 없도록 패딩됩니다. 이 검사는<strong>기본적으로 꺼져 있으며</strong> 해당 화면의 버튼으로 직접 켤 때만 실행됩니다. 끄면 어떤 요청도 전송되지 않습니다.</p>
 
       <h2 data-i18n="privacy-h2-6">6. 귀하의 권리</h2>
       <p data-i18n="privacy-p1-6">개인 데이터는 이메일 문의 등 제한적인 경우에만 처리됩니다. 이 경우 귀하는 터키 개인정보보호법 KVKK(제6698호) 제11조에 따라, 그리고 유럽연합에서는 GDPR에 따라 데이터에 대한 알 권리, 접근권, 정정권, 삭제권 및 처리 거부권을 가집니다. 요청은 <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a>(으)로 보내주시기 바라며, 최대한 30일 이내에 답변됩니다.</p>

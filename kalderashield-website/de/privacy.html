@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="de" dir="ltr" data-site-version="7.0.24"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2381">
+<meta name="x-test-count" content="2383">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -108,6 +108,7 @@
 
       <h2 data-i18n="privacy-h2-2">2. Ihre Tresordaten: werden niemals erhoben</h2>
       <p data-i18n="privacy-p1-2">Das Zero-Knowledge- und Offline-first-Design von KalderaShield bedeutet, dass die in Ihrem Tresor gespeicherten Passwörter, Benutzernamen, Notizen, Passkeys und Anhänge <strong>unter keinen Umständen erhoben, verarbeitet oder weitergegeben werden</strong>. Ihre Daten werden ausschließlich auf Ihrem Gerät gespeichert und mit Schlüsseln verschlüsselt, die aus Ihrem Master-Passwort abgeleitet werden. Wir besitzen niemals eine Kopie Ihres Master-Passworts oder der daraus abgeleiteten Schlüssel.</p>
+<p data-i18n="privacy-p1-2b">Aus Ihrem Tresor wird nichts an einen Server übertragen. Die einzigen aus Ihren Passwörtern abgeleiteten Daten, die das Gerät verlassen können, sind die optionale Prüfung auf bekannte Leaks; sie bleibt aus, sofern Sie sie nicht einschalten, und wird in Abschnitt 5 beschrieben.</p>
 
       <h2 data-i18n="privacy-h2-3">3. Diese Website: ohne Cookies und ohne Tracking</h2>
       <p data-i18n="privacy-p1-3">Diese Website verwendet <strong>keine Tracking-Cookies, keine Werbe-Cookies, kein Fingerprinting und keine Analyse-Skripte.</strong> Das Besucherverhalten wird nicht gemessen; es finden keine Anfragen an Dritte statt. Die einzige Information, die auf dieser Website gespeichert wird, ist Ihre Sprachpräferenz für die Benutzeroberfläche, die im localStorage Ihres Browsers abgelegt wird. Diese Daten verlassen Ihr Gerät niemals.</p>
@@ -117,6 +118,7 @@
 
       <h2 data-i18n="privacy-h2-5">5. Dienste von Drittanbietern</h2>
       <p data-i18n="privacy-p1-5">Pakete der Anwendung und der Erweiterung werden über GitHub Releases verteilt; während eines Downloads gelten die eigenen Datenschutzpraktiken von GitHub/Microsoft, und es werden keine Daten an uns übertragen. Das Skript <code>install.sh</code> liest die Versionsnummer und die SHA-256-Prüfsummen ausschließlich zur Integritätsprüfung von GitHub Releases. Wenn Sie uns per E-Mail kontaktieren, durchläuft Ihre Nachricht die Systeme Ihres E-Mail-Anbieters; über die Zustellung einer Antwort hinaus wird sie für keinen anderen Zweck verarbeitet.</p>
+<p data-i18n="privacy-p1-5b">Der Bildschirm „Sicherheitsprüfung“ in der App kann über die k-Anonymitäts-Range-API von Have I Been Pwned prüfen, ob Ihre Passwörter in einem bekannten Leak-Korpus enthalten sind. In diesem Fall wird nur der erste Fünf-Hex-Zeichen-Abschnitt des SHA-1-Hashwerts eines Passworts gesendet; weder das Passwort noch der restliche Hashwert werden übertragen, und Antworten werden aufgefüllt, damit ihre Größe nicht zugeordnet werden kann. Diese Prüfung ist <strong>standardmäßig deaktiviert</strong> und läuft nur, wenn Sie sie über die Schaltfläche auf diesem Bildschirm einschalten; ist sie aus, wird überhaupt keine Anfrage gesendet.</p>
 
       <h2 data-i18n="privacy-h2-6">6. Ihre Rechte</h2>
       <p data-i18n="privacy-p1-6">Personenbezogene Daten werden nur in eingeschränkten Fällen verarbeitet – beispielsweise wenn Sie uns eine E-Mail senden. In diesem Fall haben Sie gemäß Artikel 11 des türkischen KVKK-Gesetzes (Nr. 6698) und, in der Europäischen Union, gemäß der GDPR das Recht, über die Verarbeitung Ihrer Daten Bescheid zu erhalten, sie einzusehen, zu berichtigen, zu löschen und der Verarbeitung zu widersprechen. Richten Sie Anfragen an <a href="mailto:admin@kalderashield.com">admin@kalderashield.com</a>; sie werden spätestens innerhalb von 30 Tagen beantwortet.</p>

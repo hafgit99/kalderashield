@@ -3,11 +3,12 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkPasswordAgainstHibp, resetHibpCacheForTesting } from './hibp';
+import { checkPasswordAgainstHibp, HIBP_STORAGE_KEY, resetHibpCacheForTesting } from './hibp';
 
 describe('HIBP password checks', () => {
   afterEach(() => {
     resetHibpCacheForTesting();
+    localStorage.clear();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -160,8 +161,40 @@ describe('HIBP password checks', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * The breach check is opt-in.
+   *
+   * It used to answer yes to an installation that had never been asked
+   * anything (`stored !== 'false'`), which meant opening the Security Audit
+   * screen sent a request for every password in the vault. The privacy policy
+   * did not describe that request, so the default and the published policy
+   * disagreed about what the program does.
+   */
+  it('is off until the user turns it on', async () => {
+    const { isHibpCheckEnabled } = await import('./hibp');
+    localStorage.removeItem(HIBP_STORAGE_KEY);
+    expect(isHibpCheckEnabled()).toBe(false);
+  });
+
+  it('keeps the choice an installation already made', async () => {
+    const { isHibpCheckEnabled, setHibpCheckEnabled, HIBP_STORAGE_KEY } = await import('./hibp');
+
+    setHibpCheckEnabled(false);
+    expect(isHibpCheckEnabled()).toBe(false);
+
+    setHibpCheckEnabled(true);
+    expect(isHibpCheckEnabled()).toBe(true);
+
+    // Turning it off again is remembered rather than drifting back to the
+    // default, which is the whole point of storing the decision.
+    setHibpCheckEnabled(false);
+    expect(localStorage.getItem(HIBP_STORAGE_KEY)).toBe('false');
+    expect(isHibpCheckEnabled()).toBe(false);
+  });
+
   it('manages HIBP enabled setting state in storage', async () => {
     const { isHibpCheckEnabled, setHibpCheckEnabled } = await import('./hibp');
+    setHibpCheckEnabled(true);
     expect(isHibpCheckEnabled()).toBe(true);
 
     setHibpCheckEnabled(false);

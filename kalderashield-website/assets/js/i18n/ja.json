@@ -975,7 +975,7 @@
   "p-denetim-durumu-secondary": "脅威モデルを読む",
   "p-denetim-durumu-what-label": "主張の立ち位置",
   "p-denetim-durumu-what-title": "何が自動で検証され、何がそれを行うのか",
-  "p-denetim-durumu-p1": "現在存在するのは、自動的で再現可能な検証です。259 ファイルにわたる 2381 件のユニットテスト。インポート解析、バックアップエンベロープ、添付ファイルのメタデータに対するプロパティベースのファズゲート。Stryker による変異テスト。CI での CodeQL 解析と OpenSSF Scorecard。gitleaks による秘密情報スキャン。重大度が「高」または「重大」と分類された npm アドバイザリがあれば失敗する依存関係ポリシー。",
+  "p-denetim-durumu-p1": "現在存在するのは、自動的で再現可能な検証です。259 ファイルにわたる 2383 件のユニットテスト。インポート解析、バックアップエンベロープ、添付ファイルのメタデータに対するプロパティベースのファズゲート。Stryker による変異テスト。CI での CodeQL 解析と OpenSSF Scorecard。gitleaks による秘密情報スキャン。重大度が「高」または「重大」と分類された npm アドバイザリがあれば失敗する依存関係ポリシー。",
   "p-denetim-durumu-p2": "存在しないのは、暗号設計と実装に対する外部の独立した専門家レビューです。内部レビューの報告書には何百件もの指摘と修正が記録されていますが、それを書いたのはプロジェクト自身です。これは別の種類の保証であり、そのようには提示しません。",
   "p-denetim-durumu-p3": "計画は外部監査です。範囲の草案はすでに存在し、対象コンポーネント（暗号、保管庫の永続化、拡張機能ブリッジ、Tauri の IPC 面）を列挙しているため、監査者が契約すればすぐに作業を始められます。契約が存在する前に日付を約束することはありません。",
   "p-denetim-durumu-steps-title": "私たちなしでできる検証",
@@ -1239,7 +1239,7 @@
   "p-kaynak-kodu-p2": "ブラウザ拡張機能は Chromium と Firefox 向けの Manifest V3 の TypeScript ビルドで、Android アプリは AndroidKeyStore の生体認証紐づけを持つ Tauri Android プロジェクトです。nativeMessaging ホストと IPC ブリッジは Rust ワークスペースにあり、ペアリングトークン、リース、フレーム暗号化の論理がもっとも監査しやすい場所にあります。",
   "p-kaynak-kodu-p3": "サイト自体は、コミットされたプレーンなウェブページです。配備のためのビルドステップはなく、生成スクリプトと品質ゲートが、作るページの隣に登録されています。",
   "p-kaynak-kodu-steps-title": "すべての変更が通るゲート",
-  "p-kaynak-kodu-step1-title": "型検査と 2381 件のユニットテスト",
+  "p-kaynak-kodu-step1-title": "型検査と 2383 件のユニットテスト",
   "p-kaynak-kodu-step1-desc": "259 個のテストファイルに、強制されるカバレッジのしきい値。行 90%、文 90%、関数 85%、分岐 80% です。しきい値を下回る退行が失敗させるのはダッシュボードではなく、ビルドです。",
   "p-kaynak-kodu-step2-title": "ファズ、変異、セキュリティのゲート",
   "p-kaynak-kodu-step2-desc": "fast-check のプロパティテストが、不正な入力でインポーター、バックアップ、添付ファイルの経路を繰り返し打ちます。Stryker の変異テストがテストの質を採点します。専用のゲートが、CSP の強化、リリース成果物、デバッグマーカー、秘密情報を確認します。",
@@ -1380,7 +1380,7 @@
   "csp-p1-1": "このページは、KalderaShield のどのリリース成果物が、誰によって、どの鍵の管理方式で署名され、各署名について誰が承認責任を負うかを示します。同じ文書のソース版はリポジトリにあります: <a href=\"https://github.com/hafgit99/kalderashield/blob/main/CODE_SIGNING_POLICY.md\" rel=\"noopener noreferrer\">CODE_SIGNING_POLICY.md</a>",
   "csp-h2-2": "2. Windows",
   "csp-p1-3": "Free code signing provided by SignPath.io, certificate by SignPath Foundation.",
-  "csp-p1-4": "<strong>状態: 未申請。</strong> KalderaShield は SignPath Foundation への申請を予定しており THEIR の条件が申請前に本ポリシーの存在を求めるため、先に用意しました。<strong>申請は提出されておらず、保留中の決定もありません</strong>。この節から、現在の Windows 成果物が署名済みであるとは読み取ってはなりません。<strong>署名はされていません。</strong>最初の署名済みリリースが実際に公開されるまで、正しい記述は下のステータス表であり、この節はそのリリースの<em>前</em>に更新されます。",
+  "csp-p1-4": "<strong>状態：申請は準備完了、前提条件を満たしています。</strong>KalderaShield は SignPath Foundation プログラムに申請する準備を目的としており、给对方の定めた前提条件をすべて満たしています。署名される形式の Windows インストーラーが公開済みで、プロジェクトのページは公開中であり、このポリシーはトップページおよびダウンロードページからリンクされています。残っているのはフォームの送信、アカウントの多要素認証の確認、そしてセキュリティ連絡先用メールアドレスに返信があることの確認です。<strong>この節の記述は、現在のところ Windows のファイルに署名があることを意味しません</strong>—署名は一切されておらず、この文は最初の署名済みリリースの前に、 事後ではなく、更新されます。",
   "csp-p1-5": "署名されるファイルは、NSIS インストーラー（<code>KalderaShield_&lt;バージョン&gt;_x64-setup.exe</code>）、一元管理パッケージ向け MSI パッケージ（<code>KalderaShield_&lt;バージョン&gt;_x64.msi</code>）、そしてインストール不要のポータブル実行ファイル（<code>KalderaShield_&lt;バージョン&gt;_x64-portable.exe</code>）です。三つともこのリポジトリからビルドされ、<a href=\"https://github.com/hafgit99/kalderashield/releases\" rel=\"noopener noreferrer\">リリースページ</a>で公開されます。このリポジトリからビルドされていない成果物が本プロジェクトの証明書で署名されることはなく、第三者のバイナリをこの証明書で再署名することもありません。",
   "csp-p1-6": "<strong>鍵の管理:</strong>秘密鍵は SignPath の HSM 上で生成され、保管されます。本プロジェクトは鍵を一切保持せず、エクスポートもせず、ビルドランナーや開発者マシンに送信することもありません。署名は、本リポジトリの CI が送信し、責任者が承認した署名リクエストに応えて、SignPath 側で行われます。",
   "csp-p1-7": "<strong>連鎖:</strong> バージョンタグを push → GitHub Actions がファイルをビルド（ワークフローは公開、第三者アクションはコミット SHA で固定、トークン権限は読み取り専用）→ ビルドが SignPath へアップロードして署名リクエストを発行（署名はしない）→ 承認者が承認または却下 → SignPath が Foundation 証明書で署名 → 署名済みファイルを <code>SHA256SUMS.txt</code> と共に公開。すべてのリリースで人手による承認が必要です。無人の署名経路は存在せず、近い将来も追加されません。",
@@ -1409,5 +1409,8 @@
   "win-preview-assets": "NSIS インストーラー (.exe)、MSI パッケージ、ポータブル EXE — いずれも未署名。",
   "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
   "promo-video-fallback": "このブラウザは video タグに対応していません。",
-  "promo-video-fallback-link": "ビデオをダウンロード"
+  "promo-video-fallback-link": "ビデオをダウンロード",
+  "privacy-p1-2b": "保管庫の内容がサーバーへ送信されることはありません。パスワードから導出され、端末の外へ出る可能性があるデータは、任意の「既知の漏洩チェック」だけであり、あなたが有効化しない限りオフのままです（第5節で説明します）。",
+  "privacy-p1-5b": "アプリの「セキュリティ監査」画面は、Have I Been Pwned の k-匿名性レンジ API を利用して、パスワードが既知の漏洩データセットに含まれているかを確認できます。この場合送信されるのはパスワードの SHA-1 ダイジェストの先頭5文字のみで、パスワード自体もダイジェストの残りも送信されず、応答はサイズから推測できないようパディングされます。このチェックは<strong>既定でオフ</strong>であり、この画面のボタンで有効にした場合のみ実行されます。オフにするとリクエストはまったく送信されません。",
+  "footer-link-code-signing": "コード署名ポリシー"
 }
