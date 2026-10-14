@@ -390,7 +390,7 @@ if (check) {
     // SECURITY_AUDIT_PACKAGE/ is handed to an external assessor, so a stale
     // number in it is a stale number in someone else's assessment. It carried
     // "1803 unit tests across 217 files" while the site was publishing 2321
-    // across 258 -- the document understated the suite by 518 tests, in a table
+    // across 259 -- the document understated the suite by 518 tests, in a table
     // whose whole job is to be the evidence index.
     //
     // The website checks caught the site copy but nothing covered this file: the

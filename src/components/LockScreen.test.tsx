@@ -40,6 +40,14 @@ vi.mock('../lib/storage', () => ({
     err instanceof Error && err.message.startsWith('vault-database-unreadable:')),
 }));
 
+/**
+ * Captures the lock screen's biometric subscription so a test can deliver the
+ * answer that storage initialisation delivers late. The real module notifies
+ * when hydration finishes; without this the screen's only chance to read the
+ * cache is at mount, which is what the cold-start bug was.
+ */
+const biometricListeners = vi.hoisted(() => [] as Array<(state: unknown) => void>);
+
 vi.mock('../lib/biometric', () => ({
   authenticateBiometric: vi.fn(),
   authenticateBiometricCredentials: vi.fn(async () => ({ masterPassword: 'bio-master', secretKey: null })),
@@ -47,7 +55,18 @@ vi.mock('../lib/biometric', () => ({
   isBiometricSupported: vi.fn(() => false),
   getBiometricType: vi.fn(() => 'platform'),
   isBiometricV2UpgradeRequired: vi.fn(() => false),
+  subscribeBiometric: vi.fn((listener: (state: unknown) => void) => {
+    biometricListeners.push(listener);
+    return () => {
+      const index = biometricListeners.indexOf(listener);
+      if (index >= 0) biometricListeners.splice(index, 1);
+    };
+  }),
 }));
+
+function emitBiometricState(state: { enabled: boolean; type: string | null; upgradeRequired: boolean }): void {
+  biometricListeners.forEach((listener) => listener(state));
+}
 
 function passwordInput(): HTMLInputElement {
   return screen.getByTestId('lock-password-input') as HTMLInputElement;
@@ -62,6 +81,7 @@ function secretKeyInput(): HTMLInputElement {
 }
 
 beforeEach(() => {
+  biometricListeners.length = 0;
   vi.mocked(isMasterPasswordSet).mockReturnValue(false);
   vi.mocked(isAccountSecretKeyRequired).mockReturnValue(false);
   // Reset explicitly rather than relying on the factory default. A test that
@@ -96,6 +116,69 @@ describe('LockScreen', () => {
 
     expect(screen.getByTestId('asset-integrity-warning')).toBeTruthy();
     expect(screen.getByText('Application Integrity Warning')).toBeTruthy();
+  });
+
+  /**
+   * The cold start, in the shape the user sees it.
+   *
+   * App renders this screen before storage initialisation finishes (that is the
+   * 0.3s cold start), so biometric availability is unknown at mount. It used to
+   * stay unknown: the screen read the module cache once during render and never
+   * heard about the answer, so biometric unlock configured in Settings produced
+   * a password-only lock screen until the app was restarted a second time.
+   */
+  it('reveals the biometric button when hydration reports it after mount', async () => {
+    window.localStorage.setItem(languageStorageKey, 'en');
+    vi.mocked(isMasterPasswordSet).mockReturnValue(true);
+
+    render(
+      <LanguageProvider>
+        <LockScreen onUnlock={vi.fn()} />
+      </LanguageProvider>,
+    );
+
+    expect(screen.queryByTestId('lock-biometric-button')).toBeNull();
+
+    await act(async () => {
+      emitBiometricState({ enabled: true, type: 'platform', upgradeRequired: false });
+    });
+
+    expect(screen.getByTestId('lock-biometric-button')).toBeTruthy();
+  });
+
+  it('hides the biometric button again when the bundle is revoked', async () => {
+    window.localStorage.setItem(languageStorageKey, 'en');
+    vi.mocked(isMasterPasswordSet).mockReturnValue(true);
+    vi.mocked(isBiometricEnabled).mockReturnValue(true);
+
+    render(
+      <LanguageProvider>
+        <LockScreen onUnlock={vi.fn()} />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByTestId('lock-biometric-button')).toBeTruthy();
+
+    await act(async () => {
+      emitBiometricState({ enabled: false, type: null, upgradeRequired: false });
+    });
+
+    expect(screen.queryByTestId('lock-biometric-button')).toBeNull();
+  });
+
+  it('unsubscribes from biometric changes on unmount', () => {
+    window.localStorage.setItem(languageStorageKey, 'en');
+    vi.mocked(isMasterPasswordSet).mockReturnValue(true);
+
+    const { unmount } = render(
+      <LanguageProvider>
+        <LockScreen onUnlock={vi.fn()} />
+      </LanguageProvider>,
+    );
+    expect(biometricListeners.length).toBeGreaterThan(0);
+
+    unmount();
+    expect(biometricListeners.length).toBe(0);
   });
 
   it('validates minimum master password length during setup', () => {

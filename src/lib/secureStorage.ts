@@ -102,6 +102,31 @@ export async function initializeDesktopSecureStorage(): Promise<void> {
   return desktopInitPromise;
 }
 
+/**
+ * Resolves once the desktop credential-store cache is populated, or once we
+ * know it will not be.
+ *
+ * `getSecureStorageItem()` reads that cache synchronously and returns null when
+ * it is empty — indistinguishable from "this key was never stored". Anything
+ * that reads a credential during startup therefore has a dependency it cannot
+ * express through its own signature, because the read is sync by design: the
+ * cache exists so that `getSecureStorageItem()` does not need to be async for
+ * the hundreds of ordinary callers that already are inside async code.
+ *
+ * That is why this exists rather than reordering the caller. A comment in
+ * `initializeStorage()` saying "the secure storage init must come first" is a
+ * convention the next parallelisation will drop without noticing, and the
+ * failure is silent: the credential simply reads as absent.
+ */
+export function whenDesktopSecureStorageReady(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (!('__TAURI_INTERNALS__' in window)) return Promise.resolve();
+  // Reuses the in-flight init if there is one, starts it otherwise: a caller
+  // that needs the cache should not have to know whether someone else already
+  // asked for it.
+  return desktopInitPromise ?? initializeDesktopSecureStorage();
+}
+
 export function resetDesktopSecureStorageForTests(): void {
   desktopCache = null;
   isDesktopStorageSupported = false;

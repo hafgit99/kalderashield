@@ -39,6 +39,8 @@ import {
   isBiometricSupported,
   isBiometricV2UpgradeRequired,
   getBiometricType,
+  subscribeBiometric,
+  type BiometricState,
 } from '../lib/biometric';
 import { APP_NAME } from '../lib/branding';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -176,7 +178,29 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [legalModalTab, setLegalModalTab] = useState<LegalTermsTab>('terms');
 
-  const isBioEnabled = isBiometricEnabled();
+  /**
+   * Biometric availability is module state that arrives asynchronously: the
+   * bundle is read from IndexedDB or the OS credential store during storage
+   * initialisation, which this screen deliberately renders *before* — App shows
+   * the lock screen immediately for a 0.3s cold start.
+   *
+   * Reading it during render therefore captured whatever happened to be true at
+   * mount, which on a cold start is "not configured", and nothing re-rendered
+   * afterwards. A user with biometric unlock enabled was shown a password-only
+   * lock screen for the whole session, with no error and no way to tell that the
+   * feature was still on. Subscribing is what makes the late answer land; the
+   * remembered-secret-key state immediately above uses the same pattern for the
+   * same reason.
+   */
+  const [biometricState, setBiometricState] = useState<BiometricState>(() => ({
+    enabled: isBiometricEnabled(),
+    type: getBiometricType(),
+    upgradeRequired: isBiometricV2UpgradeRequired(),
+  }));
+
+  useEffect(() => subscribeBiometric(setBiometricState), []);
+
+  const isBioEnabled = biometricState.enabled;
   const lockoutRemainingSeconds = Math.ceil(lockoutRemainingMs / 1000);
   const isLockedOut = lockoutRemainingMs > 0;
 
@@ -775,7 +799,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                     isSetup={isSetup}
                     isBioEnabled={isBioEnabled}
                     biometricLoading={biometricLoading}
-                    biometricType={getBiometricType()}
+                    biometricType={biometricState.type}
                     onBiometricUnlock={handleBiometricUnlock}
                   />
                 </form>

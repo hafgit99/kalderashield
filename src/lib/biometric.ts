@@ -11,6 +11,7 @@ import {
   secureStorageKeys,
   setSecureStorageItem,
   isSecureStorageAvailable,
+  whenDesktopSecureStorageReady,
 } from './secureStorage';
 import {
   clearAndroidBiometricKey,
@@ -197,9 +198,73 @@ let cachedBiometricInfo: BiometricInfo | null = null;
 export let biometricV2UpgradeRequired = false;
 let isHydrated = false;
 
+/* What every consumer of the biometric cache actually wants to know: is it
+ * configured, and which authenticator. Three functions answered this by
+ * reading module state directly, which is invisible to React -- see
+ * `subscribeBiometric`. */
+export interface BiometricState {
+  enabled: boolean;
+  type: 'platform' | 'cross-platform' | 'native' | null;
+  upgradeRequired: boolean;
+}
+
+function currentBiometricState(): BiometricState {
+  return {
+    enabled: cachedBiometricInfo !== null,
+    type: getBiometricType(),
+    upgradeRequired: biometricV2UpgradeRequired,
+  };
+}
+
+type BiometricListener = (state: BiometricState) => void;
+const biometricListeners = new Set<BiometricListener>();
+
+/**
+ * Notified whenever the cached bundle changes.
+ *
+ * `isBiometricEnabled()` and `getBiometricType()` are synchronous reads of
+ * module state, so a component that renders them gets whatever happened to be
+ * true at that instant. The lock screen is rendered immediately on purpose --
+ * a 0.3s cold start is worth having -- which means it renders *before*
+ * storage initialisation finishes and therefore before the bundle is hydrated.
+ * Without a notification it kept the answer it got at mount for the rest of the
+ * session, and a user with working biometric unlock was shown a password-only
+ * lock screen.
+ *
+ * Mirrors `subscribeDesktopSecureStorage`, which already exists for exactly
+ * this reason on the remembered-secret-key value next to it.
+ */
+export function subscribeBiometric(listener: BiometricListener): () => void {
+  biometricListeners.add(listener);
+  return () => {
+    biometricListeners.delete(listener);
+  };
+}
+
+function notifyBiometricListeners(): void {
+  if (biometricListeners.size === 0) return;
+  const state = currentBiometricState();
+  biometricListeners.forEach((listener) => {
+    try {
+      listener(state);
+    } catch (err) {
+      console.error('Error in biometric listener:', err);
+    }
+  });
+}
+
 export async function hydrateBiometric(): Promise<void> {
   if (isHydrated) return;
   try {
+    // Desktop keeps the bundle in the OS credential store, reached through an
+    // in-memory cache that is populated asynchronously. `loadBiometricFromSecureStorage`
+    // is synchronous, so reading it before that cache exists returns null --
+    // indistinguishable from "never configured", and with no error anywhere.
+    // The IndexedDB fallback that used to cover this was deleted once the
+    // secure-storage copy succeeded, so a cold start concluded biometric unlock
+    // was off for the whole session. See the module's own test.
+    await whenDesktopSecureStorageReady();
+
     const secureStorageInfo = loadBiometricFromSecureStorage();
     cachedBiometricInfo = secureStorageInfo ?? await loadBiometricFromIndexedDB();
     if (!secureStorageInfo && cachedBiometricInfo && saveBiometricToSecureStorage(cachedBiometricInfo)) {
@@ -239,6 +304,14 @@ export async function hydrateBiometric(): Promise<void> {
     isHydrated = true;
   } catch (e) {
     console.error('Failed to load biometric config from IndexedDB', e);
+  } finally {
+    // Announced on the failure path too. A hydrate that throws leaves the cache
+    // empty, and a lock screen still waiting on this notification would show no
+    // biometric button for the rest of the session -- the same symptom as the
+    // bug above, reached a different way. "Not configured" and "we could not
+    // tell" look identical to the user either way, so the UI has to settle.
+    isHydrated = true;
+    notifyBiometricListeners();
   }
 }
 
@@ -256,6 +329,7 @@ export function resetBiometricCacheForTesting(): void {
   cachedBiometricInfo = null;
   biometricV2UpgradeRequired = false;
   isHydrated = false;
+  biometricListeners.clear();
 }
 
 function hasWebAuthnSupport(): boolean {
@@ -356,6 +430,10 @@ export function disableBiometric(): void {
   void deleteBiometricFromIndexedDBWithRetry().catch((err) => {
     console.error('Failed to delete biometric from IndexedDB after retries:', err);
   });
+  // A screen that is holding "biometric unlock is available" has to hear about
+  // this, or the button stays on a lock screen that no longer has a bundle
+  // behind it -- and the next click fails with "no biometric bundle stored".
+  notifyBiometricListeners();
 }
 
 export interface BiometricCredentialsPayload {
@@ -524,6 +602,9 @@ async function registerWebAuthnBiometric(payload: string, type: 'platform' | 'cr
   } else {
     await deleteBiometricFromIndexedDB();
   }
+  // After the writes, not before: a screen that re-renders on this and then
+  // immediately prompts would race the bundle it needs.
+  notifyBiometricListeners();
 }
 
 async function registerNativeBiometric(payload: string): Promise<void> {
@@ -566,6 +647,7 @@ async function registerNativeBiometric(payload: string): Promise<void> {
   }
   cachedBiometricInfo = biometricInfo;
   await deleteBiometricFromIndexedDB();
+  notifyBiometricListeners();
 }
 
 /**
