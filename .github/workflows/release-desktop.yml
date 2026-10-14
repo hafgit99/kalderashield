@@ -131,8 +131,37 @@ jobs:
         bundle=src-tauri/target/release/bundle
         find "$bundle" -type f -name '*.rpm' -exec cp -n {} release-local/linux/ \;
         find "$bundle" -type f \( \
-          -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
+          -name '*.tar.gz' -o -name '*.nsis.zip' \) \
           -exec cp {} release-local/linux/ \;
+
+        # v7.0.22 failed this gate with two orphans:
+        #   KalderaShield_7.0.22_amd64.deb.sig
+        #   KalderaShield_7.0.22_amd64.AppImage.sig
+        # Both signatures were real, and both had no payload beside them.
+        #
+        # The cause is a name collision between two steps that both stage
+        # signatures. Tauri writes its own bundles as `Product_Version_arch.ext`
+        # (`KalderaShield_7.0.22_amd64.deb`); the collect step above copies the
+        # same file as `Product-Version-platform-arch.ext`
+        # (`KalderaShield-7.0.22.0-linux-amd64.deb`) *and* renames its signature
+        # to match. Copying signatures by suffix from the bundle tree therefore
+        # stages the raw-name signature of a payload that was already copied
+        # under a different name -- the v7.0.20 orphan, produced by the step
+        # written to prevent it.
+        #
+        # So a signature is copied only when the file it signs is already in the
+        # staging directory under that same name. Nothing is lost: the renamed
+        # .deb/.AppImage/.rpm signatures come from the collect step, which always
+        # renames a signature together with its payload.
+        while IFS= read -r -d '' sig; do
+          name=$(basename "$sig")
+          if [ -e "release-local/linux/${name%.sig}" ]; then
+            cp -n "$sig" release-local/linux/
+          else
+            echo "skip signature with no staged payload: $name"
+          fi
+        done < <(find "$bundle" -type f -name '*.sig' -print0)
+
         ls -la release-local/linux/
         node scripts/verify-signature-payloads.cjs --dir release-local/linux
     secrets: inherit
@@ -225,8 +254,22 @@ jobs:
       updater-copy: |
         set -euo pipefail
         find src-tauri/target -path '*release/bundle*' -type f \( \
-          -name '*.sig' -o -name '*.tar.gz' -o -name '*.nsis.zip' \) \
+          -name '*.tar.gz' -o -name '*.nsis.zip' \) \
           -exec cp {} release-local/macos/ \;
+        # Same v7.0.22 orphan as Linux, with an extra twist: Tauri names the macOS
+        # bundles with spaces (`KalderaShield 7.0.22 universal.dmg`), and the
+        # collect step copies them under a space-free name together with their
+        # signature. A signature is therefore only staged when the payload it
+        # signs is already present under the same name. The space normalization
+        # step that runs next renames both halves of any pair together.
+        while IFS= read -r -d '' sig; do
+          name=$(basename "$sig")
+          if [ -e "release-local/macos/${name%.sig}" ]; then
+            cp -n "$sig" release-local/macos/
+          else
+            echo "skip signature with no staged payload: $name"
+          fi
+        done < <(find src-tauri/target -path '*release/bundle*' -type f -name '*.sig' -print0)
         ls -la release-local/macos/
         node scripts/verify-signature-payloads.cjs --dir release-local/macos
     secrets: inherit
@@ -278,11 +321,28 @@ jobs:
           Write-Host "Signed $($target.Name)"
         }
       updater-copy: |
-        New-Item -ItemType Directory -Force -Path release-local/windows | Out-Null
+        $ErrorActionPreference = 'Stop'
+        $dir = 'release-local/windows'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
         Get-ChildItem src-tauri/target/release/bundle -Recurse -File |
-          Where-Object { $_.Name -match '\.sig$|\.tar\.gz$|\.nsis\.zip$' } |
-          Copy-Item -Destination release-local/windows
-        Get-ChildItem release-local/windows | Select-Object -ExpandProperty Name
+          Where-Object { $_.Name -match '\.tar\.gz$|\.nsis\.zip$' } |
+          Copy-Item -Destination $dir
+        # Same v7.0.22 orphan as Linux: the collect step stages the .msi/.exe and
+        # their signatures under `KalderaShield-<version>-windows-<kind>.<ext>`,
+        # so a signature copied from the bundle tree by suffix would have no
+        # payload beside it. Stage a signature only when its payload is already
+        # in the directory under the same name.
+        Get-ChildItem src-tauri/target/release/bundle -Recurse -File |
+          Where-Object { $_.Extension -eq '.sig' } |
+          ForEach-Object {
+            $payload = Join-Path $dir $_.Name.Substring(0, $_.Name.Length - 4)
+            if (Test-Path $payload) {
+              Copy-Item $_.FullName -Destination $dir
+            } else {
+              Write-Host "skip signature with no staged payload: $($_.Name)"
+            }
+          }
+        Get-ChildItem $dir | Select-Object -ExpandProperty Name
         node scripts/verify-signature-payloads.cjs --dir release-local/windows
     secrets: inherit
 
