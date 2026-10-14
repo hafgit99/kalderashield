@@ -36,6 +36,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { updateJsonFile } = require('./lib/safe-file.cjs');
+
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
 const KEY = 'csp-p1-4';
@@ -70,13 +72,15 @@ const TEXT = {
 let changed = 0;
 for (const locale of Object.keys(TEXT)) {
   const file = path.join(I18N, `${locale}.json`);
-  const dict = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (typeof dict[KEY] !== 'string') {
-    console.error(`${locale}.json icin ${KEY} yok`);
-    process.exit(1);
-  }
-  dict[KEY] = TEXT[locale];
-  fs.writeFileSync(file, JSON.stringify(dict, null, 2) + '\n', 'utf8');
+  // A dictionary without this key has no status paragraph to correct, and
+  // adding one would create a string nothing renders.
+  updateJsonFile(file, (dict) => {
+    if (typeof dict[KEY] !== 'string') {
+      throw new Error(`${locale}.json ${KEY} yok`);
+    }
+    dict[KEY] = TEXT[locale];
+    return dict;
+  });
   changed++;
 }
 

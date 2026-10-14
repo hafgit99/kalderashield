@@ -39,6 +39,31 @@ const KEYS = {
   'securityAudit.pwnedDisabled': 1,
 };
 
+/**
+ * Rewrite a locale file in place, through one descriptor.
+ *
+ * CodeQL flagged the read-then-write-by-name shape as `js/file-system-race`.
+ * The fix is not to argue that nothing here is hostile -- a locale file is
+ * source code that ships, and this runs in a working tree -- it is to stop
+ * naming the file twice. One descriptor means the bytes that were read and the
+ * bytes that replace them belong to the same file, whatever happens to the
+ * directory in between.
+ *
+ * `truncate` plus an explicit write position matter: the descriptor is still
+ * positioned at the end of what it read, so writing without them leaves the tail
+ * of the old content after the new, and a source file that still parses is a
+ * file that silently lost everything after the edit point.
+ */
+function writeThrough(file, next) {
+  const fd = fs.openSync(file, 'r+');
+  try {
+    fs.ftruncateSync(fd, 0);
+    fs.writeSync(fd, next, 0, 'utf8');
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 let changed = 0;
 let missing = [];
 
@@ -54,7 +79,7 @@ for (const [locale, values] of Object.entries(VALUES)) {
     }
     const next = text.replace(re, (_, prefix) => `${prefix}'${values[index].replace(/'/g, "\\'")}'`);
     if (next !== text) {
-      fs.writeFileSync(file, next, 'utf8');
+      writeThrough(file, next);
       text = next;
       changed++;
     }

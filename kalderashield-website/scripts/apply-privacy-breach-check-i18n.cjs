@@ -26,6 +26,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { updateFile, updateJsonFile } = require('./lib/safe-file.cjs');
+
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
 const PAGE = path.join(root, 'privacy.html');
@@ -94,38 +96,40 @@ for (const [locale, texts] of Object.entries(TEXT)) {
     problems.push(`${locale}.json yok`);
     continue;
   }
-  const dict = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (typeof dict['privacy-p1-2'] !== 'string') {
-    problems.push(`${locale}.json privacy-p1-2 yok`);
-    continue;
-  }
-  dict[KEYS[0]] = texts[0];
-  dict[KEYS[1]] = texts[1];
-  fs.writeFileSync(file, JSON.stringify(dict, null, 2) + '\n', 'utf8');
+  // Throws rather than writing a dictionary without the anchor key: a silently
+  // replaced file here is a legal page that has lost a section, in a language
+  // nobody on the project reads.
+  updateJsonFile(file, (dict) => {
+    if (typeof dict['privacy-p1-2'] !== 'string') {
+      throw new Error(`${locale}.json privacy-p1-2 yok`);
+    }
+    dict[KEYS[0]] = texts[0];
+    dict[KEYS[1]] = texts[1];
+    return dict;
+  });
   dictionaries++;
 }
 
 // The Turkish page is the readable default, so the two paragraphs go in as
 // markup as well; generate-locales.cjs then writes every other language from
 // the dictionaries.
-const page = fs.readFileSync(PAGE, 'utf8');
-let next = page;
+updateFile(PAGE, (page) => {
+  let next = page;
 
-for (let index = 0; index < KEYS.length; index++) {
-  if (next.includes(`data-i18n="${KEYS[index]}"`)) continue;
-  const anchor = index === 0 ? 'privacy-p1-2' : 'privacy-p1-5';
-  const anchorTag = new RegExp(`(<p data-i18n="${anchor}">[\\s\\S]*?</p>)`);
-  if (!anchorTag.test(next)) {
-    problems.push(`privacy.html: ${anchor} bulunamadi`);
-    continue;
+  for (let index = 0; index < KEYS.length; index++) {
+    if (next.includes(`data-i18n="${KEYS[index]}"`)) continue;
+    const anchor = index === 0 ? 'privacy-p1-2' : 'privacy-p1-5';
+    const anchorTag = new RegExp(`(<p data-i18n="${anchor}">[\\s\\S]*?</p>)`);
+    if (!anchorTag.test(next)) {
+      problems.push(`privacy.html: ${anchor} bulunamadi`);
+      continue;
+    }
+    next = next.replace(anchorTag, `$1\n<p data-i18n="${KEYS[index]}">${TEXT.tr[index]}</p>`);
+    pageParagraphs++;
   }
-  next = next.replace(anchorTag, `$1\n<p data-i18n="${KEYS[index]}">${TEXT.tr[index]}</p>`);
-  pageParagraphs++;
-}
 
-if (pageParagraphs > 0) {
-  fs.writeFileSync(PAGE, next, 'utf8');
-}
+  return pageParagraphs > 0 ? next : undefined;
+});
 
 if (problems.length) {
   console.error('uygulanamadi:');

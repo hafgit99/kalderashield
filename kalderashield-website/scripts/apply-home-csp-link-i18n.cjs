@@ -19,8 +19,9 @@
  * already looks. The English wording carries the required term verbatim; the
  * other eleven translate it, which is what the term is for.
  */
-const fs = require('fs');
 const path = require('path');
+
+const { updateFile, updateJsonFile } = require('./lib/safe-file.cjs');
 
 const root = path.resolve(__dirname, '..');
 const I18N = path.join(root, 'assets', 'js', 'i18n');
@@ -48,32 +49,32 @@ const problems = [];
 
 for (const [locale, value] of Object.entries(TEXT)) {
   const file = path.join(I18N, `${locale}.json`);
-  const dict = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (typeof dict['footer-link-privacy'] !== 'string') {
-    problems.push(`${locale}.json footer-link-privacy yok`);
-    continue;
-  }
-  dict[KEY] = value;
-  fs.writeFileSync(file, JSON.stringify(dict, null, 2) + '\n', 'utf8');
+  updateJsonFile(file, (dict) => {
+    if (typeof dict['footer-link-privacy'] !== 'string') {
+      throw new Error(`${locale}.json footer-link-privacy yok`);
+    }
+    dict[KEY] = value;
+    return dict;
+  });
   dictionaries++;
 }
 
 let paragraphs = 0;
-const page = fs.readFileSync(PAGE, 'utf8');
+updateFile(PAGE, (page) => {
+  if (page.includes(`data-i18n="${KEY}"`)) return undefined;
 
-if (!page.includes(`data-i18n="${KEY}"`)) {
   const link = new RegExp(`(<li><a href="/privacy\\.html" data-i18n="footer-link-privacy">[^<]*</a></li>)`);
   if (!link.test(page)) {
     problems.push('index.html: footer-link-privacy baglantisi bulunamadi');
-  } else {
-    const next = page.replace(
-      link,
-      `$1\n<li><a href="/code-signing-policy.html" data-i18n="${KEY}">${TEXT.tr}</a></li>`
-    );
-    fs.writeFileSync(PAGE, next, 'utf8');
-    paragraphs++;
+    return undefined;
   }
-}
+
+  paragraphs++;
+  return page.replace(
+    link,
+    `$1\n<li><a href="/code-signing-policy.html" data-i18n="${KEY}">${TEXT.tr}</a></li>`
+  );
+});
 
 if (problems.length) {
   console.error('uygulanamadi:');
