@@ -24,22 +24,52 @@ ignore = [
     # tauri stack migrates away from proc-macro-error.
     "RUSTSEC-2024-0370",
 
-    # The `unic-*` family (open-i18n/rust-unic) is unmaintained. One root
-    # advisory plus four "part of the same unmaintained family" advisories.
-    # Transitive and unavoidable at the current pin:
-    #   tauri-utils 2.9.3 -> urlpattern 0.3.0 -> unic-ucd-ident 0.9.0
-    # `urlpattern` 0.6.0 (which drops rust-unic) exists, but tauri-utils 2.x
-    # pins `urlpattern = "0.3"`, so the only upgrade path is Tauri 3 (alpha).
-    # Impact: unmaintained, NOT a vulnerability. rust-unic performs Unicode
-    # identifier lookups while parsing URLPattern at build time; KalderaShield
-    # does not accept URLPattern input from untrusted sources at runtime.
-    # Revisit when tauri-utils moves to urlpattern 0.6+.
-    "RUSTSEC-2025-0075", # unic-char-range
-    "RUSTSEC-2025-0080", # unic-common
-    "RUSTSEC-2025-0081", # unic-char-property
-    "RUSTSEC-2025-0098", # unic-ucd-version
-    "RUSTSEC-2025-0100", # unic-ucd-ident
+    # `zip` 4.6.1 -- three advisories, one bug class: the archive extractor
+    # trusts the archive's own permission and symlink metadata.
+    #
+    #   RUSTSEC-2026-0367  SUID/SGID bits survive extraction (GHSA-vv5m-jxxh-4627)
+    #   RUSTSEC-2026-0368  symlink target may point outside the destination (GHSA-4v9h-p7m9-rh26)
+    #   RUSTSEC-2026-0369  permissions applied through such a symlink (GHSA-4684-h2q9-2vcp)
+    #
+    # Why this is not upgraded away:
+    #   - The fix is zip >= 9.0.0. tauri-plugin-updater pins `zip = "^4"`, and
+    #     every published version of the plugin (2.14.0, and 3.0.0-alpha.3)
+    #     still pins `^4`. Cargo cannot resolve a fixed zip without forking
+    #     the plugin itself, so there is no upgrade path from here.
+    #   - The `zip` feature cannot simply be switched off either. It is the
+    #     plugin's default feature and it is what unpacks two of the update
+    #     formats this project publishes: the compressed Linux AppImage and
+    #     the Windows `.nsis.zip` bundle. With the feature disabled the plugin
+    #     refuses compressed AppImage updates outright ("the update is a
+    #     compressed AppImage, which can only be installed when the updater's
+    #     `zip` feature is enabled").
+    #
+    # Why the impact is acceptable for THIS product:
+    #   - 0367 needs the extracting process to be privileged. The desktop app
+    #     is never installed or updated as root; a user session owns its own
+    #     install directory.
+    #   - 0368 and 0369 need an archive whose contents the attacker controls.
+    #     The updater verifies the minisign signature of the download BEFORE
+    #     it extracts anything (tauri-plugin-updater: `download_and_install`
+    #     -> `verify` -> `extract`), so a tampered or unsigned archive never
+    #     reaches the zip code. The archives are produced by our own release
+    #     pipeline and signed there.
+    #
+    # Revisit when tauri-plugin-updater moves to zip 9: delete these three
+    # entries, and let cargo deny fail until the lockfile carries zip >= 9.
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
 ]
+
+# The `unic-*` family (open-i18n/rust-unic) used to be listed here as
+# unmaintained but not vulnerable: RUSTSEC-2025-0075, -0080, -0081, -0098 and
+# -0100. tauri-utils 2.10 moved to urlpattern 0.6, which dropped rust-unic
+# from the tree altogether, so the crates left and the ignores became noise
+# ("advisory was not encountered"). They were removed instead of left to rot:
+# if a dependency bump ever brings rust-unic back, cargo deny has to fail on
+# it again and be answered with a fresh, documented decision rather than
+# inherited from a tree the crate is no longer part of.
 
 # NOTE: RUSTSEC-2026-0285 (rustls TLS 1.3 encryption-level confusion) is NOT
 # ignored — it has a fix, so it was resolved by upgrading the lockfile to
@@ -64,7 +94,6 @@ allow = [
     "0BSD",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
     "CDLA-Permissive-2.0",
@@ -144,36 +173,6 @@ license-files = []
 [[licenses.clarify]]
 name = "siphasher"
 version = "1.0.3"
-expression = "MIT OR Apache-2.0"
-license-files = []
-
-[[licenses.clarify]]
-name = "unic-char-property"
-version = "0.9.0"
-expression = "MIT OR Apache-2.0"
-license-files = []
-
-[[licenses.clarify]]
-name = "unic-char-range"
-version = "0.9.0"
-expression = "MIT OR Apache-2.0"
-license-files = []
-
-[[licenses.clarify]]
-name = "unic-common"
-version = "0.9.0"
-expression = "MIT OR Apache-2.0"
-license-files = []
-
-[[licenses.clarify]]
-name = "unic-ucd-ident"
-version = "0.9.0"
-expression = "MIT OR Apache-2.0"
-license-files = []
-
-[[licenses.clarify]]
-name = "unic-ucd-version"
-version = "0.9.0"
 expression = "MIT OR Apache-2.0"
 license-files = []
 
