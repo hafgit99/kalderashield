@@ -79,11 +79,33 @@ const FALLBACK_RE = new RegExp(
   'u'
 );
 
+/* The number the site publishes has to be the number of tests that RUN, not
+ * the number of lines some tool prints.
+ *
+ * vitest 5 changed what `vitest list` does. It now collects tests by parsing
+ * the files statically by default (`--static-parse`, default true), and a
+ * static parser cannot expand an `it.each` table: it sees the call, not the
+ * cases. So `vitest list --json` reports 2379 entries for this suite while
+ * `vitest run` executes 2383 tests. The four that go missing are the expanded
+ * cases of the `it.each` tables, and the per-file numbers move around with
+ * them -- which is how a measurement that used to be exact became a guess
+ * that was four short.
+ *
+ * `--no-static-parse` makes vitest import the test files and collect the
+ * tasks the way a run does, so the each-cases are expanded and the list is
+ * the same set the runner executes: 2383 tests in 259 files, matching
+ * `npm run test:unit` exactly. It costs about a minute instead of ten
+ * seconds, because the files have to be imported rather than parsed, and
+ * that is the price of publishing a number that is true.
+ *
+ * The flag is not optional here: with the default static parse the site
+ * would publish a number the suite does not run, which is the exact failure
+ * this script exists to prevent. */
 function countTests() {
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   let raw;
   try {
-    raw = execFileSync(npx, ['vitest', 'list', '--json'], {
+    raw = execFileSync(npx, ['vitest', 'list', '--json', '--no-static-parse'], {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
