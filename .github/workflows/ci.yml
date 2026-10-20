@@ -228,6 +228,15 @@ jobs:
       # had already drifted. This regenerates it from `vitest list` and fails if
       # the committed copy disagrees, so a new test cannot leave the site
       # claiming an old number.
+      #
+      # "vitest list" here means `vitest list --no-static-parse`, and that is
+      # not a detail. vitest 5 collects tests statically by default, and a
+      # static parser cannot expand an `it.each` table: it sees the call, not
+      # the cases. The default listing reported 2379 entries for a suite that
+      # runs 2383 tests, and every branch failed this gate at once with a
+      # number four short of the truth -- including the number the site was
+      # publishing. The script collects the way a run does, so the published
+      # number is the number of tests that execute.
       - name: Published claims match the test suite
         working-directory: kalderashield-website
         run: node scripts/sync-claims.cjs --check
