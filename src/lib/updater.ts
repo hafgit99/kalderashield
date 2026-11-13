@@ -9,13 +9,33 @@
 import { check, type Update, type DownloadEvent } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
-import { isDesktopAppUpdaterSupported, isDesktopRuntime } from './environment';
+import { isDesktopAppUpdaterSupported, isDesktopRuntime, currentUpdatePlatform } from './environment';
 
 export interface AppUpdateInfo {
   currentVersion: string;
   version: string;
   body?: string;
   date?: string;
+  /**
+   * Platforms in this release that are published without an operating-system
+   * code signature, as declared by the release pipeline in the manifest's
+   * `unsigned_platforms` field.
+   *
+   * Optional because the field is absent from a manifest that declares no
+   * unsigned platform: absence means "everything here is signed".
+   */
+  unsignedPlatforms?: string[];
+  /**
+   * True when the build being offered for THIS platform carries no
+   * operating-system code signature.
+   *
+   * The payload is still verified: the Tauri minisign signature is checked
+   * against the public key in `tauri.conf.json` before anything is installed.
+   * What is missing is publisher identity at the operating-system level, which
+   * is what Windows SmartScreen and macOS Gatekeeper look for. The user is
+   * told, rather than left to discover it as a warning dialog mid-install.
+   */
+  isUnsignedBuild?: boolean;
 }
 
 export interface UpdateDownloadProgress {
@@ -49,6 +69,32 @@ export async function getAppVersion(): Promise<string> {
 }
 
 /**
+ * Describes an available update, including whether the offered build carries
+ * an operating-system code signature.
+ *
+ * The `unsigned_platforms` field is written by the release pipeline into the
+ * updater manifest. The Tauri updater ignores it (serde does not use
+ * `deny_unknown_fields` on the release struct), so it is read here from the
+ * raw manifest and turned into something the UI can state plainly.
+ */
+function describeUpdate(update: Update): AppUpdateInfo {
+  const raw = update.rawJson as { unsigned_platforms?: unknown } | undefined;
+  const declared = Array.isArray(raw?.unsigned_platforms)
+    ? raw.unsigned_platforms.filter((value): value is string => typeof value === 'string')
+    : [];
+  const platform = currentUpdatePlatform();
+
+  return {
+    currentVersion: update.currentVersion,
+    version: update.version,
+    body: update.body,
+    date: update.date,
+    unsignedPlatforms: declared,
+    isUnsignedBuild: platform !== null && declared.includes(platform),
+  };
+}
+
+/**
  * Checks if a newer version of the desktop application is available on the update endpoint.
  */
 export async function checkAppUpdate(): Promise<CheckAppUpdateResult> {
@@ -67,12 +113,7 @@ export async function checkAppUpdate(): Promise<CheckAppUpdateResult> {
     return {
       supported: true,
       hasUpdate: true,
-      updateInfo: {
-        currentVersion: update.currentVersion,
-        version: update.version,
-        body: update.body,
-        date: update.date,
-      },
+      updateInfo: describeUpdate(update),
     };
   } catch (err: unknown) {
     const rawError = err instanceof Error ? err.message : String(err);

@@ -46,8 +46,48 @@ const repositoryUrl = typeof repositoryField === 'string'
 const repoUrl = repositoryUrl
   ? repositoryUrl.replace(/^(git\+|git:)/, '').replace(/\.git$/, '')
   : 'https://github.com/hafgit99/kalderashield';
-const releaseTag = `v${version}`;
+// The tag the release is published under is NOT always `v${packageJson.version}`.
+//
+// package.json carries a 4-part version (the Android versionCode scheme), and
+// the release workflow accepts a tag with the trailing `.0` trimmed: v7.0.24 is
+// a valid tag for version 7.0.24.0, and v7.0.24.0 is a valid tag for it too.
+// The tag therefore has to come from the workflow, not be reconstructed here.
+//
+// Reconstructing it produced a manifest that pointed every download at a
+// release that does not exist. v7.0.24 was published as tag `v7.0.24`, and
+// the published latest.json contained:
+//
+//   .../releases/download/v7.0.24.0/KalderaShield-7.0.24.0-linux-x64.AppImage
+//
+// which returns 404, while the correct URL (.../download/v7.0.24/...) returns
+// 200. An updater whose own manifest links to a 404 cannot update anybody, on
+// any platform -- and the failure is silent, because the manifest itself is
+// served fine and only the payload download fails.
+const releaseTag = resolveReleaseTag();
 const downloadBaseUrl = `${repoUrl}/releases/download/${releaseTag}`;
+
+/**
+ * Resolves the release tag the download URLs must point at.
+ *
+ * Priority:
+ *   1. `RELEASE_TAG` -- set by the release workflow to `${{ github.ref_name }}`.
+ *      This is the only source that cannot be wrong: it is the tag the release
+ *      was actually created under.
+ *   2. `GITHUB_REF_NAME` -- the same value, available automatically inside a
+ *      GitHub Actions run.
+ *   3. The package version with its trailing `.0` segments trimmed, which
+ *      mirrors the release workflow's own tag/version comparison. This is the
+ *      local-run fallback, where no tag exists yet.
+ *
+ * @returns {string} tag beginning with "v"
+ */
+function resolveReleaseTag() {
+  const explicit = String(process.env.RELEASE_TAG || process.env.GITHUB_REF_NAME || '').trim();
+  if (explicit) {
+    return explicit.startsWith('v') ? explicit : `v${explicit}`;
+  }
+  return `v${version.replace(/(\.0)+$/, '')}`;
+}
 
 const TAURI_MINISIGN_COMMENT = 'untrusted comment: signature from tauri secret key';
 
@@ -108,9 +148,11 @@ function updaterKeysForArtifact(platformName, fileName) {
 function generateManifest() {
   console.log(`\n📦 Generating Tauri v2 Auto-Updater Manifest (latest.json) for v${version} (updater semver: ${updaterVersion})...`);
 
-  if (!fs.existsSync(updaterOutputDir)) {
-    fs.mkdirSync(updaterOutputDir, { recursive: true });
-  }
+  // `recursive: true` creates the directory if it is missing and does nothing
+  // if it is there. An existence check followed by the create is a
+  // time-of-check/time-of-use race for no benefit, and CodeQL flags that
+  // shape (`js/file-system-race`).
+  fs.mkdirSync(updaterOutputDir, { recursive: true });
 
   // Load release notes if available
   let releaseNotes = `KalderaShield ${version} Release`;
@@ -162,6 +204,38 @@ function generateManifest() {
   const manifestPath = path.join(updaterOutputDir, 'latest.json');
   const configured = Object.keys(manifest.platforms);
 
+  // Platforms published without an operating-system code signature.
+  //
+  // The declaration is made by the release pipeline (vars.ALLOW_UNSIGNED_PLATFORMS)
+  // and is written into the manifest so that it travels with the artifact
+  // instead of living only in a CI log. The client reads it and tells the user
+  // what they are about to install.
+  //
+  // Tauri ignores unknown top-level fields (serde does not use
+  // `deny_unknown_fields` on `RemoteRelease`), so this field is inert for the
+  // updater itself and cannot break a client.
+  //
+  // Only platforms that are actually present in the manifest are listed. A
+  // declaration for a platform this release does not serve would claim
+  // something untrue about the release.
+  const declaredUnsigned = String(process.env.UNSIGNED_PLATFORMS || '')
+    .split(',')
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+  // The declaration vocabulary (the release scripts' platform names) and the
+  // manifest's platform-key vocabulary are not the same for macOS: the release
+  // pipeline calls it `macos`, the updater manifest calls it `darwin`, because
+  // that is the name the Tauri updater derives from the operating system.
+  const MANIFEST_KEY_PREFIX = { windows: 'windows-', macos: 'darwin-', linux: 'linux-' };
+  const unsignedPlatforms = declaredUnsigned.filter((platform) => {
+    const prefix = MANIFEST_KEY_PREFIX[platform];
+    if (!prefix) return false;
+    return configured.some((key) => key === platform || key.startsWith(prefix));
+  });
+  if (unsignedPlatforms.length > 0) {
+    manifest.unsigned_platforms = unsignedPlatforms;
+  }
+
   // An empty manifest is not a valid updater target, and writing one with exit
   // code 0 is how a release ships that silently breaks auto-update: every
   // client reads `platforms: {}`, matches nothing, and either does nothing or
@@ -186,7 +260,11 @@ function generateManifest() {
   console.log(`✓ Updater manifest written to: ${path.relative(rootDir, manifestPath)}`);
   console.log(`  Target Version: v${version}`);
   console.log(`  Target Platforms Configured: ${configured.join(', ')}`);
-  console.log(`  Download Base URL: ${downloadBaseUrl}\n`);
+  console.log(`  Download Base URL: ${downloadBaseUrl}`);
+  if (unsignedPlatforms.length > 0) {
+    console.log(`  UNSIGNED (no OS code signature): ${unsignedPlatforms.join(', ')}`);
+  }
+  console.log('');
 }
 
 generateManifest();

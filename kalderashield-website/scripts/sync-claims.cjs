@@ -474,6 +474,47 @@ if (check) {
     pages++;
   }
   console.log(`  ${pages} HTML dosyasi guncellendi (${changed} dil).`);
+
+  // The audit package is checked above, so it has to be rewritable here too.
+  //
+  // It was not, and the gap was invisible: the check reported a stale number
+  // and then told the operator to run this script, which did not touch the
+  // file it had just complained about. The instruction could not be followed
+  // and the claim stayed stale. A document handed to an external assessor
+  // whose test count is two hundred behind is a stale number in someone
+  // else's assessment, which is the whole reason the check exists.
+  //
+  // The read is not guarded by an existence check on purpose. Checking and
+  // then reading is the classic time-of-check/time-of-use race, and CodeQL
+  // flagged it (`js/file-system-race`): the file may be replaced between the
+  // two calls. `readFileSync` already throws when the file is not there, and
+  // the package is optional, so one call and one catch says the same thing
+  // without the race.
+  const auditApp = path.join(
+    siteRoot,
+    '..',
+    'SECURITY_AUDIT_PACKAGE',
+    'APPLICATION_OSTIF_ALPHA_OMEGA.md',
+  );
+  try {
+    const auditHtml = fs.readFileSync(auditApp, 'utf8');
+    const next = auditHtml.replace(
+      AUDIT_TEST_CLAIM_RE,
+      `${tests} unit tests across ${files} files`,
+    );
+    if (next !== auditHtml) {
+      fs.writeFileSync(auditApp, next, 'utf8');
+      console.log(
+        `  SECURITY_AUDIT_PACKAGE/APPLICATION_OSTIF_ALPHA_OMEGA.md: ${tests} test across ${files} dosyaya guncellendi.`,
+      );
+    }
+  } catch (error) {
+    if (error && error.code !== 'ENOENT') {
+      console.warn(
+        `  uyari: audit paketi okunamadi (${auditApp}): ${error.message}`,
+      );
+    }
+  }
 }
 
 if (require.main === module) main();

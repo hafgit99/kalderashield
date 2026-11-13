@@ -20,11 +20,44 @@ Internal candidate scope until target-device smoke is completed:
 
 Not in initial release scope:
 
-- Auto-update distribution.
 - Cloud sync.
 - Production security claims beyond the current threat model.
 - Public macOS distribution without code signing/notarization validation.
 - iOS / iPadOS distribution; planned support is tracked separately in `docs/IOS_READINESS.md` until macOS/Xcode bootstrap, signing, and runtime smoke gates pass.
+
+## Update Distribution
+
+Auto-update distribution is in scope and is owned by
+`docs/UPDATE_DISTRIBUTION_PLAN.md`. That document records the platform
+capability matrix (the Tauri updater supports Windows, Linux and macOS only),
+the manifest format, and the unsigned-distribution policy. The two settings
+that control it are:
+
+- `release/release-config.json` — the committed default:
+  `desktopPlatforms` (which desktop platforms to build; `linux` is always
+  built and can never be deselected) and `allowUnsignedPlatforms` (which
+  platforms may be published **without** an operating-system code signature).
+- `vars.RELEASE_DESKTOP_PLATFORMS` and `vars.ALLOW_UNSIGNED_PLATFORMS` — the
+  operational override, under Settings → Secrets and variables → Actions →
+  Variables. A variable that is set wins over the committed file; `none`
+  disables the file's declaration for one release.
+
+A platform with an available signing certificate is always signed; the
+declaration only ever permits the *absence* of a certificate, it never causes
+one to be skipped. A selected platform with neither a certificate nor a
+declaration fails the release in the `plan` job, before anything is built.
+
+The declaration is reproduced in three places so that an unsigned release
+cannot be mistaken for a signed one:
+
+1. The `unsigned_platforms` field of the published `latest.json` manifest.
+2. The `DESKTOP_SIGNATURES.md` evidence file of that platform.
+3. The release notes.
+
+What the declaration does not change: the Tauri minisign signature on every
+updater payload. The client verifies it against the public key in
+`src-tauri/tauri.conf.json` before installing anything, on every platform,
+whether or not the installer carries an operating-system signature.
 
 ## Required Release Gates
 

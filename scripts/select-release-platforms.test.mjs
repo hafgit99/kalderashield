@@ -6,8 +6,17 @@
  * than living as untested inline shell in the workflow.
  */
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { selectReleasePlatforms } from './select-release-platforms.cjs';
+import {
+  readRepoReleaseConfig,
+  resolveSetting,
+  resolveSigningModes,
+  selectReleasePlatforms,
+} from './select-release-platforms.cjs';
 
 describe('release platform selection', () => {
   it('selects every platform when the variable is unset', () => {
@@ -75,5 +84,156 @@ describe('release platform selection', () => {
     for (const requested of ['', 'all', 'macos', 'windows', 'macos,windows']) {
       expect(selectReleasePlatforms(requested).selection).toContain('linux');
     }
+  });
+});
+
+describe('release signing modes', () => {
+  it('blocks a selected platform that has neither a certificate nor a declaration', () => {
+    // The fail-closed default. Without this the release would either fail
+    // ninety minutes into the build job (the certificate import throws) or,
+    // worse, publish an unsigned artifact nobody declared.
+    const result = resolveSigningModes({
+      selection: 'linux,macos,windows',
+      allowUnsigned: '',
+      certificates: { windows: false, macos: false },
+    });
+
+    expect(result.modes.windows).toBe('blocked');
+    expect(result.modes.macos).toBe('blocked');
+    expect(result.unsignedPlatforms).toEqual([]);
+  });
+
+  it('publishes a declared platform unsigned when no certificate exists', () => {
+    const result = resolveSigningModes({
+      selection: 'linux,windows',
+      allowUnsigned: 'windows',
+      certificates: { windows: false, macos: false },
+    });
+
+    expect(result.modes.windows).toBe('unsigned');
+    expect(result.unsignedPlatforms).toEqual(['windows']);
+    // macOS was not selected, so it has no signing state to decide.
+    expect(result.modes.macos).toBe('skipped');
+  });
+
+  it('never downgrades a platform that has a certificate', () => {
+    // Declaring a platform unsigned must not *cause* an unsigned release. If
+    // the certificate exists, the release signs.
+    const result = resolveSigningModes({
+      selection: 'linux,windows',
+      allowUnsigned: 'windows',
+      certificates: { windows: true, macos: false },
+    });
+
+    expect(result.modes.windows).toBe('signed');
+    expect(result.unsignedPlatforms).toEqual([]);
+  });
+
+  it('does not let a declaration for one platform authorise another', () => {
+    const result = resolveSigningModes({
+      selection: 'linux,windows,macos',
+      allowUnsigned: 'windows',
+      certificates: { windows: false, macos: false },
+    });
+
+    expect(result.modes.windows).toBe('unsigned');
+    expect(result.modes.macos).toBe('blocked');
+  });
+
+  it('rejects a declaration for a platform that cannot be unsigned', () => {
+    // Linux has no OS-level signature, so declaring it unsigned is a mistake
+    // in the configuration, not a mode.
+    const result = resolveSigningModes({
+      selection: 'linux,windows',
+      allowUnsigned: 'linux,windows',
+      certificates: { windows: false, macos: false },
+    });
+
+    expect(result.unknown).toEqual(['linux']);
+    expect(result.modes.windows).toBe('unsigned');
+  });
+
+  it('treats an unset declaration as no declaration', () => {
+    for (const allowUnsigned of [undefined, null, '', '   ', 'none']) {
+      const result = resolveSigningModes({
+        selection: 'linux,windows',
+        allowUnsigned,
+        certificates: { windows: false, macos: false },
+      });
+      expect(result.unsignedPlatforms).toEqual([]);
+      expect(result.modes.windows).toBe('blocked');
+    }
+  });
+});
+
+describe('release configuration sources', () => {
+  it('prefers the environment over the committed file', () => {
+    // The repository variable is the operational override: it can be changed
+    // for one release without a commit.
+    expect(resolveSetting('windows', 'macos')).toBe('windows');
+  });
+
+  it('falls back to the committed file when the environment is empty', () => {
+    // GitHub expands an unset repository variable to an empty string, so an
+    // empty value has to mean "not set" rather than "override with nothing".
+    expect(resolveSetting('', 'windows')).toBe('windows');
+    expect(resolveSetting('   ', 'windows')).toBe('windows');
+    expect(resolveSetting(undefined, 'windows')).toBe('windows');
+  });
+
+  it('resolves to nothing when neither source has a value', () => {
+    expect(resolveSetting('', '')).toBeUndefined();
+    expect(resolveSetting(undefined, undefined)).toBeUndefined();
+  });
+
+  it('reads the committed release configuration', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'KalderaShield-release-config-'));
+    try {
+      fs.writeFileSync(
+        path.join(dir, 'release-config.json'),
+        JSON.stringify({ desktopPlatforms: 'windows', allowUnsignedPlatforms: 'windows' }),
+      );
+
+      const config = readRepoReleaseConfig(dir);
+      expect(config.desktopPlatforms).toBe('windows');
+      expect(config.allowUnsignedPlatforms).toBe('windows');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('treats a missing configuration file as no configuration', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'KalderaShield-release-config-'));
+    try {
+      expect(readRepoReleaseConfig(dir)).toEqual({});
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not read a broken configuration file as a declaration', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'KalderaShield-release-config-'));
+    try {
+      fs.writeFileSync(path.join(dir, 'release-config.json'), '{ not json');
+      expect(readRepoReleaseConfig(dir)).toEqual({});
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('ships a committed configuration that matches the documented release', () => {
+    // The repository's own file, not a fixture: this is the configuration the
+    // next release will actually use.
+    //
+    // `fileURLToPath` and not `new URL(...).pathname`: on Linux the pathname
+    // starts with a slash, and stripping it by hand turns an absolute path
+    // into a relative one that resolves against the working directory. The
+    // test then reads a directory that does not exist and reports a missing
+    // configuration as if the file had never been committed.
+    const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const config = readRepoReleaseConfig(path.join(repoRoot, 'release'));
+
+    expect(config.desktopPlatforms).toBe('windows');
+    expect(config.allowUnsignedPlatforms).toBe('windows');
   });
 });

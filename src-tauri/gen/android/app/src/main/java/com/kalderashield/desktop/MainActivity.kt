@@ -19,6 +19,7 @@ import com.kalderashield.desktop.bridges.AndroidBiometricKeyStoreBridge
 import com.kalderashield.desktop.bridges.AndroidFileBridge
 import com.kalderashield.desktop.bridges.AndroidRuntimeSecurityBridge
 import com.kalderashield.desktop.bridges.AndroidSecureStorageBridge
+import com.kalderashield.desktop.bridges.AndroidUpdateBridge
 import com.kalderashield.desktop.crypto.SecureStorageKeyStore
 import com.kalderashield.desktop.model.AndroidImportFile
 import com.kalderashield.desktop.model.AutofillLaunchRequest
@@ -143,6 +144,11 @@ class MainActivity : TauriActivity() {
 
     val securityBridge = AndroidRuntimeSecurityBridge(runtimePosture)
 
+    // Update flow: opens the APK download in the system browser. The Tauri
+    // updater does not support Android, so this is how an Android user is
+    // told about a new version and gets to it.
+    val updateBridge = AndroidUpdateBridge(this)
+
     // RUST-O4: biometric-bound wrapping key bridge (wrap/unwrap only; opaque handle transport)
     val biometricKeyBridge = AndroidBiometricKeyStoreBridge(this, secureKeyStore, ::evaluateOnWebView)
 
@@ -151,6 +157,7 @@ class MainActivity : TauriActivity() {
     webView.addJavascriptInterface(autofillBridge, "KalderaShieldAndroidAutofill")
     webView.addJavascriptInterface(securityBridge, "KalderaShieldAndroidSecurity")
     webView.addJavascriptInterface(biometricKeyBridge, "KalderaShieldAndroidBiometric")
+    webView.addJavascriptInterface(updateBridge, "KalderaShieldAndroidUpdate")
 
     webView.post {
       notifyAutofillIntent()

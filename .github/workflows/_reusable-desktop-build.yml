@@ -73,6 +73,25 @@ on:
         required: false
         type: string
         default: bash
+      signing-mode:
+        description: >-
+          "signed" or "unsigned". "signed" runs the platform's code-signing
+          ceremony (certificate import, Authenticode, codesign + notarization).
+          "unsigned" skips it and publishes the artifacts without an
+          operating-system code signature -- only reachable when the platform
+          was declared in vars.ALLOW_UNSIGNED_PLATFORMS.
+        required: false
+        type: string
+        default: signed
+      allow-unsigned-platforms:
+        description: >-
+          Comma-separated platforms declared unsigned in
+          vars.ALLOW_UNSIGNED_PLATFORMS. Passed to the signing-report gate so
+          that a declared platform is recorded as unsigned instead of failing
+          the release, while every undeclared platform still fails.
+        required: false
+        type: string
+        default: ''
       normalize-spaces:
         description: Rename assets so names match the release URLs.
         required: false
@@ -108,7 +127,7 @@ jobs:
           targets: ${{ inputs.rust-targets }}
 
       - name: Cache Rust builds
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2 (SHA-pinned)
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.2 (SHA-pinned)
         with:
           workspaces: src-tauri -> target
 
@@ -140,8 +159,16 @@ jobs:
       # from the runner's perspective (no `::set-output`, nothing echoed), and
       # a Linux job that could read them is a far smaller exposure than a fourth
       # copy of the release spine that has to be kept in sync.
+      #
+      # `signing-mode: unsigned` skips this step entirely. The certificate is
+      # simply not imported, so there is nothing to sign with and the artifacts
+      # are published unsigned -- which the plan job only allows for a platform
+      # declared in vars.ALLOW_UNSIGNED_PLATFORMS. The Tauri minisign signature
+      # (TAURI_SIGNING_PRIVATE_KEY, below) is a separate key and is still
+      # applied in unsigned mode: it is what makes the updater payload
+      # verifiable by the client.
       - name: Platform preparation
-        if: ${{ inputs.prep-steps != '' }}
+        if: ${{ inputs.prep-steps != '' && inputs.signing-mode != 'unsigned' }}
         run: ${{ inputs.prep-steps }}
         env:
           APPLE_SIGNING_CERT_P12: ${{ secrets.APPLE_SIGNING_CERT_P12 }}
@@ -164,7 +191,7 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || inputs.build-identity || '-' }}
 
       - name: Platform signing
-        if: ${{ inputs.post-steps != '' }}
+        if: ${{ inputs.post-steps != '' && inputs.signing-mode != 'unsigned' }}
         run: ${{ inputs.post-steps }}
         env:
           APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY_RESOLVED || inputs.build-identity || '-' }}
@@ -205,7 +232,11 @@ jobs:
           done
 
       - name: Signing report gate — block unsigned releases (Y-19)
-        run: npm run desktop:release:signing:report -- --platform ${{ inputs.platform }} --dir release-local/${{ inputs.platform }} --require-signed
+        # The gate still fails the release for an unsigned artifact on any
+        # platform that was not declared in vars.ALLOW_UNSIGNED_PLATFORMS.
+        # `--allow-unsigned-platforms` narrows it to the declared platforms and
+        # records them as unsigned in DESKTOP_SIGNATURES.md instead.
+        run: npm run desktop:release:signing:report -- --platform ${{ inputs.platform }} --dir release-local/${{ inputs.platform }} --require-signed --allow-unsigned-platforms "${{ inputs.allow-unsigned-platforms }}"
 
       - name: Desktop release gate
         # Verify, do not rebuild.
