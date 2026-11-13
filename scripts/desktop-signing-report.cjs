@@ -82,7 +82,13 @@ function run(command, commandArgs) {
 }
 
 function resolveArtifactPath(artifact) {
-  const fullPath = path.resolve(rootDir, artifact.path);
+  // Accept either separator. `metadata.json` is written on the machine that
+  // built the artifact and read on the machine that verifies it, and those can
+  // be different operating systems: the Windows build job writes
+  // `release-local\windows\...`, and on Linux the backslash is an ordinary
+  // filename character, so the path resolved outside the evidence directory and
+  // the publish job failed after every build had succeeded.
+  const fullPath = path.resolve(rootDir, String(artifact.path).replace(/\\/g, '/'));
   const relativeToEvidence = path.relative(evidenceDir, fullPath);
   if (relativeToEvidence.startsWith('..') || path.isAbsolute(relativeToEvidence)) {
     fail('Artifact path escapes evidence directory: ' + artifact.path);

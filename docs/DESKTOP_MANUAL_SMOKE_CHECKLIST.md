@@ -76,7 +76,7 @@ Candidate:
 - [ ] macOS `.dmg` opens and app can be copied/launched when present.
 - [ ] macOS `.app` bundle metadata and icon are correct when present.
 - [ ] `SHA256SUMS.txt` matches published file artifacts.
-- [ ] Windows/macOS final artifacts have verified platform signatures; Linux artifacts have verified SHA-256 checksums.
+- [ ] Windows/macOS final artifacts have verified platform signatures, or the platform is declared unsigned in the release manifest (`unsigned_platforms`) and `DESKTOP_SIGNATURES.md` records that declaration; Linux artifacts have verified SHA-256 checksums.
 - [ ] `metadata.json` reports the expected commit, version, platform, and clean/dirty status.
 
 ## Notes

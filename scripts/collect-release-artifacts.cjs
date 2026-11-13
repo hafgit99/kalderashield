@@ -406,7 +406,16 @@ function describeArtifact(file) {
 
   return {
     name: path.basename(file),
-    path: path.relative(rootDir, file),
+    // POSIX separators, always.
+    //
+    // This metadata is written on the machine that built the artifact and read
+    // on the machine that publishes it, and those are not the same machine:
+    // Windows artifacts are collected on Windows and re-verified by the publish
+    // job on Linux. `path.relative` on Windows returns `release-local\windows\...`,
+    // and on Linux a backslash is an ordinary filename character, so the
+    // consumer resolved a path that "escaped" the evidence directory and the
+    // publish job failed after every build had succeeded.
+    path: path.relative(rootDir, file).split(path.sep).join('/'),
     type: isDirectory ? 'directory' : 'file',
     sizeBytes: isDirectory ? dirStats.sizeBytes : stats.size,
     fileCount: isDirectory ? dirStats.fileCount : 1,
