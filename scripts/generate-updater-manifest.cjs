@@ -148,9 +148,11 @@ function updaterKeysForArtifact(platformName, fileName) {
 function generateManifest() {
   console.log(`\n📦 Generating Tauri v2 Auto-Updater Manifest (latest.json) for v${version} (updater semver: ${updaterVersion})...`);
 
-  if (!fs.existsSync(updaterOutputDir)) {
-    fs.mkdirSync(updaterOutputDir, { recursive: true });
-  }
+  // `recursive: true` creates the directory if it is missing and does nothing
+  // if it is there. An existence check followed by the create is a
+  // time-of-check/time-of-use race for no benefit, and CodeQL flags that
+  // shape (`js/file-system-race`).
+  fs.mkdirSync(updaterOutputDir, { recursive: true });
 
   // Load release notes if available
   let releaseNotes = `KalderaShield ${version} Release`;

@@ -159,9 +159,11 @@ function generateManifest() {
     manifest.versionCode = versionCode;
   }
 
-  if (!fs.existsSync(updaterOutputDir)) {
-    fs.mkdirSync(updaterOutputDir, { recursive: true });
-  }
+  // `recursive: true` creates the directory if it is missing and does nothing
+  // if it is there. An existence check followed by the create would be a
+  // time-of-check/time-of-use race for no benefit, and CodeQL flags that
+  // shape (`js/file-system-race`).
+  fs.mkdirSync(updaterOutputDir, { recursive: true });
 
   const manifestPath = path.join(updaterOutputDir, 'android-latest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
