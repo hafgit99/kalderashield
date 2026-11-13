@@ -42,14 +42,14 @@ const TAURI_SIG_BODY =
   'untrusted comment: signature from tauri secret key\n' +
   'RWRCSzA2RWRFbmR5';
 
-function run() {
+function run(extraEnv = {}) {
   try {
     const stdout = execFileSync(process.execPath, [path.join(here, 'generate-updater-manifest.cjs')], {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
       // The generator's staging directory, pointed at this test's scratch dir.
-      env: { ...process.env, RELEASE_LOCAL_DIR: releaseLocal },
+      env: { ...process.env, RELEASE_LOCAL_DIR: releaseLocal, ...extraEnv },
     });
     return { code: 0, stdout, stderr: '' };
   } catch (error) {
@@ -124,5 +124,129 @@ describe('updater manifest generation', () => {
     );
     expect(Object.keys(manifest.platforms)).toContain('linux-x86_64');
     expect(manifest.platforms['linux-x86_64'].url).toMatch(/kalderashield\.AppImage$/);
+  });
+
+  // The finding this closes: the manifest is served correctly while every
+  // download URL inside it returns 404.
+  //
+  // package.json carries a 4-part version (7.0.24.0) and the release workflow
+  // publishes it under the trimmed tag (v7.0.24). The generator used to build
+  // the tag as `v${version}` -- v7.0.24.0 -- which is a release that does not
+  // exist. The updater read the manifest, matched its platform, and then
+  // downloaded a 404. Nothing failed loudly: the manifest was served fine.
+  it('builds download URLs from the release tag, not the package version', () => {
+    const linuxDir = path.join(releaseLocal, 'linux');
+    fs.mkdirSync(linuxDir, { recursive: true });
+    fs.writeFileSync(path.join(linuxDir, 'kalderashield.AppImage'), 'binary');
+    fs.writeFileSync(
+      path.join(linuxDir, 'kalderashield.AppImage.sig'),
+      TAURI_SIG_BODY,
+    );
+
+    const result = run({ RELEASE_TAG: 'v9.9.9-channel-test' });
+    expect(result.code).toBe(0);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(updaterDir, 'latest.json'), 'utf8'),
+    );
+    expect(manifest.platforms['linux-x86_64'].url).toContain('/download/v9.9.9-channel-test/');
+    expect(manifest.platforms['linux-x86_64'].url).not.toContain('v9.9.9-channel-test.0');
+  });
+
+  it('falls back to the trimmed package version when no release tag is given', () => {
+    const linuxDir = path.join(releaseLocal, 'linux');
+    fs.mkdirSync(linuxDir, { recursive: true });
+    fs.writeFileSync(path.join(linuxDir, 'kalderashield.AppImage'), 'binary');
+    fs.writeFileSync(
+      path.join(linuxDir, 'kalderashield.AppImage.sig'),
+      TAURI_SIG_BODY,
+    );
+
+    const packageVersion = JSON.parse(
+      fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'),
+    ).version;
+    const expectedTag = `v${packageVersion.replace(/(\.0)+$/, '')}`;
+
+    // GITHUB_REF_NAME is set automatically in Actions; it must not win over an
+    // explicit RELEASE_TAG, and it must not leak into a local run either.
+    const result = run({
+      RELEASE_TAG: '',
+      GITHUB_REF_NAME: '',
+    });
+    expect(result.code).toBe(0);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(updaterDir, 'latest.json'), 'utf8'),
+    );
+    expect(manifest.platforms['linux-x86_64'].url).toContain(`/download/${expectedTag}/`);
+  });
+
+  // The unsigned declaration travels with the manifest.
+  //
+  // A release that publishes a platform without an operating-system code
+  // signature has to say so in the artifact the client reads, not only in a CI
+  // log. The field is inert for the Tauri updater itself (serde does not use
+  // `deny_unknown_fields`), so it cannot break a client, and the client reads
+  // it to tell the user before the install starts.
+  it('records the platforms published without an OS code signature', () => {
+    const windowsDir = path.join(releaseLocal, 'windows');
+    fs.mkdirSync(windowsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(windowsDir, 'KalderaShield-7.0.25.0-windows-x64-setup.exe'),
+      'binary',
+    );
+    fs.writeFileSync(
+      path.join(windowsDir, 'KalderaShield-7.0.25.0-windows-x64-setup.exe.sig'),
+      TAURI_SIG_BODY,
+    );
+
+    const result = run({ UNSIGNED_PLATFORMS: 'windows' });
+    expect(result.code).toBe(0);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(updaterDir, 'latest.json'), 'utf8'),
+    );
+    expect(manifest.unsigned_platforms).toEqual(['windows']);
+    // The Windows entry itself must exist, or the declaration describes a
+    // platform this release does not serve.
+    expect(Object.keys(manifest.platforms)).toContain('windows-x86_64-nsis');
+    expect(Object.keys(manifest.platforms)).toContain('windows-x86_64');
+  });
+
+  it('does not declare a platform the release does not publish', () => {
+    const linuxDir = path.join(releaseLocal, 'linux');
+    fs.mkdirSync(linuxDir, { recursive: true });
+    fs.writeFileSync(path.join(linuxDir, 'kalderashield.AppImage'), 'binary');
+    fs.writeFileSync(
+      path.join(linuxDir, 'kalderashield.AppImage.sig'),
+      TAURI_SIG_BODY,
+    );
+
+    // Windows is declared, but this release published no Windows artifact.
+    const result = run({ UNSIGNED_PLATFORMS: 'windows' });
+    expect(result.code).toBe(0);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(updaterDir, 'latest.json'), 'utf8'),
+    );
+    expect(manifest.unsigned_platforms).toBeUndefined();
+  });
+
+  it('omits the declaration when nothing was declared', () => {
+    const linuxDir = path.join(releaseLocal, 'linux');
+    fs.mkdirSync(linuxDir, { recursive: true });
+    fs.writeFileSync(path.join(linuxDir, 'kalderashield.AppImage'), 'binary');
+    fs.writeFileSync(
+      path.join(linuxDir, 'kalderashield.AppImage.sig'),
+      TAURI_SIG_BODY,
+    );
+
+    const result = run();
+    expect(result.code).toBe(0);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(updaterDir, 'latest.json'), 'utf8'),
+    );
+    expect(manifest.unsigned_platforms).toBeUndefined();
   });
 });

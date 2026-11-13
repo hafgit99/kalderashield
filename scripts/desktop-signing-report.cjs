@@ -19,6 +19,34 @@ const explicitDir = getArgValue(args, '--dir');
 const evidenceDir = explicitDir ? path.resolve(rootDir, explicitDir) : path.join(releaseLocalDir, platform);
 const requireSigned = hasFlag(args, '--require-signed');
 
+// Platforms whose artifacts may be published without an operating-system
+// code-signing certificate, but ONLY because the repository variable
+// `vars.ALLOW_UNSIGNED_PLATFORMS` declares them.
+//
+// This is a narrowing of the Y-19 gate, not a removal of it:
+//
+//   - The declaration is per platform. Declaring `windows` says nothing about
+//     `macos`, and an undeclared platform with an unsigned artifact still fails
+//     the release.
+//   - The declaration says nothing about the Tauri minisign signature. The
+//     updater payload is still verified against the public key in
+//     `src-tauri/tauri.conf.json` on every client; that check is unaffected by
+//     this flag and is not this script's to verify.
+//   - An empty list (the default) restores the previous behaviour exactly: an
+//     unsigned artifact fails the release.
+//
+// The declaration is made visible in the report itself and in the generated
+// updater manifest (`unsigned_platforms`), so a release that ships an unsigned
+// artifact cannot be mistaken for a signed one by anyone reading it.
+const allowUnsignedRaw = getArgValue(args, '--allow-unsigned-platforms') || '';
+const allowUnsignedPlatforms = new Set(
+  allowUnsignedRaw
+    .split(',')
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean),
+);
+const platformMayBeUnsigned = allowUnsignedPlatforms.has(String(platform).toLowerCase());
+
 function usage() {
   return [
     'Desktop signing report',
@@ -30,6 +58,9 @@ function usage() {
     '  --platform <windows|linux|macos>  Evidence platform. Defaults to host platform.',
     '  --dir <path>                       Evidence directory. Defaults to release-local/<platform>.',
     '  --require-signed                  Fail if signable artifacts are not verified as signed.',
+    '  --allow-unsigned-platforms <list> Comma-separated platforms that may be published without an',
+    '                                    OS code signature (declared in vars.ALLOW_UNSIGNED_PLATFORMS).',
+    '                                    Only the platform being reported is affected.',
     '  --help                            Show this help.',
   ].join('\n');
 }
@@ -163,6 +194,23 @@ function writeReport(metadata, results) {
     lines.push('  - Detail: ' + result.detail);
   }
 
+  if (platformMayBeUnsigned) {
+    // This block is the point of the declaration: it is what a reader of the
+    // evidence folder learns before downloading anything from this platform.
+    lines.push(
+      '',
+      '## Unsigned release declaration',
+      '',
+      '- This platform was published WITHOUT an operating-system code signature.',
+      '- The declaration comes from `vars.ALLOW_UNSIGNED_PLATFORMS`.',
+      '- The updater payload is still signed with the Tauri minisign key and is',
+      '  verified by the client against the public key in `src-tauri/tauri.conf.json`.',
+      '- What is missing is publisher identity at the operating-system level:',
+      '  Windows SmartScreen and macOS Gatekeeper will warn about a manual download.',
+      '',
+    );
+  }
+
   lines.push('', '## Policy', '', '- Public Windows/macOS releases must be signed and verified before publishing.', '- Internal diagnostic builds may be unsigned when release notes clearly state that signing was not verified.', '');
   fs.writeFileSync(path.join(evidenceDir, 'DESKTOP_SIGNATURES.md'), lines.join('\n'), 'utf8');
 }
@@ -179,11 +227,20 @@ function generateSigningReport() {
   writeReport(metadata, results);
 
   const failedRequired = results.filter((result) => result.applicable && !result.verified);
-  if (requireSigned && failedRequired.length > 0) {
+  if (requireSigned && failedRequired.length > 0 && !platformMayBeUnsigned) {
     fail('Required signing verification failed for: ' + failedRequired.map((result) => result.name).join(', '));
   }
   console.log('Desktop signing report written to ' + path.relative(rootDir, path.join(evidenceDir, 'DESKTOP_SIGNATURES.md')));
   console.log('Signable artifacts verified: ' + results.filter((result) => result.verified).length + '/' + results.filter((result) => result.applicable).length);
+  if (requireSigned && failedRequired.length > 0 && platformMayBeUnsigned) {
+    // The release continues, and it continues *visibly*. A warning that is
+    // easy to miss in a long log is how an unsigned artifact becomes the
+    // normal case.
+    console.warn(
+      '::warning::Publishing UNSIGNED ' + platform + ' artifacts (declared in vars.ALLOW_UNSIGNED_PLATFORMS): '
+      + failedRequired.map((result) => result.name).join(', '),
+    );
+  }
 }
 
 if (hasFlag(args, '--help')) {

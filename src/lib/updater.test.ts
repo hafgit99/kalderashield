@@ -31,6 +31,7 @@ type MockedUpdate = {
   version: string;
   body?: string;
   date?: string;
+  rawJson?: Record<string, unknown>;
   downloadAndInstall: ReturnType<typeof vi.fn>;
 };
 
@@ -41,6 +42,7 @@ function makeUpdate(overrides: Partial<MockedUpdate> = {}): Update {
     version: '7.0.3.0',
     body: 'Security hardening release',
     date: '2026-08-27',
+    rawJson: {},
     downloadAndInstall: vi.fn(async (onEvent?: (e: DownloadEvent) => void) => {
       for (const event of events) onEvent?.(event);
     }),
@@ -109,8 +111,47 @@ describe('updater', () => {
           version: '7.0.3.0',
           body: 'Security hardening release',
           date: '2026-08-27',
+          unsignedPlatforms: [],
+          isUnsignedBuild: false,
         },
       });
+    });
+
+    it('flags an unsigned build when the manifest declares this platform', async () => {
+      // The release pipeline writes `unsigned_platforms` into the manifest for
+      // platforms published without an operating-system code signature. The
+      // client reads it so the user hears it from the app instead of meeting
+      // it as a SmartScreen dialog in the middle of an install.
+      setDesktopRuntime(true, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+      const update = makeUpdate({ rawJson: { unsigned_platforms: ['windows'] } });
+      vi.mocked(check).mockResolvedValueOnce(update);
+
+      const result = await checkAppUpdate();
+
+      expect(result.updateInfo?.unsignedPlatforms).toEqual(['windows']);
+      expect(result.updateInfo?.isUnsignedBuild).toBe(true);
+    });
+
+    it('does not flag the build when the declaration names another platform', async () => {
+      setDesktopRuntime(true, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+      const update = makeUpdate({ rawJson: { unsigned_platforms: ['macos'] } });
+      vi.mocked(check).mockResolvedValueOnce(update);
+
+      const result = await checkAppUpdate();
+
+      expect(result.updateInfo?.unsignedPlatforms).toEqual(['macos']);
+      expect(result.updateInfo?.isUnsignedBuild).toBe(false);
+    });
+
+    it('treats a malformed declaration as no declaration', async () => {
+      setDesktopRuntime(true, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+      const update = makeUpdate({ rawJson: { unsigned_platforms: 'windows' } });
+      vi.mocked(check).mockResolvedValueOnce(update);
+
+      const result = await checkAppUpdate();
+
+      expect(result.updateInfo?.unsignedPlatforms).toEqual([]);
+      expect(result.updateInfo?.isUnsignedBuild).toBe(false);
     });
 
     it('classifies release-JSON fetch failures with a localized error key', async () => {

@@ -200,11 +200,46 @@ function main() {
   // the signing work is a script the caller passes in, so "conditional" means
   // two things: the spine runs it only when the caller sent something, and the
   // platforms that need signing actually send it.
+  //
+  // The guard is a *conjunction*, and that is the invariant, not the exact
+  // spelling of it. A condition of the form
+  //
+  //   if: ${{ inputs.prep-steps != '' && inputs.signing-mode != 'unsigned' }}
+  //
+  // protects the step exactly as much as
+  //
+  //   if: ${{ inputs.prep-steps != '' }}
+  //
+  // does: the step runs only when the caller sent a script, and a platform
+  // that sends none cannot run one. The previous check compared the whole
+  // expression literally, so adding a second condition to the guard turned
+  // the gate red even though the invariant still held -- a gate that cries
+  // wolf gets ignored, and then it protects nothing.
+  //
+  // So the check is now on the shape of the condition rather than on its
+  // text: the guard must require a non-empty script, and it must not contain a
+  // disjunction (`||`), because one alternative is enough to make the step run
+  // with no script at all. An inverted test (`inputs.prep-steps == ''`) is
+  // rejected for the same reason.
   for (const phase of ['prep-steps', 'post-steps']) {
+    const guards = [...spine.matchAll(new RegExp(`if: \\$\\{\\{([^\\n]*)\\}\\}`, 'g'))]
+      .map((match) => match[1])
+      .filter((body) => body.includes(`inputs.${phase}`));
+
     check(
-      new RegExp(`if: \\$\\{\\{ inputs\\.${phase} != '' \\}\\}`, 'm').test(spine),
-      `${spineName}: ${phase} must be guarded by an if: so a platform that sends no script cannot run one`
+      guards.some((body) => body.includes(`inputs.${phase} != ''`)),
+      `${spineName}: ${phase} must be guarded by an if: so a platform that sends no script cannot run one`,
     );
+    for (const body of guards) {
+      check(
+        !body.includes(`inputs.${phase} == ''`),
+        `${spineName}: the ${phase} guard must require a non-empty script, not an empty one`,
+      );
+      check(
+        !body.includes('||'),
+        `${spineName}: the ${phase} guard must be a conjunction; a disjunction can run the step with no script at all`,
+      );
+    }
   }
   for (const job of ['build-macos', 'build-windows']) {
     const jobStart = workflow.indexOf(`\n  ${job}:`);

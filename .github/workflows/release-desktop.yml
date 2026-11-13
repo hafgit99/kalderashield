@@ -53,6 +53,9 @@ jobs:
       macos: ${{ steps.select.outputs.macos }}
       windows: ${{ steps.select.outputs.windows }}
       selection: ${{ steps.select.outputs.selection }}
+      windows-signing: ${{ steps.select.outputs.windows-signing }}
+      macos-signing: ${{ steps.select.outputs.macos-signing }}
+      unsigned-platforms: ${{ steps.select.outputs.unsigned-platforms }}
     steps:
       # Without this the job runs `node scripts/...` in an empty workspace and
       # dies with MODULE_NOT_FOUND. `publish` reads only this job's *outputs*, not
@@ -63,10 +66,41 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned)
 
+      # Which code-signing certificates exist right now.
+      #
+      # This is an emptiness test on a secret, never a print of it: the value is
+      # mapped into the environment and only its presence is written to the
+      # outputs. The decision it feeds is "may this platform be published
+      # unsigned", and a platform that *could* be signed is always signed.
+      - name: Detect available signing material
+        id: signing
+        env:
+          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+          APPLE_SIGNING_CERT_P12: ${{ secrets.APPLE_SIGNING_CERT_P12 }}
+        run: |
+          set -euo pipefail
+          if [ -n "${WINDOWS_SIGNING_CERT_BASE64//[[:space:]]/}" ]; then
+            echo "windows=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "windows=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "${APPLE_SIGNING_CERT_P12//[[:space:]]/}" ]; then
+            echo "macos=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "macos=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Select platforms
         id: select
         env:
           REQUESTED_PLATFORMS: ${{ vars.RELEASE_DESKTOP_PLATFORMS }}
+          # Platforms that may be published without an operating-system code
+          # signature. Unset by default, and unset means "nothing unsigned may
+          # be published", so the default behaviour of this pipeline is
+          # unchanged.
+          ALLOW_UNSIGNED_PLATFORMS: ${{ vars.ALLOW_UNSIGNED_PLATFORMS }}
+          WINDOWS_CERT_PRESENT: ${{ steps.signing.outputs.windows }}
+          MACOS_CERT_PRESENT: ${{ steps.signing.outputs.macos }}
         run: node scripts/select-release-platforms.cjs
 
   # ─────────────────────────────────────────────────────────────────────────
@@ -177,6 +211,8 @@ jobs:
       timeout-minutes: 90
       rust-targets: x86_64-apple-darwin,aarch64-apple-darwin
       build-command: npx tauri build --target universal-apple-darwin
+      signing-mode: ${{ needs.plan.outputs.macos-signing }}
+      allow-unsigned-platforms: ${{ needs.plan.outputs.unsigned-platforms }}
       # Y-19: real Developer ID signing. This previously always built with
       # APPLE_SIGNING_IDENTITY resolved to "-", i.e. ad-hoc, and an ad-hoc
       # signature cannot pass spctl --assess -- so the signing-report gate
@@ -285,6 +321,12 @@ jobs:
       timeout-minutes: 90
       build-command: npx tauri build
       updater-shell: pwsh
+      # `signed` imports the Authenticode certificate and signs the artifacts.
+      # `unsigned` skips both and publishes them without an OS-level signature,
+      # which is only reachable when the platform was declared in
+      # vars.ALLOW_UNSIGNED_PLATFORMS (the plan job fails otherwise).
+      signing-mode: ${{ needs.plan.outputs.windows-signing }}
+      allow-unsigned-platforms: ${{ needs.plan.outputs.unsigned-platforms }}
       # Y-19: Authenticode. There was previously no signing step at all here, so
       # every published .exe/.msi reached users unsigned. Secret names match
       # docs/RELEASE_PLAN.md.
@@ -435,6 +477,27 @@ jobs:
           fi
           echo "Collected ${count} APK(s):"
           ls -la release-local/android/
+
+      # The Android `versionCode` travels with the artifacts.
+      #
+      # The Tauri CLI regenerates `tauri.properties` during the build, and it
+      # is the file that carries the versionCode Android uses to decide
+      # whether an APK may replace an installed one. The publish job checks the
+      # repository out fresh and does not have that file, so the value is
+      # recorded here, next to the APK it describes.
+      - name: Record the Android versionCode
+        run: |
+          set -euo pipefail
+          properties="src-tauri/gen/android/app/tauri.properties"
+          if [ ! -f "$properties" ]; then
+            echo "::warning::$properties was not generated; the update manifest will omit the versionCode."
+            exit 0
+          fi
+          version_name=$(grep '^tauri.android.versionName=' "$properties" | cut -d= -f2- | tr -d '\r' || true)
+          version_code=$(grep '^tauri.android.versionCode=' "$properties" | cut -d= -f2- | tr -d '\r' || true)
+          printf '{\n  "versionName": "%s",\n  "versionCode": %s\n}\n' \
+            "$version_name" "${version_code:-0}" > release-local/android/android-release.json
+          cat release-local/android/android-release.json
 
       - name: Upload Android release artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v5.0.0 (SHA-pinned)
@@ -738,6 +801,21 @@ jobs:
           path: release-local/sbom
 
       - name: Generate Tauri updater manifest (latest.json)
+        # RELEASE_TAG is the tag this release was created under. It is NOT
+        # necessarily `v${package.json version}`: package.json carries a 4-part
+        # version (7.0.25.0) and the tag check above accepts the trimmed form
+        # (v7.0.25). The manifest generator used to reconstruct the tag from the
+        # package version, so every download URL pointed at a release that does
+        # not exist -- v7.0.24.0 was published as v7.0.24, and the URLs 404'd
+        # while the manifest itself was served correctly.
+        #
+        # UNSIGNED_PLATFORMS records in the manifest which platforms are
+        # published without an operating-system code signature. The client
+        # reads it and tells the user what they are about to install; the
+        # updater itself ignores it.
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          UNSIGNED_PLATFORMS: ${{ needs.plan.outputs.unsigned-platforms }}
         run: node scripts/generate-updater-manifest.cjs
 
       # The safety net for partial releases, and deliberately independent of the
@@ -755,6 +833,12 @@ jobs:
       # Runs before the prune step, which deletes the per-platform metadata.json
       # this gate reads.
       - name: Re-verify collected artifacts before publishing
+        env:
+          # The same declaration the build jobs used. An undeclared platform
+          # still fails here, which is the point of running this check twice:
+          # once against the build output, once against what was actually
+          # downloaded.
+          ALLOW_UNSIGNED_PLATFORMS: ${{ needs.plan.outputs.unsigned-platforms }}
         run: |
           set -euo pipefail
           for platform in macos windows; do
@@ -762,7 +846,8 @@ jobs:
             if [ -d "$dir" ] && [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
               echo "::group::Re-verifying $platform artifacts"
               npm run desktop:release:signing:report -- \
-                --platform "$platform" --dir "$dir" --require-signed
+                --platform "$platform" --dir "$dir" --require-signed \
+                --allow-unsigned-platforms "$ALLOW_UNSIGNED_PLATFORMS"
               echo "::endgroup::"
             else
               echo "No $platform artifacts present - nothing to verify."
@@ -930,6 +1015,13 @@ jobs:
 
           link_alias 'KalderaShield-latest-linux-amd64.deb' 'KalderaShield-*-linux-amd64.deb'
           link_alias 'KalderaShield-latest-linux-x64.AppImage' 'KalderaShield-*-linux-x64.AppImage'
+          # Windows. The setup executable is the artifact the Tauri updater
+          # installs, so it is the one a user on the current version needs; the
+          # MSI is the alternative for an MSI install. Both carry their minisign
+          # signature next to them, which is what lets a user verify a download
+          # that carries no Authenticode signature.
+          link_alias 'KalderaShield-latest-windows-x64-setup.exe' 'KalderaShield-*-windows-x64-setup.exe'
+          link_alias 'KalderaShield-latest-windows-x64.msi' 'KalderaShield-*-windows-x64.msi'
           link_alias 'kalderashield-chrome-latest.zip' 'kalderashield-chrome-*.zip'
           link_alias 'kalderashield-edge-latest.zip' 'kalderashield-edge-*.zip'
           link_alias 'kalderashield-firefox-latest.xpi' 'kalderashield-firefox-*.xpi'
@@ -967,6 +1059,21 @@ jobs:
             echo 'KALDERASHIELD_ALIAS_EOF'
           } >> "$GITHUB_OUTPUT"
           echo "Handed ${#staged_files[@]} alias file(s) to the publish step."
+
+      - name: Generate Android update manifest (android-latest.json)
+        # The Android channel. The Tauri updater does not support Android, so
+        # this manifest is read by the app's own Android update module, which
+        # compares the announced version with the running one and opens the
+        # APK download when it is newer.
+        #
+        # The file name is version-less on purpose:
+        # `releases/latest/download/android-latest.json` resolves to the newest
+        # non-prerelease release, which is the same release the desktop updater
+        # is offered by. One release, two channels, no way for them to disagree
+        # about which version is current.
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/generate-android-update-manifest.cjs
 
       - name: Generate global SHA256SUMS.txt
         run: |
@@ -1079,6 +1186,7 @@ jobs:
             release-local/extensions/**
             release-local/sbom/**
             release-local/updater/latest.json
+            release-local/updater/android-latest.json
             release-local/SHA256SUMS.txt
             ${{ steps.alias.outputs.staged }}
 
@@ -1097,6 +1205,7 @@ jobs:
             release-local/extensions/**
             release-local/sbom/**
             release-local/updater/latest.json
+            release-local/updater/android-latest.json
             release-local/SHA256SUMS.txt
 
       - name: Publish updater manifest to backup endpoint (update.KalderaShield.xyz)
@@ -1156,6 +1265,8 @@ jobs:
           if scp -o BatchMode=yes -o StrictHostKeyChecking=yes \
             release-local/updater/latest.json \
             release-local/updater/latest.json.sigstore.json \
+            release-local/updater/android-latest.json \
+            release-local/updater/android-latest.json.sigstore.json \
             release-local/SHA256SUMS.txt \
             release-local/SHA256SUMS.txt.sigstore.json \
             "$CLEAN_HOST:pub/"; then

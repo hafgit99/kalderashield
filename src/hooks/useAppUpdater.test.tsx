@@ -6,6 +6,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAppUpdater } from './useAppUpdater';
 import * as updaterLib from '../lib/updater';
+import * as androidUpdateLib from '../lib/androidUpdate';
+import { isAndroidRuntime } from '../lib/environment';
 
 vi.mock('../lib/environment', () => ({
   isDesktopAppUpdaterSupported: vi.fn(() => true),
@@ -108,5 +110,66 @@ describe('useAppUpdater hook', () => {
     });
 
     expect(restartSpy).toHaveBeenCalled();
+  });
+
+  // The Tauri updater does not support Android, so the Android build has to
+  // use the sideload channel. Without this branch the settings card would
+  // report "desktop only" on the one platform where an update is most wanted.
+  it('uses the Android channel when running on Android', async () => {
+    vi.mocked(isAndroidRuntime).mockReturnValue(true);
+
+    const checkSpy = vi.spyOn(androidUpdateLib, 'checkAndroidUpdate').mockResolvedValueOnce({
+      supported: true,
+      hasUpdate: true,
+      updateInfo: {
+        version: '7.0.25',
+        publishedAt: '2026-11-13T00:00:00Z',
+        notes: 'Security release',
+        url: 'https://github.com/hafgit99/kalderashield/releases/download/v7.0.25/app.apk',
+      },
+    });
+
+    const { result } = renderHook(() => useAppUpdater());
+
+    await act(async () => {
+      await result.current.checkForUpdates();
+    });
+
+    expect(checkSpy).toHaveBeenCalledTimes(1);
+    expect(result.current.channel).toBe('android');
+    expect(result.current.status).toBe('available');
+    expect(result.current.updateInfo?.version).toBe('7.0.25');
+  });
+
+  it('opens the APK download instead of installing on Android', async () => {
+    vi.mocked(isAndroidRuntime).mockReturnValue(true);
+
+    const openSpy = vi
+      .spyOn(androidUpdateLib, 'openAndroidUpdate')
+      .mockResolvedValueOnce({ success: true });
+    vi.spyOn(androidUpdateLib, 'checkAndroidUpdate').mockResolvedValueOnce({
+      supported: true,
+      hasUpdate: true,
+      updateInfo: {
+        version: '7.0.25',
+        url: 'https://github.com/hafgit99/kalderashield/releases/download/v7.0.25/app.apk',
+      },
+    });
+
+    const { result } = renderHook(() => useAppUpdater());
+
+    await act(async () => {
+      await result.current.checkForUpdates();
+    });
+    await act(async () => {
+      await result.current.installUpdate();
+    });
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://github.com/hafgit99/kalderashield/releases/download/v7.0.25/app.apk',
+    );
+    // The install happens outside the app, so there is no downloaded state to
+    // restart from.
+    expect(result.current.status).toBe('available');
   });
 });
