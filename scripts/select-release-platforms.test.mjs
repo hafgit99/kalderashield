@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   readRepoReleaseConfig,
@@ -223,9 +224,14 @@ describe('release configuration sources', () => {
   it('ships a committed configuration that matches the documented release', () => {
     // The repository's own file, not a fixture: this is the configuration the
     // next release will actually use.
-    const config = readRepoReleaseConfig(
-      path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\//, '')), '..', 'release'),
-    );
+    //
+    // `fileURLToPath` and not `new URL(...).pathname`: on Linux the pathname
+    // starts with a slash, and stripping it by hand turns an absolute path
+    // into a relative one that resolves against the working directory. The
+    // test then reads a directory that does not exist and reports a missing
+    // configuration as if the file had never been committed.
+    const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const config = readRepoReleaseConfig(path.join(repoRoot, 'release'));
 
     expect(config.desktopPlatforms).toBe('windows');
     expect(config.allowUnsignedPlatforms).toBe('windows');
