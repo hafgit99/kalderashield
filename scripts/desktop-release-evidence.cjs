@@ -58,7 +58,13 @@ function resolveArtifactPath(artifact) {
   if (!artifact || typeof artifact.path !== 'string') {
     fail('Artifact entry is missing a path.');
   }
-  const fullPath = path.resolve(rootDir, artifact.path);
+  // Accept either separator. `metadata.json` is written on the machine that
+  // built the artifact and read on the machine that verifies it, and those can
+  // be different operating systems: a Windows build job writes
+  // `release-local\windows\...`, and on Linux the backslash is an ordinary
+  // filename character, so the path resolved outside the evidence directory.
+  const normalizedPath = artifact.path.replace(/\\/g, '/');
+  const fullPath = path.resolve(rootDir, normalizedPath);
   const relativeToEvidence = path.relative(evidenceDir, fullPath);
   if (relativeToEvidence.startsWith('..') || path.isAbsolute(relativeToEvidence)) {
     fail('Artifact path escapes evidence directory: ' + artifact.path);
