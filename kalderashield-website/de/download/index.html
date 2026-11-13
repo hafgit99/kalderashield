@@ -324,7 +324,7 @@ sh install.sh</code></pre>
   <section id="unavailable">
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-not-yet">Noch nicht veröffentlicht</span>
-      <p class="prose muted" data-i18n="dl-notice-platforms">Windows- und macOS-Pakete sind noch nicht veröffentlicht; die Gründe stehen unten.</p>
+      <p class="prose muted" data-i18n="dl-notice-platforms">Windows-Pakete werden unsigniert veröffentlicht. macOS wird aus den unten genannten Gründen noch nicht veröffentlicht.</p>
 
       <div class="grid grid-2 soon-grid" style="margin-top:1.5rem">
         <article class="card soon" id="windows">
@@ -332,11 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 64-Bit und höher</p>
           <p data-i18n="dl-c1-desc">Tauri-basierter MSI-Installer oder eigenständige portable EXE-Datei.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Unsignierte Vorschau — veröffentlicht</strong></p>
-            <p data-i18n="win-store-desc"><strong>Diese Dateien sind nicht signiert.</strong> Windows SmartScreen zeigt "Der PC ist geschützt", und Sie müssen auf "Weitere Informationen" → "Trotzdem ausführen" klicken, um das Installationsprogramm zu starten. Das ist erwartet und bedeutet nicht, dass die Datei Schadsoftware ist. Prüfen Sie vor dem Start die SHA-256-Prüfsumme gegen SHA256SUMS.txt. Dies ist eine <em>Vorabversion</em>: kein stabiles Release, und <code>latest</code> zeigt nicht darauf. Warum unsigniert: Die Release-Pipeline behandelt ein unsigniertes Desktop-Release als Fehler, es gibt also noch kein Zertifikat zum Signieren. Eine Bewerbung beim SignPath Foundation ist vorbereitet, aber noch nicht eingereicht. Sobald Signieren möglich ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.</p>
+            <p><strong data-i18n="win-store-title">Windows — veröffentlicht, unsigniert</strong></p>
+            <p data-i18n="win-store-desc"><strong>Diese Dateien sind nicht signiert.</strong> Windows SmartScreen zeigt „Windows hat Ihren PC geschützt“ und Sie müssen auf „Weitere Informationen“ → „Trotzdem ausführen“ klicken, um das Installationsprogramm auszuführen. Das ist zu erwarten und bedeutet nicht, dass die Datei schädlich ist. Prüfen Sie vor dem Ausführen den SHA-256-Wert gegen SHA256SUMS.txt. Der Windows-Build erscheint in derselben Version wie die anderen Plattformen; deshalb bietet ihn der integrierte Updater an und <code>latest</code> verweist darauf. Es fehlt allein ein Code-Signaturzertifikat. Sobald eines verfügbar ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.</p>
           </div>
-          <p class="pick-req" data-i18n="win-preview-assets">NSIS-Installationsprogramm (.exe), MSI-Paket und portable EXE — alle unsigniert.</p>
-          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">Unsignierte Vorschau von GitHub Releases herunterladen</a></p>
+          <p class="pick-req" data-i18n="win-preview-assets">NSIS-Installer (.exe), MSI-Paket und portable EXE — alle unsigniert.</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">Unsignierten Windows-Build von GitHub Releases herunterladen</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/de/code-signing-policy.html" data-i18n="dl-csp-link">Richtlinie zur Code-Signierung</a></p>
         </article>
 

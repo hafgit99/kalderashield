@@ -324,7 +324,7 @@ sh install.sh</code></pre>
   <section id="unavailable">
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-not-yet">Todavía no publicado</span>
-      <p class="prose muted" data-i18n="dl-notice-platforms">Los paquetes de Windows y macOS aún no se publican, por las razones indicadas abajo.</p>
+      <p class="prose muted" data-i18n="dl-notice-platforms">Los paquetes de Windows se publican sin firma. macOS aún no se publica, por los motivos que se explican abajo.</p>
 
       <div class="grid grid-2 soon-grid" style="margin-top:1.5rem">
         <article class="card soon" id="windows">
@@ -332,11 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 de 64 bits y posterior</p>
           <p data-i18n="dl-c1-desc">Instalador MSI optimizado basado en Tauri o ejecutable portable independiente.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">Vista previa sin firmar — publicada</strong></p>
-            <p data-i18n="win-store-desc"><strong>Estos archivos no están firmados.</strong> Windows SmartScreen mostrará "Tu PC está protegido" y tendrás que hacer clic en "Más información" → "Ejecutar de todas formas" para ejecutar el instalador. Es lo esperado y no significa que el archivo sea malware. Verifica el resumen SHA-256 en SHA256SUMS.txt antes de ejecutarlo. Esta es una <em>versión preliminar</em>: no es una versión estable, y <code>latest</code> no apunta a ella. Por qué sin firmar: la cadena de publicación trata una versión de escritorio sin firmar como un fallo, así que todavía no hay certificado con el que firmar. Se ha preparado una solicitud al programa de SignPath Foundation pero no se ha enviado. Cuando la firma esté disponible, las siguientes versiones de Windows irán firmadas y este aviso se eliminará.</p>
+            <p><strong data-i18n="win-store-title">Windows — publicado, sin firma</strong></p>
+            <p data-i18n="win-store-desc"><strong>Estos archivos no están firmados.</strong> Windows SmartScreen mostrará «Windows protegió tu PC» y tendrás que hacer clic en «Más información» → «Ejecutar de todos modos» para ejecutar el instalador. Es lo esperado y no significa que el archivo sea malicioso. Verifica el resumen SHA-256 con SHA256SUMS.txt antes de ejecutarlo. La compilación de Windows se publica en la misma versión que las demás plataformas, así que el actualizador de la propia aplicación la ofrece y <code>latest</code> apunta a ella; lo que falta es un certificado de firma de código. Cuando haya uno, las siguientes versiones de Windows se firmarán y este aviso se eliminará.</p>
           </div>
-          <p class="pick-req" data-i18n="win-preview-assets">Instalador NSIS (.exe), paquete MSI y EXE portátil: los tres sin firmar.</p>
-          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">Descargar la vista previa sin firmar desde GitHub Releases</a></p>
+          <p class="pick-req" data-i18n="win-preview-assets">Instalador NSIS (.exe), paquete MSI y EXE portátil — todos sin firma.</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">Descargar la compilación de Windows sin firma desde GitHub Releases</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/es/code-signing-policy.html" data-i18n="dl-csp-link">Política de firma de código</a></p>
         </article>
 
