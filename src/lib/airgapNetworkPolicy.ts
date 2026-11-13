@@ -9,6 +9,26 @@ const HIBP_RANGE_ORIGIN = 'https://api.pwnedpasswords.com';
 const HIBP_RANGE_PATH_PATTERN = /^\/range\/[0-9A-Fa-f]{5}$/;
 
 /**
+ * The Android update manifest.
+ *
+ * The Tauri updater does not support Android (`updater_os()` returns `None`),
+ * so the Android build reads its own manifest with `fetch()` from the webview --
+ * and the air-gap policy blocks every webview request that is not explicitly
+ * allowed. Without this exemption the check fails with a `network.blocked`
+ * *critical* security event on every run, which is both a false alarm and a
+ * dead update channel.
+ *
+ * The exemption is as narrow as the HIBP one, and for the same reason: the URL
+ * is fixed, public, read-only and version-less. It is an exact path with no
+ * query string, so it cannot be bent into a general-purpose request to
+ * `github.com`. The download itself does not go through the webview at all --
+ * it opens the system browser -- so nothing else needs to be allowed.
+ */
+const UPDATE_MANIFEST_ORIGIN = 'https://github.com';
+const UPDATE_MANIFEST_PATH =
+  '/hafgit99/kalderashield/releases/latest/download/android-latest.json';
+
+/**
  * Runtime-managed set of HTTPS origins approved for E2EE sync providers.
  * Origins are added when a user configures WebDAV (or similar) and removed
  * when they disable sync. Only HTTPS origins are ever stored here.
@@ -147,6 +167,14 @@ export function isNetworkUrlAllowed(input: string | URL): boolean {
   if (typeof location !== 'undefined' && url.origin === location.origin) return true;
 
   if (url.origin === HIBP_RANGE_ORIGIN && HIBP_RANGE_PATH_PATTERN.test(url.pathname) && url.search === '') return true;
+
+  // The Android update manifest: one exact path, no query string. See the
+  // comment on the constants above for why this exemption exists at all.
+  if (
+    url.origin === UPDATE_MANIFEST_ORIGIN
+    && url.pathname === UPDATE_MANIFEST_PATH
+    && url.search === ''
+  ) return true;
 
   // E2EE sync provider origins, user-approved at configuration time
   if (syncAllowedOrigins.has(url.origin)) return true;

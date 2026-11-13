@@ -4,6 +4,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { assertNetworkUrlAllowed, isNetworkUrlAllowed } from './airgapNetworkPolicy';
+import { ANDROID_UPDATE_MANIFEST_URL } from './androidUpdate';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -28,6 +29,23 @@ describe('air-gap network policy', () => {
     expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6/extra')).toBe(false);
     expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6?mode=ntlm')).toBe(false);
     expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/ZZZZZ')).toBe(false);
+  });
+
+  // The Android update channel reads its manifest with fetch(), and the
+  // air-gap policy blocks every webview request that is not allowed. Without
+  // this exemption the check produced a *critical* network.blocked event on
+  // every run and the channel was dead.
+  it('allows the Android update manifest and nothing else on that host', () => {
+    expect(isNetworkUrlAllowed(ANDROID_UPDATE_MANIFEST_URL)).toBe(true);
+
+    // The exemption is one exact path. It must not become a way to reach
+    // github.com in general, which is the difference between "the updater may
+    // read its manifest" and "the renderer may talk to GitHub".
+    expect(isNetworkUrlAllowed('https://github.com/hafgit99/kalderashield')).toBe(false);
+    expect(isNetworkUrlAllowed('https://github.com/hafgit99/other-project/releases/latest/download/android-latest.json')).toBe(false);
+    expect(isNetworkUrlAllowed(`${ANDROID_UPDATE_MANIFEST_URL}?redirect=1`)).toBe(false);
+    expect(isNetworkUrlAllowed('https://api.github.com/hafgit99/kalderashield/releases/latest')).toBe(false);
+    expect(isNetworkUrlAllowed('http://github.com/hafgit99/kalderashield/releases/latest/download/android-latest.json')).toBe(false);
   });
 
   it('blocks arbitrary outbound network requests without leaking full paths', () => {
