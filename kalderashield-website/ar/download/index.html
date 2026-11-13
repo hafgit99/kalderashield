@@ -324,7 +324,7 @@ sh install.sh</code></pre>
   <section id="unavailable">
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-not-yet">لم يُنشر بعد</span>
-      <p class="prose muted" data-i18n="dl-notice-platforms">حزمتي Windows و macOS لم تُنشر بعد، للأسباب الموضحة أدناه.</p>
+      <p class="prose muted" data-i18n="dl-notice-platforms">تُنشر حزم Windows دون توقيع. أما macOS فلم يُنشر بعد للأسباب الموضحة أدناه.</p>
 
       <div class="grid grid-2 soon-grid" style="margin-top:1.5rem">
         <article class="card soon" id="windows">
@@ -332,11 +332,11 @@ sh install.sh</code></pre>
           <p class="pick-req" data-i18n="win-req">Windows 10 بإصدار 64 بت فما فوق</p>
           <p data-i18n="dl-c1-desc">مثبت MSI أصلي ومحسن مبني على Tauri أو نسخة محمولة EXE.</p>
           <div class="notice">
-            <p><strong data-i18n="win-store-title">إعاينة غير موقَّعة — منشورة</strong></p>
-            <p data-i18n="win-store-desc"><strong>هذه الملفات غير موقَّعة.</strong> سيعرض Windows SmartScreen رسالة «حماية جهازك» وستحتاج إلى النقر على «مزيد من المعلومات» ← «تشغيل على أي حال» لتشغيل المُثبِّت. هذا متوقّع ولا يعني أن الملف برمجية ضارة. تحقّق من بصمة SHA-256 في SHA256SUMS.txt قبل تشغيله. هذه <em>إصدار مبكر</em>: ليست نسخة مستقرة، و<code>latest</code> لا يشير إليها. لماذا غير موقّع: فسلسلة الإصدار تعتبر إصدار سطح مكتب غير موقّع خطأً، لذا لا يوجد حتى الآن شهادة للتوقيع بها. أُعدّ طلب إلى برنامج SignPath Foundation لكنه لم يُقدَّم بعد. وبمجرد توفر التوقيع ستُوقَّع إصدارات Windows اللاحقة وسيُحذف هذا التحذير.</p>
+            <p><strong data-i18n="win-store-title">Windows — منشور، غير موقّع</strong></p>
+            <p data-i18n="win-store-desc"><strong>هذه الملفات غير موقّعة.</strong> سيعرض Windows SmartScreen رسالة «قام Windows بحماية الكمبيوتر»، وستحتاج إلى النقر على «مزيد من المعلومات» ← «التشغيل على أي حال» لتشغيل المثبّت. هذا متوقع ولا يعني أن الملف ضار. تحقّق من تجزئة SHA-256 مقابل SHA256SUMS.txt قبل التشغيل. تُنشر نسخة Windows في الإصدار نفسه الذي تُنشر فيه بقية المنصات، لذا يعرضها محدّث التطبيق وتشير إليها <code>latest</code>؛ ما ينقص هو شهادة توقيع الكود. وعند توفّرها ستُوقَّع إصدارات Windows التالية وتُزال هذه الملاحظة.</p>
           </div>
-          <p class="pick-req" data-i18n="win-preview-assets">مُثبِّت NSIS (.exe) وحزمة MSI وملف EXE المحمول — جميعها غير موقَّعة.</p>
-          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">نزّل الإعاينة غير الموقّعة من GitHub Releases</a></p>
+          <p class="pick-req" data-i18n="win-preview-assets">مثبّت NSIS ‏(.exe) وحزمة MSI ونسخة EXE محمولة — كلها غير موقّعة.</p>
+          <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">نزّل نسخة Windows غير الموقّعة من GitHub Releases</a></p>
           <p class="card-action"><a class="btn btn-ghost" href="/ar/code-signing-policy.html" data-i18n="dl-csp-link">سياسة توقيع الشيفرة</a></p>
         </article>
 
