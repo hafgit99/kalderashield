@@ -27,6 +27,7 @@ export function SettingsUpdateCard() {
   const {
     status,
     supported,
+    channel,
     updateInfo,
     progress,
     errorMessage,
@@ -37,6 +38,11 @@ export function SettingsUpdateCard() {
   } = useAppUpdater();
 
   const displayErrorMessage = errorKey ? t(errorKey as Parameters<typeof t>[0]) : errorMessage;
+
+  // Android cannot install an update from inside the app: the Tauri updater
+  // does not support it, so the action opens the APK in the browser and the
+  // user confirms the installation.
+  const isAndroid = channel === 'android';
 
   useEffect(() => {
     let mounted = true;
@@ -138,6 +144,23 @@ export function SettingsUpdateCard() {
             </div>
           )}
 
+          {/* Unsigned build notice.
+              The payload is verified by the client either way (the Tauri
+              minisign signature is checked against the public key before
+              installation); what is missing is publisher identity at the
+              operating-system level, which is what SmartScreen and Gatekeeper
+              look for. Saying so here is cheaper than letting the user meet
+              it as a warning dialog in the middle of an install. */}
+          {status === 'available' && updateInfo?.isUnsignedBuild && (
+            <div
+              data-testid="update-unsigned-notice"
+              className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] text-amber-300"
+            >
+              <AlertCircle className="mt-0.5 w-3.5 h-3.5 shrink-0" />
+              <span>{t('settings.updates.unsignedNotice')}</span>
+            </div>
+          )}
+
           {/* Download progress bar */}
           {status === 'downloading' && (
             <div className="space-y-1.5 pt-1" data-testid="download-progress-container">
@@ -164,7 +187,11 @@ export function SettingsUpdateCard() {
               className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-xs font-bold text-brand-on-primary transition-all hover:opacity-90 cursor-pointer shadow-lg shadow-brand-primary/20"
             >
               <Download className="w-4 h-4" />
-              <span>{t('settings.updates.downloadAndInstall')}</span>
+              <span>
+                {isAndroid
+                  ? t('settings.updates.downloadApk')
+                  : t('settings.updates.downloadAndInstall')}
+              </span>
             </button>
           ) : status === 'downloaded' ? (
             <button

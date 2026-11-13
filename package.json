@@ -76,6 +76,7 @@
     "release:checksums": "node scripts/generate-checksums.cjs",
     "release:collect": "node scripts/collect-release-artifacts.cjs",
     "release:updater:manifest": "node scripts/generate-updater-manifest.cjs",
+    "release:android:manifest": "node scripts/generate-android-update-manifest.cjs",
     "build:extension": "node scripts/build-extension.js",
     "build:extension:debug": "node scripts/build-extension.js --debug",
     "package:chrome:zip": "node scripts/chrome-zip.cjs",

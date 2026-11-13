@@ -24,6 +24,7 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
     downloadProgress,
     isReadyToRestart,
     errorMessage,
+    channel,
     dismissBanner,
     applyUpdate,
     restartNow,
@@ -32,6 +33,10 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
   if (!isVisible || !updateInfo) {
     return null;
   }
+
+  // On Android the updater cannot install anything: the action opens the APK
+  // in the browser and the user confirms the installation.
+  const isAndroid = channel === 'android';
 
   return (
     <div
@@ -67,6 +72,22 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
                 ? t('settings.updates.readyToRestart')
                 : t('update.banner.availableDesc', { version: updateInfo.version })}
           </p>
+          {updateInfo.isUnsignedBuild && (
+            <p
+              data-testid="update-unsigned-notice"
+              className="text-[11px] text-amber-400/90 mt-1"
+            >
+              {t('update.banner.unsignedNotice')}
+            </p>
+          )}
+          {isAndroid && (
+            <p
+              data-testid="update-android-notice"
+              className="text-[11px] text-on-surface-variant/80 mt-1"
+            >
+              {t('update.banner.androidNotice')}
+            </p>
+          )}
           {errorMessage && (
             <p className="text-[11px] text-red-400 mt-1 font-semibold">{errorMessage}</p>
           )}
@@ -104,7 +125,7 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
               onClick={() => void applyUpdate()}
               className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-brand-primary text-surface-lowest hover:bg-brand-primary/90 transition-all cursor-pointer shadow-sm"
             >
-              {t('update.banner.updateNow')}
+              {isAndroid ? t('update.banner.downloadApk') : t('update.banner.updateNow')}
             </button>
             <button
               type="button"

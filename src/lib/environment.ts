@@ -37,6 +37,30 @@ export function isDesktopAppUpdaterSupported(): boolean {
 }
 
 /**
+ * The desktop platform slug used by the release updater manifest
+ * (`linux`, `windows`, `darwin`), or `null` when the runtime is not a
+ * desktop.
+ *
+ * This mirrors the naming the updater manifest uses for its platform keys
+ * (`windows-x86_64`, `linux-x86_64`, `darwin-aarch64`). The manifest's
+ * `unsigned_platforms` array names the platforms in that same vocabulary, so
+ * the two have to agree on the spelling: `macos` in the release scripts and
+ * `darwin` in the manifest are different words for the same platform, and the
+ * comparison is the one place where that matters.
+ */
+export function currentUpdatePlatform(): 'windows' | 'macos' | 'linux' | null {
+  if (typeof window === 'undefined') return null;
+  if (!isDesktopRuntime()) return null;
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  // Android is a Linux user agent, but it is not a desktop updater target.
+  if (/Android/i.test(ua)) return null;
+  if (/Windows/i.test(ua)) return 'windows';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'macos';
+  if (/Linux|X11/i.test(ua)) return 'linux';
+  return null;
+}
+
+/**
  * `true` inside jsdom / happy-dom unit test environments.
  * Used to skip real timers (e.g. `maybeDelay`) during tests.
  */

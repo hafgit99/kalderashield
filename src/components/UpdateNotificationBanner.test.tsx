@@ -21,6 +21,7 @@ const mockAutoUpdate: UseAutoUpdateCheckResult = {
   downloadProgress: 0,
   isReadyToRestart: false,
   errorMessage: null,
+  channel: 'desktop',
   dismissBanner: vi.fn(),
   applyUpdate: vi.fn().mockResolvedValue(undefined),
   restartNow: vi.fn().mockResolvedValue(undefined),
@@ -96,5 +97,43 @@ describe('UpdateNotificationBanner', () => {
     expect(restartBtn).toBeTruthy();
     fireEvent.click(restartBtn);
     expect(mockAutoUpdate.restartNow).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers the APK download on Android instead of an in-app install', () => {
+    // The Tauri updater does not support Android, so the action hands the
+    // download to the browser. The button must say so: "Update Now" would
+    // promise an install the app cannot perform.
+    render(
+      <LanguageProvider>
+        <UpdateNotificationBanner
+          autoUpdate={{
+            ...mockAutoUpdate,
+            channel: 'android',
+          }}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByTestId('banner-update-now-button').textContent).toContain('APK');
+    expect(screen.getByTestId('update-android-notice')).toBeTruthy();
+  });
+
+  it('states that the offered build is not OS-signed', () => {
+    render(
+      <LanguageProvider>
+        <UpdateNotificationBanner
+          autoUpdate={{
+            ...mockAutoUpdate,
+            updateInfo: {
+              ...mockAutoUpdate.updateInfo!,
+              isUnsignedBuild: true,
+              unsignedPlatforms: ['windows'],
+            },
+          }}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByTestId('update-unsigned-notice')).toBeTruthy();
   });
 });

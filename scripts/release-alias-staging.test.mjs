@@ -44,6 +44,12 @@ const FIXTURE_FILES = [
   'linux/KalderaShield-7.0.13.0-linux-amd64.deb.sig',
   'linux/KalderaShield-7.0.13.0-linux-x64.AppImage',
   'linux/KalderaShield-7.0.13.0-linux-x64.AppImage.sig',
+  // Windows: the updater payload (the NSIS installer) and the MSI, each with
+  // the Tauri minisign signature and no cosign bundle.
+  'windows/KalderaShield-7.0.13.0-windows-x64-setup.exe',
+  'windows/KalderaShield-7.0.13.0-windows-x64-setup.exe.sig',
+  'windows/KalderaShield-7.0.13.0-windows-x64.msi',
+  'windows/KalderaShield-7.0.13.0-windows-x64.msi.sig',
   // Android and the extensions: cosign-signed, the opposite pairing.
   'android/app-universal-universal-release.apk',
   'android/app-universal-universal-release.apk.sigstore.json',
@@ -66,6 +72,10 @@ const EXPECTED_STAGED = [
   'release-local/KalderaShield-latest-linux-amd64.deb.sig',
   'release-local/KalderaShield-latest-linux-x64.AppImage',
   'release-local/KalderaShield-latest-linux-x64.AppImage.sig',
+  'release-local/KalderaShield-latest-windows-x64-setup.exe',
+  'release-local/KalderaShield-latest-windows-x64-setup.exe.sig',
+  'release-local/KalderaShield-latest-windows-x64.msi',
+  'release-local/KalderaShield-latest-windows-x64.msi.sig',
   'release-local/kalderashield-chrome-latest.zip',
   'release-local/kalderashield-chrome-latest.zip.sigstore.json',
   'release-local/kalderashield-edge-latest.zip',
@@ -189,11 +199,11 @@ describe('release alias staging', () => {
     // The v7.0.13.0 failure. Reaching this line at all is the assertion: the
     // script used to exit 1 right after the first `aliased` line.
     expect(stdout).toContain('KalderaShield-latest-linux-amd64.deb');
-    expect(stdout).toContain('Staged 7 version-less alias(es).');
+    expect(stdout).toContain('Staged 9 version-less alias(es).');
   });
 
   it('stages every alias the site links to', () => {
-    expect((stdout.match(/^aliased /gm) || [])).toHaveLength(7);
+    expect((stdout.match(/^aliased /gm) || [])).toHaveLength(9);
   });
 
   it('hands publish exactly the staged files and their signatures', () => {
