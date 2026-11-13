@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "利用者に影響する第三者コンポーネントの挙動は LICENSE-3RD-PARTY.md に記載されています。",
   "win-preview-link": "GitHub Releases から未署名プレビューをダウンロード",
   "win-preview-assets": "NSIS インストーラー (.exe)、MSI パッケージ、ポータブル EXE — いずれも未署名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "このブラウザは video タグに対応していません。",
   "promo-video-fallback-link": "ビデオをダウンロード",
   "privacy-p1-2b": "保管庫の内容がサーバーへ送信されることはありません。パスワードから導出され、端末の外へ出る可能性があるデータは、任意の「既知の漏洩チェック」だけであり、あなたが有効化しない限りオフのままです（第5節で説明します）。",
