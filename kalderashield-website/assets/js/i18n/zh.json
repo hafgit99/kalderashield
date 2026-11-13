@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "影响用户的第三方组件行为记录在 LICENSE-3RD-PARTY.md 中。",
   "win-preview-link": "从 GitHub Releases 下载未签名预览版",
   "win-preview-assets": "NSIS 安装程序（.exe）、MSI 包和便携版 EXE — 三者均未签名。",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "您的浏览器不支持 video 标签。",
   "promo-video-fallback-link": "下载视频",
   "privacy-p1-2b": "您的密码库内容不会传输到任何服务器。唯一可能离开设备的、由密码派生出的数据，是可选的已知泄露检查；除非您主动启用，否则它保持关闭，详见第5节。",

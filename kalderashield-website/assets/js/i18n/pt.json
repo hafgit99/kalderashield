@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "O comportamento de componentes de terceiros que afeta os utilizadores está coberto por LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Transferir a pré-visualização sem assinatura do GitHub Releases",
   "win-preview-assets": "Instalador NSIS (.exe), pacote MSI e EXE portátil — todos sem assinatura.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "Seu navegador não suporta a tag de vídeo.",
   "promo-video-fallback-link": "Baixar o vídeo",
   "privacy-p1-2b": "Nada do seu cofre é transmitido a qualquer servidor. O único dado derivado das suas palavras-passe que pode sair do dispositivo é a verificação opcional de fugas conhecidas, que fica desativada a não ser que a ative, e que está descrita na secção 5.",
