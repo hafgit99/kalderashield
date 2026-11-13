@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "Le comportement des composants tiers qui affecte les utilisateurs est couvert par LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Télécharger l'aperçu non signé depuis GitHub Releases",
   "win-preview-assets": "Installeur NSIS (.exe), paquet MSI et EXE portable — tous non signés.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "Votre navigateur ne prend pas en charge la balise vidéo.",
   "promo-video-fallback-link": "Télécharger la vidéo",
   "privacy-p1-2b": "Aucune donnée de votre coffre n’est transmise à un serveur. Les seules données dérivées de vos mots de passe susceptibles de quitter l’appareil sont la vérification facultative des fuites connues, qui reste désactivée sauf si vous l’activez, et qui est décrite à la section 5.",

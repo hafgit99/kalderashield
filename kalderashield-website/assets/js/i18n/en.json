@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "The behaviour of third-party components that affects users is covered by LICENSE-3RD-PARTY.md.",
   "win-preview-link": "Download the unsigned preview from GitHub Releases",
   "win-preview-assets": "NSIS installer (.exe), MSI package and portable EXE — all unsigned.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "Your browser does not support the video tag.",
   "promo-video-fallback-link": "Download the video",
   "privacy-p1-2b": "Nothing in your vault is transmitted to any server. The only data derived from your passwords that can leave the device is the optional breach check, which stays off unless you turn it on and is described in section 5.",

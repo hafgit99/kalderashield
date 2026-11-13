@@ -1407,7 +1407,7 @@
   "csp-p1-19-tail": "Das Verhalten Dritter, das Nutzer betrifft, ist in LICENSE-3RD-PARTY.md geregelt.",
   "win-preview-link": "Unsignierte Vorschau von GitHub Releases herunterladen",
   "win-preview-assets": "NSIS-Installationsprogramm (.exe), MSI-Paket und portable EXE — alle unsigniert.",
-  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/tag/v7.0.24-unsigned-preview",
+  "win-preview-url": "https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe",
   "promo-video-fallback": "Ihr Browser unterstützt das Video-Tag nicht.",
   "promo-video-fallback-link": "Video herunterladen",
   "privacy-p1-2b": "Aus Ihrem Tresor wird nichts an einen Server übertragen. Die einzigen aus Ihren Passwörtern abgeleiteten Daten, die das Gerät verlassen können, sind die optionale Prüfung auf bekannte Leaks; sie bleibt aus, sofern Sie sie nicht einschalten, und wird in Abschnitt 5 beschrieben.",
