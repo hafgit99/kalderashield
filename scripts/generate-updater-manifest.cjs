@@ -10,6 +10,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { readChangelogSection } = require('./lib/changelog.cjs');
+
 const rootDir = path.resolve(__dirname, '..');
 const packageJson = require(path.join(rootDir, 'package.json'));
 // Overridable so the tests can point the generator at a scratch directory.
@@ -155,9 +157,16 @@ function generateManifest() {
   fs.mkdirSync(updaterOutputDir, { recursive: true });
 
   // Load release notes if available
+  // The app shows this under "What's new", so it comes from CHANGELOG.md --
+  // the document that answers "what changed" -- and only falls back to the
+  // generated release notes (a packaging artefact: version, platform,
+  // checksums) when the changelog has no section for this version.
   let releaseNotes = `KalderaShield ${version} Release`;
+  const changelogNotes = readChangelogSection(version);
   const releaseNotesPath = path.join(releaseLocalDir, 'windows', 'RELEASE_NOTES.md');
-  if (fs.existsSync(releaseNotesPath)) {
+  if (changelogNotes) {
+    releaseNotes = changelogNotes;
+  } else if (fs.existsSync(releaseNotesPath)) {
     try {
       releaseNotes = fs.readFileSync(releaseNotesPath, 'utf8').trim();
     } catch (_) {}

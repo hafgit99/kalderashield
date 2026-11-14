@@ -28,6 +28,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const { readChangelogSection } = require('./lib/changelog.cjs');
+
 const rootDir = path.resolve(__dirname, '..');
 const packageJson = require(path.join(rootDir, 'package.json'));
 const tauriConfig = JSON.parse(
@@ -113,6 +115,12 @@ function readVersionCode() {
 }
 
 function readNotes() {
+  // What the app shows under "What's new": the changelog section for this
+  // release. The generated RELEASE-NOTES.md is a packaging artefact and is only
+  // the fallback.
+  const fromChangelog = readChangelogSection(version);
+  if (fromChangelog) return fromChangelog;
+
   const notesPath = path.join(androidDir, 'RELEASE-NOTES.md');
   if (!fs.existsSync(notesPath)) return `KalderaShield ${version}`;
   try {
