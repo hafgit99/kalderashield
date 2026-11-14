@@ -83,15 +83,13 @@ fn tls_config() -> Result<rustls::ClientConfig, String> {
     let mut roots = rustls::RootCertStore::empty();
     roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
-    Ok(
-        rustls::ClientConfig::builder_with_provider(Arc::new(
-            rustls::crypto::ring::default_provider(),
-        ))
-        .with_safe_default_protocol_versions()
-        .map_err(|error| format!("failed to build the TLS configuration: {error}"))?
-        .with_root_certificates(roots)
-        .with_no_client_auth(),
-    )
+    Ok(rustls::ClientConfig::builder_with_provider(Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .map_err(|error| format!("failed to build the TLS configuration: {error}"))?
+    .with_root_certificates(roots)
+    .with_no_client_auth())
 }
 
 /// Fetches the Android update manifest and returns it as text.
@@ -142,8 +140,7 @@ pub async fn fetch_android_update_manifest() -> Result<String, String> {
         return Err("update manifest is larger than expected.".to_string());
     }
 
-    String::from_utf8(body.into())
-        .map_err(|_| "update manifest is not valid UTF-8.".to_string())
+    String::from_utf8(body.into()).map_err(|_| "update manifest is not valid UTF-8.".to_string())
 }
 
 #[cfg(test)]
@@ -170,7 +167,9 @@ mod tests {
         assert!(!is_release_host(&url("http://github.com/x")));
         assert!(!is_release_host(&url("https://example.com/x")));
         // A lookalike suffix is not a subdomain: the dot is what makes it one.
-        assert!(!is_release_host(&url("https://evilgithubusercontent.com/x")));
+        assert!(!is_release_host(&url(
+            "https://evilgithubusercontent.com/x"
+        )));
         assert!(!is_release_host(&url("https://github.com.evil.example/x")));
         // The bare apex serves no assets and is not accepted.
         assert!(!is_release_host(&url("https://githubusercontent.com/x")));
