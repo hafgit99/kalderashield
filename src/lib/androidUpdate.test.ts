@@ -8,22 +8,37 @@
  * to hand the download to the system browser rather than pretending to install
  * anything.
  *
+ * The manifest itself is fetched by the Rust command, so these tests mock
+ * `invoke` and check what the channel does with its answer -- including the
+ * answer "the request failed", which must never be mistaken for "up to date".
+ *
  * @vitest-environment jsdom
  * @license Apache-2.0
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ANDROID_UPDATE_MANIFEST_URL,
-  checkAndroidUpdate,
-  compareVersions,
-  openAndroidUpdate,
-} from './androidUpdate';
+import { checkAndroidUpdate, compareVersions, openAndroidUpdate } from './androidUpdate';
 import { getVersion } from '@tauri-apps/api/app';
+import { invoke } from '@tauri-apps/api/core';
 
 vi.mock('@tauri-apps/api/app', () => ({
   getVersion: vi.fn(),
 }));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
+
+const MANIFEST = {
+  version: '7.0.25',
+  publishedAt: '2026-11-13T00:00:00Z',
+  notes: 'Security release',
+  apk: {
+    url: 'https://github.com/hafgit99/kalderashield/releases/download/v7.0.25/app-universal-universal-release.apk',
+    sha256: 'a'.repeat(64),
+    size: 42,
+  },
+};
 
 function setUserAgent(userAgent: string): void {
   Object.defineProperty(navigator, 'userAgent', {
@@ -32,34 +47,12 @@ function setUserAgent(userAgent: string): void {
   });
 }
 
-function manifestResponse(payload: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => payload,
-  } as unknown as Response;
-}
-
 describe('androidUpdate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile');
     vi.mocked(getVersion).mockResolvedValue('7.0.24');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        manifestResponse({
-          version: '7.0.25',
-          publishedAt: '2026-11-13T00:00:00Z',
-          notes: 'Security release',
-          apk: {
-            url: 'https://github.com/hafgit99/kalderashield/releases/download/v7.0.25/app-universal-universal-release.apk',
-            sha256: 'a'.repeat(64),
-            size: 42,
-          },
-        }),
-      ),
-    );
+    vi.mocked(invoke).mockResolvedValue(JSON.stringify(MANIFEST));
   });
 
   afterEach(() => {
@@ -87,7 +80,7 @@ describe('androidUpdate', () => {
       setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
 
       await expect(checkAndroidUpdate()).resolves.toEqual({ supported: false, hasUpdate: false });
-      expect(fetch).not.toHaveBeenCalled();
+      expect(invoke).not.toHaveBeenCalled();
     });
 
     it('reports an available update', async () => {
@@ -101,8 +94,8 @@ describe('androidUpdate', () => {
     });
 
     it('reports no update when the release is not newer', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(
-        manifestResponse({
+      vi.mocked(invoke).mockResolvedValueOnce(
+        JSON.stringify({
           version: '7.0.24',
           apk: { url: 'https://github.com/hafgit99/kalderashield/releases/download/v7.0.24/app.apk' },
         }),
@@ -125,7 +118,9 @@ describe('androidUpdate', () => {
     it('surfaces a failing manifest request instead of pretending there is no update', async () => {
       // Silence would be indistinguishable from "you are up to date", and the
       // user would never learn that a newer version exists.
-      vi.mocked(fetch).mockResolvedValueOnce(manifestResponse({}, 404));
+      vi.mocked(invoke).mockRejectedValueOnce(
+        'update manifest request failed with HTTP 404 Not Found.',
+      );
 
       const result = await checkAndroidUpdate();
 
@@ -133,8 +128,21 @@ describe('androidUpdate', () => {
       expect(result.error).toMatch(/404/);
     });
 
+    it('surfaces a transport failure from the Rust command', async () => {
+      // This is the shape of the error the old webview `fetch` produced
+      // ("Failed to fetch"); it must reach the user as a failed check.
+      vi.mocked(invoke).mockRejectedValueOnce(
+        'update manifest request failed: error sending request for url (https://github.com/…)',
+      );
+
+      const result = await checkAndroidUpdate();
+
+      expect(result.hasUpdate).toBe(false);
+      expect(result.error).toMatch(/request failed/i);
+    });
+
     it('rejects a malformed manifest', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(manifestResponse({ version: '7.0.25' }));
+      vi.mocked(invoke).mockResolvedValueOnce(JSON.stringify({ version: '7.0.25' }));
 
       const result = await checkAndroidUpdate();
 
@@ -142,13 +150,19 @@ describe('androidUpdate', () => {
       expect(result.error).toMatch(/malformed/i);
     });
 
-    it('reads the manifest from the stable release URL', async () => {
+    it('rejects a manifest that is not JSON at all', async () => {
+      vi.mocked(invoke).mockResolvedValueOnce('<html>not a manifest</html>');
+
+      const result = await checkAndroidUpdate();
+
+      expect(result.hasUpdate).toBe(false);
+      expect(result.error).toMatch(/malformed/i);
+    });
+
+    it('reads the manifest through the Rust command', async () => {
       await checkAndroidUpdate();
 
-      expect(fetch).toHaveBeenCalledWith(
-        ANDROID_UPDATE_MANIFEST_URL,
-        expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/json' }) }),
-      );
+      expect(invoke).toHaveBeenCalledWith('fetch_android_update_manifest');
     });
   });
 
