@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="de" dir="ltr" data-site-version="7.0.26"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2451">
+<meta name="x-test-count" content="2453">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
@@ -386,23 +386,37 @@ sh install.sh</code></pre>
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-verify-eyebrow">Verifikation</span>
       <h2 data-i18n="dl-verify-title">Downloads überprüfen</h2>
+      <p class="prose muted" data-i18n="dl-verify-desc">Jede Version erscheint mit SHA256SUMS.txt und minisign-Signaturen. Sie können Prüfsumme und Signatur vor der Installation prüfen.</p>
 
       <div class="verify-grid" style="margin-top:1.5rem">
         <div>
-          <p class="prose muted" data-i18n="dl-verify-desc">Jede Version wird mit SHA256SUMS.txt + PGP/.sig-Signaturen veröffentlicht. Prüfen Sie die Prüfsummen vor der Installation.</p>
-          <div class="notice" style="margin-top:1.1rem">
-            <p><strong data-i18n="dl-notice-label">Hinweis:</strong> <span data-i18n="dl-notice-releases">Downloads werden über GitHub Releases bereitgestellt.</span></p>
-          </div>
+          <h3 data-i18n="dl-verify-hash-title">1. SHA-256-Prüfsumme</h3>
+          <p class="prose muted" data-i18n="dl-verify-hash-desc">Berechnen Sie die Prüfsumme der heruntergeladenen Datei und vergleichen Sie sie mit der Zeile in SHA256SUMS.txt. Stimmen sie überein, ist die Datei die von uns veröffentlichte.</p>
+          <pre><code># Windows
+certutil -hashfile KalderaShield-latest-windows-x64-setup.exe SHA256
+
+# Linux
+sha256sum -c SHA256SUMS.txt</code></pre>
           <p class="cta-row" style="margin-top:1.2rem">
             <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/SHA256SUMS.txt" rel="noopener noreferrer" data-i18n="dl-sha-note">SHA-256-Prüfsummen aller Installationsdateien:</a>
             <a class="btn btn-ghost" href="/de/guvenlik/dogrulama/" data-i18n="sec-verify-btn">Verifizierungsanleitung ansehen</a>
           </p>
         </div>
-        <pre><code># indirdiğiniz dosyanın özetini karşılaştırın
-sha256sum -c SHA256SUMS.txt
+        <div>
+          <h3 data-i18n="dl-verify-sig-title">2. minisign-Signatur</h3>
+          <p class="prose muted" data-i18n="dl-verify-sig-desc">Jedes Update-Paket wird mit diesem Schlüssel signiert, und der Updater der App prüft gegen denselben. Sie können einen Download mit der danebenliegenden .sig-Datei von Hand prüfen.</p>
+          <pre><code>minisign -Vm KalderaShield-latest-windows-x64-setup.exe \
+  -P RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <p class="pick-req" data-i18n="dl-verify-pubkey-label">minisign-Public-Key</p>
+          <pre><code>RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <div class="notice" style="margin-top:1.1rem">
+            <p><span data-i18n="dl-verify-note">Der Schlüssel ändert sich nie. Prüfsummen ändern sich mit jeder Version und stehen deshalb in SHA256SUMS.txt.</span></p>
+          </div>
+        </div>
+      </div>
 
-# ya da tek dosya için
-sha256sum KalderaShield-latest-linux-x64.AppImage</code></pre>
+      <div class="notice" style="margin-top:1.5rem">
+        <p><strong data-i18n="dl-notice-label">Hinweis:</strong> <span data-i18n="dl-notice-releases">Downloads werden über GitHub Releases bereitgestellt.</span></p>
       </div>
     </div>
   </section>

@@ -20,9 +20,17 @@
  * the Tauri manifest's platform keys do not cover Android and the Tauri
  * updater would reject it.
  *
+ * The read itself happens in Rust (`fetch_android_update_manifest`), not here.
+ * `github.com` redirects the file to `release-assets.githubusercontent.com`,
+ * and that host sends no `Access-Control-Allow-Origin` header, so a webview
+ * `fetch` can never read the response -- it fails as "Failed to fetch" no
+ * matter what the CSP allows. The desktop updater fetches its manifest from
+ * Rust for the same reason.
+ *
  * @license Apache-2.0
  */
 
+import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
 import { isAndroidRuntime } from './environment';
 
@@ -39,18 +47,6 @@ declare global {
     };
   }
 }
-
-/**
- * Where the release publishes the Android update manifest.
- *
- * `releases/latest/download/<name>` resolves to the newest non-prerelease
- * release, which is the same release the desktop updater is offered by. The
- * file name is version-less on purpose: the URL has to stay stable.
- */
-export const ANDROID_UPDATE_MANIFEST_URL =
-  'https://github.com/hafgit99/kalderashield/releases/latest/download/android-latest.json';
-
-const REQUEST_TIMEOUT_MS = 10_000;
 
 export interface AndroidUpdateInfo {
   /** The version the release announces, e.g. "7.0.25". */
@@ -72,6 +68,13 @@ export interface AndroidUpdateCheckResult {
   hasUpdate: boolean;
   updateInfo?: AndroidUpdateInfo;
   error?: string;
+}
+
+/** Turns a rejected `invoke` (which rejects with the command's `Err`) into text. */
+function describeError(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
 /**
@@ -132,52 +135,43 @@ export async function checkAndroidUpdate(): Promise<AndroidUpdateCheckResult> {
     return { supported: false, hasUpdate: false };
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
+  // The manifest is read in Rust. A webview `fetch` cannot read it: the asset
+  // host it redirects to sends no CORS header. See the file header.
+  let raw: string;
   try {
-    const response = await fetch(ANDROID_UPDATE_MANIFEST_URL, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-      credentials: 'omit',
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return {
-        supported: true,
-        hasUpdate: false,
-        error: `Update manifest request failed with HTTP ${response.status}.`,
-      };
-    }
-
-    const manifest = parseManifest(await response.json());
-    if (!manifest) {
-      return { supported: true, hasUpdate: false, error: 'Update manifest is malformed.' };
-    }
-
-    let currentVersion = '';
-    try {
-      currentVersion = (await getVersion()) || '';
-    } catch {
-      currentVersion = '';
-    }
-
-    if (!currentVersion) {
-      return { supported: true, hasUpdate: false, error: 'The installed version is unknown.' };
-    }
-
-    if (compareVersions(manifest.version, currentVersion) <= 0) {
-      return { supported: true, hasUpdate: false };
-    }
-
-    return { supported: true, hasUpdate: true, updateInfo: manifest };
+    raw = await invoke<string>('fetch_android_update_manifest');
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { supported: true, hasUpdate: false, error: message };
-  } finally {
-    clearTimeout(timer);
+    return { supported: true, hasUpdate: false, error: describeError(error) };
   }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return { supported: true, hasUpdate: false, error: 'Update manifest is malformed.' };
+  }
+
+  const manifest = parseManifest(payload);
+  if (!manifest) {
+    return { supported: true, hasUpdate: false, error: 'Update manifest is malformed.' };
+  }
+
+  let currentVersion = '';
+  try {
+    currentVersion = (await getVersion()) || '';
+  } catch {
+    currentVersion = '';
+  }
+
+  if (!currentVersion) {
+    return { supported: true, hasUpdate: false, error: 'The installed version is unknown.' };
+  }
+
+  if (compareVersions(manifest.version, currentVersion) <= 0) {
+    return { supported: true, hasUpdate: false };
+  }
+
+  return { supported: true, hasUpdate: true, updateInfo: manifest };
 }
 
 /**
