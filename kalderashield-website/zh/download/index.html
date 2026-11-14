@@ -386,23 +386,37 @@ sh install.sh</code></pre>
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-verify-eyebrow">验证</span>
       <h2 data-i18n="dl-verify-title">验证下载完整性</h2>
+      <p class="prose muted" data-i18n="dl-verify-desc">每个版本都附带 SHA256SUMS.txt 和 minisign 签名。安装前可以验证校验和与签名。</p>
 
       <div class="verify-grid" style="margin-top:1.5rem">
         <div>
-          <p class="prose muted" data-i18n="dl-verify-desc">每个发行版本均附带 SHA256SUMS.txt 及 PGP/.sig 签名文件。安装前请先核对校验和。</p>
-          <div class="notice" style="margin-top:1.1rem">
-            <p><strong data-i18n="dl-notice-label">注意：</strong> <span data-i18n="dl-notice-releases">下载通过 GitHub Releases 提供。</span></p>
-          </div>
+          <h3 data-i18n="dl-verify-hash-title">1. SHA-256 校验和</h3>
+          <p class="prose muted" data-i18n="dl-verify-hash-desc">计算所下载文件的校验和，与 SHA256SUMS.txt 中对应的一行比较。若一致，则该文件就是我们发布的文件。</p>
+          <pre><code># Windows
+certutil -hashfile KalderaShield-latest-windows-x64-setup.exe SHA256
+
+# Linux
+sha256sum -c SHA256SUMS.txt</code></pre>
           <p class="cta-row" style="margin-top:1.2rem">
             <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/SHA256SUMS.txt" rel="noopener noreferrer" data-i18n="dl-sha-note">所有安装文件的 SHA-256 摘要：</a>
             <a class="btn btn-ghost" href="/zh/guvenlik/dogrulama/" data-i18n="sec-verify-btn">查看验证指南</a>
           </p>
         </div>
-        <pre><code># indirdiğiniz dosyanın özetini karşılaştırın
-sha256sum -c SHA256SUMS.txt
+        <div>
+          <h3 data-i18n="dl-verify-sig-title">2. minisign 签名</h3>
+          <p class="prose muted" data-i18n="dl-verify-sig-desc">每个更新包都用该密钥签名，应用自带的更新功能也用它验证。你可以用旁边的 .sig 文件手动核对下载。</p>
+          <pre><code>minisign -Vm KalderaShield-latest-windows-x64-setup.exe \
+  -P RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <p class="pick-req" data-i18n="dl-verify-pubkey-label">minisign 公钥</p>
+          <pre><code>RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <div class="notice" style="margin-top:1.1rem">
+            <p><span data-i18n="dl-verify-note">该密钥从不改变。校验和每个版本都会变，因此随 SHA256SUMS.txt 发布。</span></p>
+          </div>
+        </div>
+      </div>
 
-# ya da tek dosya için
-sha256sum KalderaShield-latest-linux-x64.AppImage</code></pre>
+      <div class="notice" style="margin-top:1.5rem">
+        <p><strong data-i18n="dl-notice-label">注意：</strong> <span data-i18n="dl-notice-releases">下载通过 GitHub Releases 提供。</span></p>
       </div>
     </div>
   </section>
