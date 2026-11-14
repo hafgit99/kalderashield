@@ -39,6 +39,14 @@ chacha20poly1305 = "0.11"
 tokio = { version = "1", features = ["time"] }
 hmac = "0.13"
 sha2 = "0.11"
+# The Android update check reads its manifest from Rust, because the release
+# asset host sends no CORS header and the webview can never read it. `rustls`
+# and `webpki-roots` are used explicitly instead of reqwest's platform
+# verifier: on Android that verifier needs a Kotlin component and a JNI
+# hand-off this app does not have, so it would fail every request.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.61.2", features = [

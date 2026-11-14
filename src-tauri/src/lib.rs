@@ -9,6 +9,7 @@ const VAULT_DATABASE_FILENAME: &str = "kalderashield.db";
 const FILE_DIALOG_BUFFER_LEN: usize = 32768;
 const MAX_VAULT_FILE_BYTES: u64 = 25 * 1024 * 1024; // 25 MB
 
+mod android_update;
 mod credential_handler;
 mod linux_security;
 mod native_messaging;
@@ -958,6 +959,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            android_update::fetch_android_update_manifest,
             get_asset_integrity_anchor,
             record_asset_integrity_result,
             read_vault_database,

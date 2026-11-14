@@ -158,7 +158,7 @@ level* — Windows SmartScreen and macOS Gatekeeper — not payload authenticity
                    ┌──────────────────┴──────────────────┐
                    ▼                                     ▼
         Tauri updater (Win/Linux/macOS)          Android update module
-        check() → banner → download → verify      fetch → compare versionCode
+        check() → banner → download → verify      Rust fetch → compare version
         → install                                 → banner → open APK in browser
 ```
 
@@ -181,9 +181,19 @@ Android cannot use the Tauri updater at all (§2). The distribution channel is:
 
 1. The release publishes `android-latest.json` next to the APK:
    `{ version, versionCode, publishedAt, notes, apk: { url, sha256, size } }`.
-2. The app fetches that file, compares `versionCode` with the installed
-   build's `versionCode` (exposed by a small Rust command), and shows the
-   existing update banner when the remote value is higher.
+2. The app reads that file **from Rust** (`fetch_android_update_manifest`) and
+   compares the announced version with the installed one, then shows the
+   existing update banner when the remote value is newer.
+
+   The read cannot happen in the webview: `github.com` answers with a redirect
+   to `release-assets.githubusercontent.com`, which sends no
+   `Access-Control-Allow-Origin` header, so every `fetch` rejects as "Failed to
+   fetch" no matter what the CSP allows. The command follows redirects only to
+   the release hosts and verifies TLS against roots compiled into the binary --
+   on Android the platform verifier needs a Kotlin component and a JNI
+   hand-off that this app does not have, so it would fail every request.
+   Because the webview no longer reads the file, `connect-src` carries no
+   GitHub origin at all.
 3. The banner's action opens the APK URL in the system browser. The user
    downloads and confirms the install; Android performs an **in-place update**
    because the APK is signed with the same release keystore and the
@@ -290,9 +300,11 @@ it in-app, with the payload verified by minisign.
   non-prerelease release — the same release the desktop updater is offered by.
 * The Android build job records the `versionCode` the Tauri CLI generated, so
   the publish job can publish it without re-deriving it.
-* New `src/lib/androidUpdate.ts`: reads the manifest, compares the announced
-  version with the running one, and opens the APK download through the native
-  bridge.
+* New `src/lib/androidUpdate.ts`: compares the announced version with the
+  running one, and opens the APK download through the native bridge.
+* New `src-tauri/src/android_update.rs`: the manifest read itself, exposed to
+  the page as `fetch_android_update_manifest`. It is the only way to read the
+  file — see §3.2 — and it keeps the webview off the release hosts entirely.
 * New `AndroidUpdateBridge.kt`: opens an HTTPS URL on an allowlisted host with
   an `ACTION_VIEW` Intent. The Tauri `opener` plugin was **not** used: its
   underlying `open` crate resolves URLs through `xdg-open`, which does not
