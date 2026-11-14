@@ -2,6 +2,35 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.27.0 - Android update channel
+
+### Fixed
+
+- **The Android update check works.** On 7.0.26 every check failed with
+  "Failed to fetch": `github.com` redirects `android-latest.json` to a download
+  host that sends no CORS header, so the webview could never read the response
+  and no CSP entry could have fixed it. The manifest is now read in Rust, the
+  way the desktop updater already reads its own, and handed to the page.
+- **A failed check no longer looks like "up to date".** The Android channel
+  reports the failure, so the settings card says the check could not run
+  instead of staying silent.
+
+### Security
+
+- **The webview no longer reaches GitHub at all.** With the read moved to Rust,
+  the `connect-src` allowance for `github.com` and
+  `objects.githubusercontent.com` is gone, and so is the air-gap exemption that
+  existed only for that fetch. The Rust command follows redirects only to the
+  release hosts over HTTPS, at most five hops, and refuses a body over 256 KiB.
+- The command verifies TLS against the Mozilla roots compiled into the binary.
+  The Android platform verifier would need a Kotlin component and a JNI
+  hand-off this app does not have, so it would have failed every request.
+
+### Upgrade note
+
+- Android users on 7.0.26 have to install this APK once by hand: the broken
+  check cannot announce its own fix. From this release on the channel works.
+
 ## 7.0.26.0 - Update visibility
 
 ### Changed
