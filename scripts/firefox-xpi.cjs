@@ -174,6 +174,15 @@ function base64url(buffer) {
  * HS256, `iss` = the API key (the "JWT issuer"), signed with the API secret.
  * The lifetime is deliberately short: this token is only used for two requests
  * during a release.
+ *
+ * Why the hash below is SHA-256 and not a password KDF: this is a message
+ * authentication code, not password storage. The API secret is the HMAC *key*,
+ * the signed bytes are the public header and payload, and HS256 is the
+ * algorithm the AMO API requires -- a verifier given an argon2/bcrypt digest
+ * could not check the token at all. CodeQL's js/insufficient-password-hash
+ * flags any credential-shaped value that reaches a fast hash, which is what
+ * the suppression marker on the call records: the alert is a false positive
+ * here, and "fixing" it would break the protocol.
  */
 function createAmoJwt(apiKey, apiSecret) {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -184,6 +193,7 @@ function createAmoJwt(apiKey, apiSecret) {
     iat: now,
     exp: now + 60,
   }));
+  // codeql[js/insufficient-password-hash]
   const signature = base64url(
     crypto.createHmac('sha256', apiSecret).update(`${header}.${payload}`).digest(),
   );
