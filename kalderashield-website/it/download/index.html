@@ -386,23 +386,37 @@ sh install.sh</code></pre>
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-verify-eyebrow">Verifica</span>
       <h2 data-i18n="dl-verify-title">Verifica i tuoi download</h2>
+      <p class="prose muted" data-i18n="dl-verify-desc">Ogni versione esce con SHA256SUMS.txt e firme minisign. Puoi verificare l'hash e la firma prima dell'installazione.</p>
 
       <div class="verify-grid" style="margin-top:1.5rem">
         <div>
-          <p class="prose muted" data-i18n="dl-verify-desc">Ogni rilascio include SHA256SUMS.txt e firme PGP/.sig. Confronta i digest prima dell'installazione.</p>
-          <div class="notice" style="margin-top:1.1rem">
-            <p><strong data-i18n="dl-notice-label">Nota:</strong> <span data-i18n="dl-notice-releases">I download sono distribuiti tramite GitHub Releases.</span></p>
-          </div>
+          <h3 data-i18n="dl-verify-hash-title">1. Hash SHA-256</h3>
+          <p class="prose muted" data-i18n="dl-verify-hash-desc">Calcola l'hash del file scaricato e confrontalo con la riga in SHA256SUMS.txt. Se coincidono, il file è quello che abbiamo pubblicato.</p>
+          <pre><code># Windows
+certutil -hashfile KalderaShield-latest-windows-x64-setup.exe SHA256
+
+# Linux
+sha256sum -c SHA256SUMS.txt</code></pre>
           <p class="cta-row" style="margin-top:1.2rem">
             <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/SHA256SUMS.txt" rel="noopener noreferrer" data-i18n="dl-sha-note">Digest SHA-256 di tutti i file di installazione:</a>
             <a class="btn btn-ghost" href="/it/guvenlik/dogrulama/" data-i18n="sec-verify-btn">Visualizza guida alla verifica</a>
           </p>
         </div>
-        <pre><code># indirdiğiniz dosyanın özetini karşılaştırın
-sha256sum -c SHA256SUMS.txt
+        <div>
+          <h3 data-i18n="dl-verify-sig-title">2. Firma minisign</h3>
+          <p class="prose muted" data-i18n="dl-verify-sig-desc">Ogni pacchetto di aggiornamento è firmato con questa chiave, e l'aggiornamento dell'app verifica con la stessa. Puoi controllare un download a mano con il file .sig accanto.</p>
+          <pre><code>minisign -Vm KalderaShield-latest-windows-x64-setup.exe \
+  -P RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <p class="pick-req" data-i18n="dl-verify-pubkey-label">Chiave pubblica minisign</p>
+          <pre><code>RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <div class="notice" style="margin-top:1.1rem">
+            <p><span data-i18n="dl-verify-note">La chiave non cambia mai. Gli hash cambiano a ogni versione, per questo sono pubblicati in SHA256SUMS.txt.</span></p>
+          </div>
+        </div>
+      </div>
 
-# ya da tek dosya için
-sha256sum KalderaShield-latest-linux-x64.AppImage</code></pre>
+      <div class="notice" style="margin-top:1.5rem">
+        <p><strong data-i18n="dl-notice-label">Nota:</strong> <span data-i18n="dl-notice-releases">I download sono distribuiti tramite GitHub Releases.</span></p>
       </div>
     </div>
   </section>

@@ -386,23 +386,37 @@ sh install.sh</code></pre>
     <div class="wrap">
       <span class="eyebrow" data-i18n="dl-verify-eyebrow">検証</span>
       <h2 data-i18n="dl-verify-title">ダウンロードの検証</h2>
+      <p class="prose muted" data-i18n="dl-verify-desc">各リリースは SHA256SUMS.txt と minisign 署名とともに公開されます。インストール前にハッシュと署名を確認できます。</p>
 
       <div class="verify-grid" style="margin-top:1.5rem">
         <div>
-          <p class="prose muted" data-i18n="dl-verify-desc">すべてのリリースには SHA256SUMS.txt と PGP/.sig 署名が付属します。インストール前にダイジェストを比較してください。</p>
-          <div class="notice" style="margin-top:1.1rem">
-            <p><strong data-i18n="dl-notice-label">注意：</strong> <span data-i18n="dl-notice-releases">ダウンロードは GitHub Releases で提供されます。</span></p>
-          </div>
+          <h3 data-i18n="dl-verify-hash-title">1. SHA-256 ハッシュ</h3>
+          <p class="prose muted" data-i18n="dl-verify-hash-desc">ダウンロードしたファイルのハッシュを計算し、SHA256SUMS.txt の該当行と比較してください。一致すれば、公開したファイルそのものです。</p>
+          <pre><code># Windows
+certutil -hashfile KalderaShield-latest-windows-x64-setup.exe SHA256
+
+# Linux
+sha256sum -c SHA256SUMS.txt</code></pre>
           <p class="cta-row" style="margin-top:1.2rem">
             <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/SHA256SUMS.txt" rel="noopener noreferrer" data-i18n="dl-sha-note">すべてのインストーラーのSHA-256ダイジェスト：</a>
             <a class="btn btn-ghost" href="/ja/guvenlik/dogrulama/" data-i18n="sec-verify-btn">検証ガイドを見る</a>
           </p>
         </div>
-        <pre><code># indirdiğiniz dosyanın özetini karşılaştırın
-sha256sum -c SHA256SUMS.txt
+        <div>
+          <h3 data-i18n="dl-verify-sig-title">2. minisign 署名</h3>
+          <p class="prose muted" data-i18n="dl-verify-sig-desc">更新パッケージはすべてこの鍵で署名され、アプリの更新機能も同じ鍵で検証します。隣にある .sig ファイルで手動検証もできます。</p>
+          <pre><code>minisign -Vm KalderaShield-latest-windows-x64-setup.exe \
+  -P RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <p class="pick-req" data-i18n="dl-verify-pubkey-label">minisign 公開鍵</p>
+          <pre><code>RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
+          <div class="notice" style="margin-top:1.1rem">
+            <p><span data-i18n="dl-verify-note">鍵は変わりません。ハッシュはリリースごとに変わるため SHA256SUMS.txt で公開しています。</span></p>
+          </div>
+        </div>
+      </div>
 
-# ya da tek dosya için
-sha256sum KalderaShield-latest-linux-x64.AppImage</code></pre>
+      <div class="notice" style="margin-top:1.5rem">
+        <p><strong data-i18n="dl-notice-label">注意：</strong> <span data-i18n="dl-notice-releases">ダウンロードは GitHub Releases で提供されます。</span></p>
       </div>
     </div>
   </section>
