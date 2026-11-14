@@ -1,15 +1,25 @@
 /**
  * @file useAutoUpdateCheck.ts
- * @description Hook that silently checks for app updates once per day.
- * When a newer version is available, it surfaces update info for the notification banner.
+ * @description Checks for app updates on every start and surfaces a banner
+ * when a newer version exists.
  *
  * Two channels, one hook:
  *
- *   - Desktop: the Tauri updater. A daily check, five seconds after the vault
- *     is unlocked, and a banner when there is something newer.
- *   - Android: the sideload channel (`android-latest.json`), because the
- *     Tauri updater does not support Android. The banner's action opens the
- *     APK download in the browser instead of installing anything.
+ *   - Desktop: the Tauri updater. The check runs a few seconds after the vault
+ *     is unlocked, on every start, and the banner offers install-in-place.
+ *   - Android: the sideload channel (`android-latest.json`), because the Tauri
+ *     updater does not support Android. The banner's action opens the APK
+ *     download in the browser instead of installing anything.
+ *
+ * The check used to run at most once every 24 hours. A user who launches the
+ * app daily therefore saw the check only when the interval happened to have
+ * elapsed, which is indistinguishable from "the app never checks". It now runs
+ * once per start. The request is a plain GET for a public release manifest: no
+ * vault data, no identifiers, credentials omitted.
+ *
+ * Closing the banner with the X remembers the version, so the same release is
+ * not announced again on the next start; "Later" only hides it until the next
+ * start. A newer release always announces itself.
  *
  * @license Apache-2.0
  */
@@ -28,9 +38,8 @@ import {
 } from '../lib/androidUpdate';
 import { isAndroidRuntime, isDesktopAppUpdaterSupported } from '../lib/environment';
 
-const LAST_CHECK_KEY = 'KalderaShield_last_auto_update_check';
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const STARTUP_DELAY_MS = 5000; // 5 seconds grace period after unlock
+const DISMISSED_VERSION_KEY = 'KalderaShield_dismissed_update_version';
+const STARTUP_DELAY_MS = 3000; // let the unlock animation finish first
 
 export type UpdateChannel = 'desktop' | 'android';
 
@@ -42,7 +51,10 @@ export interface UseAutoUpdateCheckResult {
   isReadyToRestart: boolean;
   errorMessage: string | null;
   channel: UpdateChannel;
+  /** Hides the banner until the next start. */
   dismissBanner: () => void;
+  /** Hides the banner and does not announce this version again. */
+  dismissForVersion: () => void;
   applyUpdate: () => Promise<void>;
   restartNow: () => Promise<void>;
 }
@@ -56,6 +68,23 @@ function toAppUpdateInfo(info: AndroidUpdateInfo): AppUpdateInfo {
     unsignedPlatforms: [],
     isUnsignedBuild: false,
   };
+}
+
+function readDismissedVersion(): string | null {
+  try {
+    return localStorage.getItem(DISMISSED_VERSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function rememberDismissedVersion(version: string): void {
+  try {
+    localStorage.setItem(DISMISSED_VERSION_KEY, version);
+  } catch {
+    // localStorage may be unavailable in restricted sandboxes; the banner then
+    // simply appears again on the next start.
+  }
 }
 
 export function useAutoUpdateCheck(enabled = true): UseAutoUpdateCheckResult {
@@ -75,25 +104,22 @@ export function useAutoUpdateCheck(enabled = true): UseAutoUpdateCheckResult {
   useEffect(() => {
     if (!enabled || hasTriggeredRef.current) return;
 
-    // Android first: the Tauri updater is not available there, and the two
-    // channels share the daily interval and the banner. The channel itself is
-    // already set by the state initialiser, so nothing has to be set here.
+    const announce = (info: AppUpdateInfo, android: AndroidUpdateInfo | null) => {
+      setUpdateInfo(info);
+      setAndroidUpdate(android);
+      // The check runs on every start; only the version the user closed with
+      // the X is suppressed. A newer release always announces itself.
+      if (readDismissedVersion() !== info.version) setIsVisible(true);
+    };
+
     if (isAndroidRuntime()) {
       hasTriggeredRef.current = true;
 
       const timer = setTimeout(async () => {
         try {
           const result = await checkAndroidUpdate();
-          try {
-            localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
-          } catch {
-            // ignore
-          }
-
           if (result.hasUpdate && result.updateInfo) {
-            setAndroidUpdate(result.updateInfo);
-            setUpdateInfo(toAppUpdateInfo(result.updateInfo));
-            setIsVisible(true);
+            announce(toAppUpdateInfo(result.updateInfo), result.updateInfo);
           }
         } catch (error) {
           console.warn('Android auto update check encountered a non-fatal error:', error);
@@ -107,33 +133,13 @@ export function useAutoUpdateCheck(enabled = true): UseAutoUpdateCheckResult {
 
     if (!isDesktopAppUpdaterSupported()) return;
 
-    // Check last check timestamp in localStorage
-    try {
-      const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
-      if (lastCheck) {
-        const elapsed = Date.now() - parseInt(lastCheck, 10);
-        if (elapsed < CHECK_INTERVAL_MS) {
-          return;
-        }
-      }
-    } catch {
-      // localStorage may fail in restricted sandboxes; proceed with check
-    }
-
     hasTriggeredRef.current = true;
 
     const timer = setTimeout(async () => {
       try {
         const result = await checkAppUpdate();
-        try {
-          localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
-        } catch {
-          // ignore
-        }
-
         if (result.hasUpdate && result.updateInfo) {
-          setUpdateInfo(result.updateInfo);
-          setIsVisible(true);
+          announce(result.updateInfo, null);
         }
       } catch (error) {
         console.warn('Auto update check encountered non-fatal error:', error);
@@ -148,6 +154,11 @@ export function useAutoUpdateCheck(enabled = true): UseAutoUpdateCheckResult {
   const dismissBanner = useCallback(() => {
     setIsVisible(false);
   }, []);
+
+  const dismissForVersion = useCallback(() => {
+    setIsVisible(false);
+    if (updateInfo?.version) rememberDismissedVersion(updateInfo.version);
+  }, [updateInfo]);
 
   const applyUpdate = useCallback(async () => {
     if (channel === 'android') {
@@ -192,6 +203,7 @@ export function useAutoUpdateCheck(enabled = true): UseAutoUpdateCheckResult {
     errorMessage,
     channel,
     dismissBanner,
+    dismissForVersion,
     applyUpdate,
     restartNow,
   };

@@ -23,6 +23,7 @@ const mockAutoUpdate: UseAutoUpdateCheckResult = {
   errorMessage: null,
   channel: 'desktop',
   dismissBanner: vi.fn(),
+  dismissForVersion: vi.fn(),
   applyUpdate: vi.fn().mockResolvedValue(undefined),
   restartNow: vi.fn().mockResolvedValue(undefined),
 };
@@ -77,8 +78,11 @@ describe('UpdateNotificationBanner', () => {
     fireEvent.click(screen.getByTestId('banner-later-button'));
     expect(mockAutoUpdate.dismissBanner).toHaveBeenCalledTimes(1);
 
+    // The X is the stronger action: it also remembers the version, so the same
+    // release is not announced again on the next start.
     fireEvent.click(screen.getByTestId('banner-close-button'));
-    expect(mockAutoUpdate.dismissBanner).toHaveBeenCalledTimes(2);
+    expect(mockAutoUpdate.dismissForVersion).toHaveBeenCalledTimes(1);
+    expect(mockAutoUpdate.dismissBanner).toHaveBeenCalledTimes(1);
   });
 
   it('renders restart button when update is ready to restart', () => {
@@ -135,5 +139,55 @@ describe('UpdateNotificationBanner', () => {
     );
 
     expect(screen.getByTestId('update-unsigned-notice')).toBeTruthy();
+  });
+
+  // The banner's second job: let the user read what changed before deciding.
+  // The notes stay collapsed so the banner stays a banner.
+  it('keeps the release notes collapsed until the user asks for them', () => {
+    render(
+      <LanguageProvider>
+        <UpdateNotificationBanner autoUpdate={mockAutoUpdate} />
+      </LanguageProvider>,
+    );
+
+    expect(screen.queryByTestId('banner-release-notes')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('banner-details-toggle'));
+
+    expect(screen.getByTestId('banner-release-notes').textContent).toContain(
+      'Security updates and improvements',
+    );
+  });
+
+  it('hides the release notes again on a second click', () => {
+    render(
+      <LanguageProvider>
+        <UpdateNotificationBanner autoUpdate={mockAutoUpdate} />
+      </LanguageProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId('banner-details-toggle'));
+    expect(screen.getByTestId('banner-release-notes')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('banner-details-toggle'));
+    expect(screen.queryByTestId('banner-release-notes')).toBeNull();
+  });
+
+  it('offers no details toggle when the release carries no notes', () => {
+    render(
+      <LanguageProvider>
+        <UpdateNotificationBanner
+          autoUpdate={{
+            ...mockAutoUpdate,
+            updateInfo: {
+              ...mockAutoUpdate.updateInfo!,
+              body: '',
+            },
+          }}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.queryByTestId('banner-details-toggle')).toBeNull();
   });
 });
