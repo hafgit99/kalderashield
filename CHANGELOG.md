@@ -2,7 +2,7 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
-## 7.0.26.0 - Update visibility (Unreleased)
+## 7.0.26.0 - Update visibility
 
 ### Changed
 
