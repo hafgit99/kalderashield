@@ -2,6 +2,78 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.26.0 - Update visibility (Unreleased)
+
+### Changed
+
+- **The update check runs on every start.** It used to run at most once every
+  24 hours, so a user who launches the app daily saw it only when the interval
+  happened to have elapsed -- indistinguishable from "the app never checks".
+- **The update banner shows what changed.** The release notes from the manifest
+  are available behind a "What's new" toggle, collapsed so the banner stays a
+  banner. The notes are now read from this changelog rather than from the
+  generated release-notes artefact, which listed checksums and warnings instead
+  of changes.
+- Closing the banner with the X remembers the version, so the same release is
+  not announced again; "Later" only hides it until the next start. A newer
+  release always announces itself.
+
+### Fixed
+
+- **Android update check was blocked by the air-gap policy.** The check reads
+  `android-latest.json` with `fetch()`, and the policy blocks every webview
+  request that is not explicitly allowed, so every attempt produced a
+  *critical* `network.blocked` security event and the channel could never
+  succeed. The manifest URL now has the same narrow exemption the HIBP range
+  lookup has: one origin, one exact path, no query string.
+- **A failed release no longer burns the extension version.** AMO accepts a
+  given version once; when a release failed after signing, the next attempt got
+  `409 Conflict` and published an unsigned XPI, which Firefox Release refuses to
+  install. The packaging step now retrieves the artifact AMO already signed for
+  that version and uses it.
+- **The publish job accepts artifact metadata written on another OS.** Windows
+  build jobs write `metadata.json` with backslashes and the publish job reads it
+  on Linux, where the path resolved outside the evidence directory and the
+  release failed after every build had succeeded.
+
+### Security
+
+- The packaged extension manifest is checked against `package.json`, so a stale
+  build cannot be uploaded under an old version number.
+
+## 7.0.25.0 - Update channels
+
+### Added
+
+- **Windows is published in the main release.** It previously existed only as a
+  separate unsigned preview, which meant a Windows client never saw an update:
+  the manifest had no `windows-*` entry at all. Windows now ships with the other
+  platforms and the app updates itself in place.
+- **Android has an update channel.** The Tauri updater does not support Android,
+  so the release publishes `android-latest.json` and the app reads it, compares
+  versions and opens the APK download; Android then updates in place because the
+  APK carries the same release keystore and a higher `versionCode`.
+
+### Fixed
+
+- **The updater manifest pointed every download at a release that does not
+  exist.** `package.json` carries a 4-part version (`7.0.25.0`) and the release
+  is published under the trimmed tag (`v7.0.25`); the generator rebuilt the tag
+  as `v7.0.25.0`, so the manifest was served correctly while every URL inside it
+  returned 404. The tag now comes from the workflow.
+
+### Security
+
+- Windows artifacts are published without an Authenticode signature and are
+  declared as such: `vars.ALLOW_UNSIGNED_PLATFORMS` (or the committed
+  `release/release-config.json`) names the platforms that may ship unsigned, the
+  manifest carries `unsigned_platforms`, and the app tells the user before the
+  install starts. The Tauri minisign signature still verifies the payload on
+  every client. A selected platform with neither a certificate nor a declaration
+  fails the release before anything is built.
+- Dependency advisories resolved in `rustls-webpki`, `webpki-root-certs`,
+  `tokio` and `ctutils`.
+
 ## 7.0.18.0 - Rebrand
 
 ### Breaking Changes

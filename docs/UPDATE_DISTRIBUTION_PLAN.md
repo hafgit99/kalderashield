@@ -299,7 +299,7 @@ it in-app, with the payload verified by minisign.
   exist on Android, and it would have pulled a D-Bus dependency tree into the
   mobile build for a single Intent.
 * `src/hooks/useAutoUpdateCheck.ts` and `src/hooks/useAppUpdater.ts`: the
-  Android branch of the same two hooks, so the daily check and the settings
+  Android branch of the same two hooks, so the check-on-start and the settings
   card work there too.
 * i18n for all twelve locales.
 

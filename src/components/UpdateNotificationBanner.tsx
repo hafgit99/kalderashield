@@ -2,10 +2,16 @@
  * @file UpdateNotificationBanner.tsx
  * @description Floating notification banner alerting user to available app updates.
  *
+ * The banner is what makes an automatic check useful: it names the new version,
+ * offers the action, and -- when the release carries notes -- lets the user read
+ * what changed before deciding. The notes are collapsed by default so the
+ * banner stays a banner.
+ *
  * @license Apache-2.0
  */
 
-import { Download, RefreshCw, Sparkles, X } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Download, RefreshCw, Sparkles, X } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { ProgressFill } from './ui/ProgressFill';
@@ -17,6 +23,7 @@ interface UpdateNotificationBannerProps {
 
 export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificationBannerProps) {
   const { t } = useLanguage();
+  const [showDetails, setShowDetails] = useState(false);
   const {
     updateInfo,
     isVisible,
@@ -26,6 +33,7 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
     errorMessage,
     channel,
     dismissBanner,
+    dismissForVersion,
     applyUpdate,
     restartNow,
   } = autoUpdate;
@@ -37,6 +45,8 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
   // On Android the updater cannot install anything: the action opens the APK
   // in the browser and the user confirms the installation.
   const isAndroid = channel === 'android';
+  const releaseNotes = (updateInfo.body || '').trim();
+  const hasReleaseNotes = releaseNotes.length > 0;
 
   return (
     <div
@@ -100,6 +110,37 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
               />
             </div>
           )}
+
+          {/* What changed. Collapsed by default: the banner has one job, and a
+              release note is a paragraph. */}
+          {hasReleaseNotes && !isDownloading && !isReadyToRestart && (
+            <div className="mt-1.5">
+              <button
+                type="button"
+                data-testid="banner-details-toggle"
+                onClick={() => setShowDetails((current) => !current)}
+                aria-expanded={showDetails}
+                className="flex items-center gap-1 text-[11px] font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors cursor-pointer"
+              >
+                {showDetails ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+                <span>
+                  {showDetails ? t('update.banner.hideDetails') : t('update.banner.details')}
+                </span>
+              </button>
+              {showDetails && (
+                <div
+                  data-testid="banner-release-notes"
+                  className="mt-1.5 max-h-28 overflow-y-auto whitespace-pre-line rounded-lg border border-white/10 bg-surface p-2.5 text-[11px] leading-relaxed text-on-surface-variant"
+                >
+                  {releaseNotes}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -141,9 +182,9 @@ export default function UpdateNotificationBanner({ autoUpdate }: UpdateNotificat
         <button
           type="button"
           data-testid="banner-close-button"
-          onClick={dismissBanner}
+          onClick={dismissForVersion}
           className="p-1.5 text-on-surface-variant hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-          title={t('update.banner.later')}
+          title={t('update.banner.dismissVersion')}
         >
           <X className="w-4 h-4" />
         </button>
