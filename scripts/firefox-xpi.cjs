@@ -180,9 +180,11 @@ function base64url(buffer) {
  * the signed bytes are the public header and payload, and HS256 is the
  * algorithm the AMO API requires -- a verifier given an argon2/bcrypt digest
  * could not check the token at all. CodeQL's js/insufficient-password-hash
- * flags any credential-shaped value that reaches a fast hash, which is what
- * the suppression marker on the call records: the alert is a false positive
- * here, and "fixing" it would break the protocol.
+ * flags any credential-shaped value that reaches a fast hash, so the alert on
+ * this function is a false positive; it is dismissed in the code scanning UI
+ * with this rationale rather than "fixed" in a way that would break the
+ * protocol. (An in-code `codeql[...]` marker was tried and is ignored by the
+ * analysis version in use.)
  */
 function createAmoJwt(apiKey, apiSecret) {
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -193,7 +195,6 @@ function createAmoJwt(apiKey, apiSecret) {
     iat: now,
     exp: now + 60,
   }));
-  // codeql[js/insufficient-password-hash]
   const signature = base64url(
     crypto.createHmac('sha256', apiSecret).update(`${header}.${payload}`).digest(),
   );
