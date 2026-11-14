@@ -245,7 +245,27 @@ async function fetchAlreadySignedXpi(apiKey, apiSecret, guid, version, destinati
     return false;
   }
 
-  const fileResponse = await fetch(fileUrl, { headers: { Authorization: `JWT ${jwt}` } });
+  // The download URL comes from a remote API response, so it is checked before
+  // it is fetched rather than trusted: HTTPS, and a Mozilla host. A response
+  // that points somewhere else is a bug or a compromise, and either way this
+  // script must not follow it.
+  let parsedFileUrl;
+  try {
+    parsedFileUrl = new URL(fileUrl);
+  } catch {
+    console.error('AMO returned a download URL that is not a URL.');
+    return false;
+  }
+  if (parsedFileUrl.protocol !== 'https:') {
+    console.error(`Refusing to download the signed XPI over ${parsedFileUrl.protocol}.`);
+    return false;
+  }
+  if (!/(^|\.)mozilla\.org$/i.test(parsedFileUrl.hostname) && !/(^|\.)mozilla\.net$/i.test(parsedFileUrl.hostname)) {
+    console.error(`Refusing to download the signed XPI from an unexpected host: ${parsedFileUrl.hostname}`);
+    return false;
+  }
+
+  const fileResponse = await fetch(parsedFileUrl, { headers: { Authorization: `JWT ${jwt}` } });
   if (!fileResponse.ok) {
     console.error(`Downloading the signed XPI failed with HTTP ${fileResponse.status}.`);
     return false;
