@@ -564,7 +564,7 @@ jobs:
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
           WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
-          AMO_CHANNEL: unlisted
+          AMO_CHANNEL: ${{ vars.AMO_CHANNEL || 'unlisted' }}
         run: |
           set -euo pipefail
           mkdir -p release-local/firefox

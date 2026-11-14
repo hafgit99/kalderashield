@@ -98,6 +98,21 @@ function assertFirefoxManifest() {
     throw new Error('Firefox manifest must include browser_specific_settings.gecko.id = kalderashield@hafgit99.com');
   }
 
+  // The packaged manifest must carry the release version.
+  //
+  // `build-extension.js` stamps `package.json`'s version into every built
+  // manifest, so this normally passes without anyone thinking about it. The
+  // check exists because a stale staging directory (or a build that skipped the
+  // stamping step) would otherwise produce an XPI with an old version, and AMO
+  // rejects a version it has already signed -- the failure would appear as a
+  // confusing upload error on release day, not as a stale manifest.
+  if (manifest.version !== packageJson.version) {
+    throw new Error(
+      'Firefox manifest version ' + manifest.version + ' does not match package.json ' +
+      packageJson.version + '. Run npm run build:extension before packaging.',
+    );
+  }
+
   if (manifest.background?.service_worker) {
     throw new Error('Firefox build must use background.scripts, not background.service_worker');
   }
