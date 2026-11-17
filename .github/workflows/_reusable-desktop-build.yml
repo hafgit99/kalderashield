@@ -111,7 +111,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0 (SHA-pinned)
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
 
       # Two steps rather than one with a conditional `targets:` because an empty

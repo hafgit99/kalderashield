@@ -401,7 +401,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.1 (SHA-pinned)
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
 
       - name: Setup Rust
@@ -519,7 +519,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.1 (SHA-pinned)
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
 
       - name: Install frontend dependencies
@@ -639,7 +639,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0 (SHA-pinned)
         with:
-          node-version: 22
+          node-version: 26
 
       - name: Install dependencies (full, incl. dev — required by @cyclonedx/cyclonedx-npm)
         run: npm ci
@@ -699,7 +699,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.7 (SHA-pinned)
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
 
       - name: Install dependencies
