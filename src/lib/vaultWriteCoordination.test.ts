@@ -73,7 +73,16 @@ describe('vaultWriteCoordination (Y-15)', () => {
     recordVaultSeal.mockClear();
     FakeBroadcastChannel.instances = [];
     (globalThis as any).BroadcastChannel = FakeBroadcastChannel;
-    delete (globalThis.navigator as any).locks;
+    // Node 24+ ships the Web Locks API, and `navigator.locks` is a getter with
+    // no setter there. A plain assignment throws in a module (strict mode), and
+    // `delete` would only re-expose Node's real implementation to the next
+    // test, so the property is defined and reset explicitly. On Node 22 the
+    // property does not exist and defining it is equally fine.
+    Object.defineProperty(globalThis.navigator, 'locks', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
   });
 
   afterEach(() => {
@@ -157,7 +166,11 @@ describe('vaultWriteCoordination (Y-15)', () => {
 
     it('uses navigator.locks when available', async () => {
       const request = vi.fn(async (_name: string, _opts: unknown, cb: () => Promise<unknown>) => cb());
-      (globalThis.navigator as any).locks = { request };
+      Object.defineProperty(globalThis.navigator, 'locks', {
+        value: { request },
+        configurable: true,
+        writable: true,
+      });
 
       const result = await withVaultWriteLock(async () => 'done');
 
