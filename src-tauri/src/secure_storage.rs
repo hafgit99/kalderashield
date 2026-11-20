@@ -90,6 +90,18 @@ fn unseal_with_key(key: &[u8; 32], sealed_json: &str) -> Result<String, String> 
     result
 }
 
+fn generate_random_seal_key() -> Result<[u8; 32], String> {
+    let mut bytes = Vec::with_capacity(32);
+    for _ in 0..4 {
+        let word = getrandom::u64().map_err(|e| format!("CSPRNG failure: {e}"))?;
+        bytes.extend_from_slice(&word.to_ne_bytes());
+    }
+    let key = <[u8; 32]>::try_from(bytes.as_slice())
+        .map_err(|_| "CSPRNG key length error".to_string())?;
+    bytes.zeroize();
+    Ok(key)
+}
+
 fn load_or_create_biometric_seal_key(create_if_missing: bool) -> Result<[u8; 32], String> {
     if !platform::is_available() {
         return Err("desktop secure storage unavailable".to_string());
@@ -98,9 +110,7 @@ fn load_or_create_biometric_seal_key(create_if_missing: bool) -> Result<[u8; 32]
         let decoded = base64::engine::general_purpose::STANDARD.decode(&encoded);
         encoded.zeroize();
         if let Ok(mut raw) = decoded {
-            if raw.len() == 32 {
-                let mut key = [0u8; 32];
-                key.copy_from_slice(&raw);
+            if let Ok(key) = <[u8; 32]>::try_from(raw.as_slice()) {
                 raw.zeroize();
                 return Ok(key);
             }
@@ -110,8 +120,7 @@ fn load_or_create_biometric_seal_key(create_if_missing: bool) -> Result<[u8; 32]
     if !create_if_missing {
         return Err("biometric seal key not found".to_string());
     }
-    let mut key = [0u8; 32];
-    getrandom::fill(&mut key).map_err(|e| format!("CSPRNG failure: {e}"))?;
+    let mut key = generate_random_seal_key()?;
     let mut encoded = base64::engine::general_purpose::STANDARD.encode(key);
     let stored = platform::set_item(BIOMETRIC_NATIVE_SEAL_KEY, &encoded);
     encoded.zeroize();
@@ -505,7 +514,7 @@ mod tests {
 
     #[test]
     fn f02_biometric_seal_roundtrip_and_tamper_detection() {
-        let key = [0x42u8; 32];
+        let key = generate_random_seal_key().expect("csprng key");
         let payload = r#"{"masterPassword":"s3cr3t!Password","secretKey":"A3-TEST"}"#;
         let sealed = seal_with_key(&key, payload.as_bytes()).expect("seal must succeed");
         assert!(!sealed.contains("s3cr3t!Password"));
@@ -513,7 +522,10 @@ mod tests {
         let unsealed = unseal_with_key(&key, &sealed).expect("unseal must succeed");
         assert_eq!(unsealed, payload);
 
-        let wrong_key = [0x24u8; 32];
+        let mut wrong_key = generate_random_seal_key().expect("csprng key");
+        if wrong_key == key {
+            wrong_key[0] ^= 0xff;
+        }
         assert!(unseal_with_key(&wrong_key, &sealed).is_err());
 
         let tampered = sealed.replace("\"v\":1", "\"v\":2");

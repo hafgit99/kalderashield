@@ -911,6 +911,20 @@ mod tests {
         assert!(argon2.verify_password(b"wrong-password", &parsed).is_err());
     }
 
+    fn random_test_passphrase() -> String {
+        let a = getrandom::u64().expect("csprng");
+        let b = getrandom::u64().expect("csprng");
+        format!("ks-test-{a:016x}-{b:016x}")
+    }
+
+    fn random_test_key_32() -> Vec<u8> {
+        let mut out = Vec::with_capacity(32);
+        for _ in 0..4 {
+            out.extend_from_slice(&getrandom::u64().expect("csprng").to_ne_bytes());
+        }
+        out
+    }
+
     #[test]
     fn f01_update_vault_key_refuses_when_locked() {
         let session = super::CredentialSession::default();
@@ -929,8 +943,9 @@ mod tests {
     #[test]
     fn f01_update_vault_key_rejects_invalid_length() {
         let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
         session
-            .set_active_credential_for_session("master-pass")
+            .set_active_credential_for_session(&pass)
             .expect("credential");
 
         assert_eq!(
@@ -950,27 +965,34 @@ mod tests {
     #[test]
     fn f01_update_vault_key_succeeds_when_session_active() {
         let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
         session
-            .set_active_credential_for_session("master-pass")
+            .set_active_credential_for_session(&pass)
             .expect("credential");
 
-        assert!(session.update_active_vault_key(vec![42u8; 32]).is_ok());
+        let new_key = random_test_key_32();
+        assert!(session.update_active_vault_key(new_key).is_ok());
         assert!(session.require_active_session().is_ok());
     }
 
     #[test]
     fn f04_credential_verifier_validates_without_retaining_plaintext() {
         let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
+        let mut wrong = random_test_passphrase();
+        if wrong == pass {
+            wrong.push('x');
+        }
         session
-            .set_active_credential_for_session("super-secret-master-password")
+            .set_active_credential_for_session(&pass)
             .expect("set verifier");
 
         let state = session.state.lock().expect("lock");
-        assert!(state.verify_credential(b"super-secret-master-password"));
-        assert!(!state.verify_credential(b"wrong-master-password"));
+        assert!(state.verify_credential(pass.as_bytes()));
+        assert!(!state.verify_credential(wrong.as_bytes()));
         let verifier = state
             .active_credential_verifier
             .expect("verifier should be populated");
-        assert_ne!(&verifier[..], b"super-secret-master-password\0\0\0\0");
+        assert_ne!(&verifier[..], pass.as_bytes());
     }
 }
