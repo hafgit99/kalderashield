@@ -729,4 +729,53 @@ describe('LockScreen', () => {
     expect(secretInput.getAttribute('autocomplete')).toBe('off');
     expect(secretInput.getAttribute('data-lpignore')).toBe('true');
   });
+
+  it('prevents double submission while initial vault setup is in flight', async () => {
+    vi.mocked(isMasterPasswordSet).mockReturnValue(false);
+    vi.mocked(isRememberSecretKeySupported).mockReturnValue(true);
+
+    let resolveSetup!: () => void;
+    vi.mocked(setupMasterPasswordWithSecretKey).mockImplementation(
+      () => new Promise<void>((resolve) => {
+        resolveSetup = resolve;
+      }),
+    );
+
+    const onUnlock = vi.fn();
+    render(<LockScreen onUnlock={onUnlock} />);
+
+    fireEvent.change(passwordInput(), { target: { value: 'StrongMasterPass123!' } });
+    fireEvent.change(screen.getByTestId('lock-confirm-password-input'), {
+      target: { value: 'StrongMasterPass123!' },
+    });
+    fireEvent.click(screen.getByTestId('lock-terms-checkbox'));
+
+    const form = document.querySelector('form') as HTMLFormElement;
+    const submitBtn = screen.getByTestId('lock-submit-button') as HTMLButtonElement;
+
+    fireEvent.submit(form);
+    expect(submitBtn.disabled).toBe(true);
+    expect(submitBtn.getAttribute('aria-busy')).toBe('true');
+
+    // A second submit while the first Argon2id setup is still pending must be ignored.
+    fireEvent.submit(form);
+    expect(setupMasterPasswordWithSecretKey).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSetup();
+    });
+
+    await waitFor(() => {
+      expect(onUnlock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('renders a vertically scrollable container so large font scaling never clips bottom controls', () => {
+    vi.mocked(isMasterPasswordSet).mockReturnValue(false);
+    render(<LockScreen onUnlock={vi.fn()} />);
+
+    const scrollContainer = screen.getByTestId('lock-screen-scroll-container');
+    expect(scrollContainer.className).toContain('lock-screen-scroll');
+    expect(scrollContainer.className).not.toContain('overflow-hidden');
+  });
 });

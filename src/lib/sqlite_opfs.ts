@@ -514,15 +514,27 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
    */
   public async setupMaster(password: string, vaultEncryptionKey?: Uint8Array): Promise<void> {
     await this.hydrate();
-    const argonHash = await createArgon2idHash(password, createVaultEncryptionSalt());
-    this.state.encryption_salt = createVaultEncryptionSalt();
-    this.state.kdfParams = NEW_VAULT_ITEM_KDF_PARAMS;
-    this.state.user_secrets = [{
-      username: 'owner',
-      argon_hash: argonHash,
-    }];
-    this.logQuery('INSERT INTO user_secrets (username, argon_hash) VALUES ("owner", "[argon2id verification hash]");', 'SUCCESS', 1);
-    await this.saveToPersistentStorage(vaultEncryptionKey);
+    const previousState = this.cloneState();
+    const previousDecryptedItemsCache = this.cloneDecryptedItemsCache();
+    try {
+      const argonHash = await createArgon2idHash(password, createVaultEncryptionSalt());
+      this.state.encryption_salt = createVaultEncryptionSalt();
+      this.state.kdfParams = NEW_VAULT_ITEM_KDF_PARAMS;
+      this.state.user_secrets = [{
+        username: 'owner',
+        argon_hash: argonHash,
+      }];
+      await this.saveToPersistentStorage(vaultEncryptionKey);
+      this.logQuery('INSERT INTO user_secrets (username, argon_hash) VALUES ("owner", "[argon2id verification hash]");', 'SUCCESS', 1);
+    } catch (err) {
+      // Transactional rollback: if persistence or integrity gating rejects a
+      // setup write (e.g. a racing duplicate setup call), never leave a fresh
+      // salt or argon_hash mutated in memory while the active session still
+      // holds the previous key.
+      this.restoreTransactionalState(previousState, previousDecryptedItemsCache);
+      this.logQuery('INSERT INTO user_secrets rolled back because setup persistence failed;', 'ERROR', 0);
+      throw err;
+    }
   }
 
   /**
@@ -537,14 +549,26 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
     vaultEncryptionKey?: Uint8Array,
   ): Promise<void> {
     await this.hydrate();
-    this.state.encryption_salt = salt;
-    this.state.kdfParams = kdfParams;
-    this.state.user_secrets = [{
-      username: 'owner',
-      argon_hash: argonHash,
-    }];
-    this.logQuery('INSERT INTO user_secrets (username, argon_hash) VALUES ("owner", "[argon2id verification hash]");', 'SUCCESS', 1);
-    await this.saveToPersistentStorage(vaultEncryptionKey);
+    const previousState = this.cloneState();
+    const previousDecryptedItemsCache = this.cloneDecryptedItemsCache();
+    try {
+      this.state.encryption_salt = salt;
+      this.state.kdfParams = kdfParams;
+      this.state.user_secrets = [{
+        username: 'owner',
+        argon_hash: argonHash,
+      }];
+      await this.saveToPersistentStorage(vaultEncryptionKey);
+      this.logQuery('INSERT INTO user_secrets (username, argon_hash) VALUES ("owner", "[argon2id verification hash]");', 'SUCCESS', 1);
+    } catch (err) {
+      // Transactional rollback: a rejected concurrent setup must never poison
+      // `this.state.encryption_salt` / `user_secrets` in memory, otherwise the
+      // next item write seals the new salt with the old session key and locks
+      // the vault out on the next unlock (`vault-database-integrity-corrupted`).
+      this.restoreTransactionalState(previousState, previousDecryptedItemsCache);
+      this.logQuery('INSERT INTO user_secrets rolled back because setup persistence failed;', 'ERROR', 0);
+      throw err;
+    }
   }
 
   /**

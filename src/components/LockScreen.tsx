@@ -166,6 +166,8 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const [biometricLoading, setBiometricLoading] = useState(false);
   const isBiometricPendingRef = useRef(false);
   const hasAutoTriggeredRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   /**
@@ -311,6 +313,9 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     setError(null);
     setBiometricError(null);
 
@@ -386,6 +391,9 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
       console.error('[KalderaShield] Unlock/setup error:', err);
       const message = err instanceof Error ? err.message : String(err);
       setError(`${t('lock.error.cryptoFailed', 'Vault initialization failed.')} (${message})`);
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -450,20 +458,23 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   ];
 
   return (
-    <div className="safe-screen bg-brand-bg text-on-surface flex flex-col justify-between selection:bg-brand-primary/30 selection:text-white relative overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-brand-primary/10 rounded-full blur-[128px] pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-brand-secondary/10 rounded-full blur-[128px] pointer-events-none -z-10" />
+    <div
+      data-testid="lock-screen-scroll-container"
+      className="lock-screen-scroll bg-brand-bg text-on-surface selection:bg-brand-primary/30 selection:text-white relative touch-pan-y"
+    >
+      {/* Background ambient lighting & grid — pinned to viewport so they never block scrolling or cause overflow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-1/4 -left-48 w-96 h-96 bg-brand-primary/10 rounded-full blur-[128px]" />
+        <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-brand-secondary/10 rounded-full blur-[128px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40" />
+      </div>
 
-      {/* Cyber ambient grid lines */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40 -z-10" />
-
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-6 flex-1 flex flex-col">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-10 sm:py-6 min-h-full flex flex-col">
         {/* Top bar with Language Switcher */}
         <LockScreenHeader />
 
-        {/* Main Content: Split Grid on Desktop */}
-        <div className="flex-1 flex items-center justify-center py-4 lg:py-0">
+        {/* Main Content: Split Grid on Desktop. Using my-auto centers when short and scrolls cleanly from top when taller than viewport (e.g. large Android font scale). */}
+        <div className="w-full my-auto py-2 sm:py-4 lg:py-0">
           <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             {/* Left Panel — Brand Showcase (Desktop only: 7 columns on desktop) */}
@@ -609,7 +620,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
 
                   {/* Primary Password Input Container */}
                   <div className="text-left">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-2">
                       <label htmlFor="lock-master-password" className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
                         {isSetup ? t('lock.field.masterPassword') : t('lock.field.newMasterPassword')}
                       </label>
@@ -778,10 +789,16 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                   <button
                     data-testid="lock-submit-button"
                     type="submit"
-                    disabled={isSetup && isLockedOut}
-                    className="w-full flex items-center justify-center gap-2.5 bg-brand-primary text-brand-on-primary py-3.5 sm:py-4 rounded-xl font-bold transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-lg shadow-brand-primary/10 hover:brightness-110"
+                    disabled={isSubmitting || (isSetup && isLockedOut)}
+                    aria-busy={isSubmitting}
+                    className="w-full flex items-center justify-center gap-2.5 bg-brand-primary text-brand-on-primary py-3.5 sm:py-4 rounded-xl font-bold transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer shadow-lg shadow-brand-primary/10 hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {isSetup ? (
+                    {isSubmitting ? (
+                      <>
+                        <span className="w-4 h-4 rounded-full border-2 border-brand-on-primary/30 border-t-brand-on-primary animate-spin" />
+                        <span>{isSetup ? t('lock.action.unlock') : t('lock.action.setup')}</span>
+                      </>
+                    ) : isSetup ? (
                       <>
                         <Unlock className="w-4.5 h-4.5" />
                         <span>{isLockedOut ? `${lockoutRemainingSeconds}s` : t('lock.action.unlock')}</span>
@@ -830,7 +847,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                 )}
 
                 {/* Zero-Knowledge Security Trust Badges */}
-                <div className="mt-4 pt-4 border-t border-outline-variant/10 flex items-center justify-between text-[9px] sm:text-[10px] font-mono text-on-surface-variant/60 select-none">
+                <div className="mt-4 pt-4 border-t border-outline-variant/10 flex flex-wrap items-center justify-center sm:justify-between gap-x-3 gap-y-2 text-[9px] sm:text-[10px] font-mono text-on-surface-variant/60 select-none">
                   <div className="flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-brand-primary" />
                     <span>{t('lock.badge.aes', 'AES-256-GCM')}</span>

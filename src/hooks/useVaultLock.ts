@@ -24,8 +24,8 @@ export function useVaultLock({
     // own clones while the lock takes effect immediately. Failures are
     // swallowed inside checkAndTriggerAutoSnapshot (resolves to null).
     void checkAndTriggerAutoSnapshot('lock');
+    void clearExtensionCredentials();
     closeVaultSession();
-    clearExtensionCredentials();
     resetReveals();
     clearCopiedField();
   }, [clearCopiedField, resetReveals]);

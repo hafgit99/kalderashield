@@ -1,10 +1,12 @@
 package com.kalderashield.desktop
 
 import android.app.PendingIntent
+import android.app.assist.AssistStructure
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.service.autofill.AutofillService
+import android.service.autofill.Dataset
 import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.FillResponse
@@ -15,7 +17,6 @@ import android.text.InputType
 import android.util.Log
 import android.view.View
 import android.view.autofill.AutofillId
-import android.app.assist.AssistStructure
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
@@ -29,6 +30,7 @@ import org.json.JSONObject
 @RequiresApi(Build.VERSION_CODES.O)
 class KalderaShieldAutofillService : AutofillService() {
   private val requestCodeCounter = java.util.concurrent.atomic.AtomicInteger(1000)
+
   override fun onFillRequest(
     request: FillRequest,
     cancellationSignal: android.os.CancellationSignal,
@@ -40,13 +42,21 @@ class KalderaShieldAutofillService : AutofillService() {
     }
 
     val structure = request.fillContexts.lastOrNull()?.structure
+    val clientPackage = structure?.activityComponent?.packageName
+    if (clientPackage == packageName) {
+      // Never offer autofill inside KalderaShield's own lock screen or vault WebView.
+      Log.i(AUTOFILL_LOG_TAG, "FillRequest ignored for own package=$clientPackage")
+      callback.onSuccess(null)
+      return
+    }
+
     val loginFields = structure?.let { collectLoginFields(it) }
     if (loginFields == null || !loginFields.hasFillableLogin()) {
       Log.i(
         AUTOFILL_LOG_TAG,
-        "FillRequest ignored package=${loginFields?.appPackage ?: structure?.activityComponent?.packageName ?: "unknown"} " +
+        "FillRequest ignored package=${loginFields?.appPackage ?: clientPackage ?: "unknown"} " +
           "domain=${loginFields?.webDomain ?: "unknown"} usernameFields=${loginFields?.usernameIds?.size ?: 0} " +
-          "passwordFields=${loginFields?.passwordIds?.size ?: 0} fillableFields=${loginFields?.allIds()?.size ?: 0}"
+          "passwordFields=${loginFields?.passwordIds?.size ?: 0} fillableFields=${loginFields?.allIds()?.size ?: 0}",
       )
       callback.onSuccess(null)
       return
@@ -55,21 +65,44 @@ class KalderaShieldAutofillService : AutofillService() {
     Log.i(
       AUTOFILL_LOG_TAG,
       "FillRequest accepted package=${loginFields.appPackage ?: "unknown"} domain=${loginFields.webDomain ?: "unknown"} " +
-        "usernameFields=${loginFields.usernameIds.size} passwordFields=${loginFields.passwordIds.size} fillableFields=${loginFields.allIds().size}"
+        "usernameFields=${loginFields.usernameIds.size} passwordFields=${loginFields.passwordIds.size} fillableFields=${loginFields.allIds().size}",
     )
 
-    val authenticationIds = loginFields.allIds().toTypedArray()
-    @Suppress("DEPRECATION")
-    val response = FillResponse.Builder()
-      .setAuthentication(authenticationIds, createAuthenticationIntent(loginFields).intentSender, createAuthenticationPresentation())
-      .setSaveInfo(createSaveInfo(loginFields))
-      .build()
+    val authPresentation = createAuthenticationPresentation(loginFields.webDomain)
+    val authIntentSender = createAuthenticationIntent(loginFields).intentSender
 
-    callback.onSuccess(response)
+    // Dataset-level authentication: when AutofillAuthActivity returns the
+    // selected credential as a Dataset via EXTRA_AUTHENTICATION_RESULT, the
+    // Android Autofill Framework populates username + password immediately in
+    // one step without showing a second picker popup.
+    @Suppress("DEPRECATION")
+    val datasetBuilder = Dataset.Builder(authPresentation)
+      .setAuthentication(authIntentSender)
+
+    loginFields.allIds().forEach { autofillId ->
+      @Suppress("DEPRECATION")
+      datasetBuilder.setValue(autofillId, null, authPresentation)
+    }
+
+    val responseBuilder = FillResponse.Builder()
+      .addDataset(datasetBuilder.build())
+
+    if (loginFields.passwordIds.isNotEmpty()) {
+      responseBuilder.setSaveInfo(createSaveInfo(loginFields))
+    }
+
+    callback.onSuccess(responseBuilder.build())
   }
 
   override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
     val structure = request.fillContexts.lastOrNull()?.structure
+    val clientPackage = structure?.activityComponent?.packageName
+    if (clientPackage == packageName) {
+      Log.i(AUTOFILL_LOG_TAG, "SaveRequest ignored for own package=$clientPackage")
+      callback.onSuccess()
+      return
+    }
+
     val candidate = structure?.let { collectSaveCandidate(it) }
 
     if (candidate == null || candidate.password.isBlank()) {
@@ -199,10 +232,15 @@ class KalderaShieldAutofillService : AutofillService() {
     }
 
     val autofillId = node.autofillId
-    if (autofillId != null && node.visibility == View.VISIBLE) {
+    if (autofillId != null && node.visibility == View.VISIBLE && isEditableInputNode(node)) {
       when {
         isPasswordField(node) -> fields.passwordIds.add(autofillId)
-        isUsernameField(node) -> fields.usernameIds.add(autofillId)
+        isUsernameField(node) -> {
+          fields.usernameIds.add(autofillId)
+          if (hasStrongUsernameSignal(node)) {
+            fields.hasStrongUsernameSignal = true
+          }
+        }
       }
     }
 
@@ -220,7 +258,7 @@ class KalderaShieldAutofillService : AutofillService() {
     }
 
     val value = node.autofillValue?.takeIf { it.isText }?.textValue?.toString().orEmpty()
-    if (value.isNotBlank()) {
+    if (value.isNotBlank() && isEditableInputNode(node)) {
       when {
         isPasswordField(node) && candidate.password.isBlank() -> candidate.password = value
         isUsernameField(node) && candidate.username.isBlank() -> candidate.username = value.trim()
@@ -256,9 +294,43 @@ class KalderaShieldAutofillService : AutofillService() {
     }
   }
 
+  private fun htmlAttribute(node: AssistStructure.ViewNode, attributeName: String): String? {
+    val target = attributeName.lowercase()
+    node.htmlInfo?.attributes?.forEach { attr ->
+      if (attr?.first?.lowercase() == target) {
+        return attr.second?.trim()?.lowercase()
+      }
+    }
+    return null
+  }
+
+  private fun isEditableInputNode(node: AssistStructure.ViewNode): Boolean {
+    val htmlTag = node.htmlInfo?.tag?.lowercase()
+    if (htmlTag != null) {
+      if (htmlTag != "input") return false
+      val inputTypeAttr = htmlAttribute(node, "type")
+      if (inputTypeAttr != null && inputTypeAttr in NON_CREDENTIAL_HTML_INPUT_TYPES) {
+        return false
+      }
+      return true
+    }
+
+    if (node.autofillType == View.AUTOFILL_TYPE_TEXT) return true
+    if (node.inputType != 0) return true
+    val cls = node.className?.toString().orEmpty()
+    return cls.contains("EditText", ignoreCase = true) ||
+      cls.contains("AutoCompleteTextView", ignoreCase = true)
+  }
+
   private fun isPasswordField(node: AssistStructure.ViewNode): Boolean {
     val hints = node.autofillHints?.map { it.lowercase() }.orEmpty()
     if (hints.any { it.contains("password") || it.contains("credential") }) return true
+
+    val htmlType = htmlAttribute(node, "type")
+    if (htmlType == "password") return true
+
+    val htmlAutocomplete = htmlAttribute(node, "autocomplete").orEmpty()
+    if (htmlAutocomplete.contains("password")) return true
 
     val variation = node.inputType and InputType.TYPE_MASK_VARIATION
     val isPasswordType = variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
@@ -269,27 +341,69 @@ class KalderaShieldAutofillService : AutofillService() {
     if (isPasswordType) return true
 
     val tokens = node.searchTokens()
-    val negativeTokens = setOf("reset", "forgot", "link", "button", "change")
+    val negativeTokens = setOf("reset", "forgot", "link", "button", "change", "show", "toggle")
     if (tokens.any { token -> negativeTokens.any { neg -> token == neg } }) return false
 
-    return tokens.any { it == "password" || it == "passwd" || it == "pwd" || it.contains("pass_word") }
+    return tokens.any {
+      it == "password" ||
+        it == "passwd" ||
+        it == "pwd" ||
+        it == "parola" ||
+        it == "sifre" ||
+        it == "şifre" ||
+        it.contains("pass_word")
+    }
   }
 
-  private fun isUsernameField(node: AssistStructure.ViewNode): Boolean {
+  private fun hasStrongUsernameSignal(node: AssistStructure.ViewNode): Boolean {
     val hints = node.autofillHints?.map { it.lowercase() }.orEmpty()
     if (hints.any { it.contains("username") || it.contains("email") }) return true
 
+    val htmlType = htmlAttribute(node, "type")
+    if (htmlType == "email") return true
+
+    val htmlAutocomplete = htmlAttribute(node, "autocomplete").orEmpty()
+    if (htmlAutocomplete.contains("username") || htmlAutocomplete.contains("email")) return true
+
+    val variation = node.inputType and InputType.TYPE_MASK_VARIATION
+    return variation == InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS ||
+      variation == InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS
+  }
+
+  private fun isUsernameField(node: AssistStructure.ViewNode): Boolean {
+    if (hasStrongUsernameSignal(node)) return true
+
     val tokens = node.searchTokens()
-    val negativeTokens = setOf("agent", "profile", "avatar", "icon", "image", "button", "search", "header")
+    val negativeTokens = setOf(
+      "agent",
+      "profile",
+      "avatar",
+      "icon",
+      "image",
+      "button",
+      "search",
+      "header",
+      "footer",
+      "captcha",
+      "otp",
+      "coupon",
+      "promo",
+    )
     if (tokens.any { token -> negativeTokens.any { neg -> token.contains(neg) } }) return false
 
     return tokens.any {
       it == "username" ||
         it == "user" ||
+        it == "userid" ||
         it == "email" ||
         it == "e-mail" ||
+        it == "eposta" ||
         it == "login" ||
+        it == "signin" ||
         it == "account" ||
+        it == "identifier" ||
+        it == "kullanici" ||
+        it == "kullanıcı" ||
         it.contains("user_name") ||
         it.contains("email_address")
     }
@@ -336,13 +450,26 @@ class KalderaShieldAutofillService : AutofillService() {
       ),
     )
 
-    val intent = Intent(this, MainActivity::class.java).apply {
+    // Launch the non-exported AutofillAuthActivity relay (standard launchMode
+    // inside the client app's task) rather than MainActivity (singleTask), so
+    // Android delivers setResult(RESULT_OK, EXTRA_AUTHENTICATION_RESULT) back
+    // to the browser instead of cancelling the result across tasks.
+    val intent = Intent(this, AutofillAuthActivity::class.java).apply {
       action = ACTION_AUTOFILL_AUTHENTICATE
       putExtra(EXTRA_REQUEST_ID, requestId)
       putExtra(EXTRA_REQUEST_CREATED_AT, createdAt)
     }
 
-    val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    // Android's Autofill framework explicitly requires FLAG_MUTABLE on API 31+
+    // for authentication PendingIntents so the platform can attach runtime
+    // authentication arguments. Because the Intent is explicit and targets our
+    // non-exported AutofillAuthActivity (which ignores every extra except our
+    // registry-verified opaque requestId), K-1 isolation stays intact.
+    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+    } else {
+      PendingIntent.FLAG_UPDATE_CURRENT
+    }
     val requestCode = requestCodeCounter.incrementAndGet()
     return PendingIntent.getActivity(this, requestCode, intent, flags)
   }
@@ -364,9 +491,14 @@ class KalderaShieldAutofillService : AutofillService() {
     return builder.build()
   }
 
-  private fun createAuthenticationPresentation(): RemoteViews {
+  private fun createAuthenticationPresentation(webDomain: String?): RemoteViews {
+    val promptText = if (!webDomain.isNullOrBlank()) {
+      "${getString(R.string.app_name)} — $webDomain"
+    } else {
+      getString(R.string.autofill_unlock_prompt)
+    }
     return RemoteViews(packageName, android.R.layout.simple_list_item_1).apply {
-      setTextViewText(android.R.id.text1, getString(R.string.autofill_unlock_prompt))
+      setTextViewText(android.R.id.text1, promptText)
     }
   }
 
@@ -375,8 +507,10 @@ class KalderaShieldAutofillService : AutofillService() {
     val passwordIds: MutableList<AutofillId> = mutableListOf(),
     var appPackage: String? = null,
     var webDomain: String? = null,
+    var hasStrongUsernameSignal: Boolean = false,
   ) {
-    fun hasFillableLogin(): Boolean = passwordIds.isNotEmpty() && (usernameIds.isNotEmpty() || passwordIds.size == 1)
+    fun hasFillableLogin(): Boolean =
+      passwordIds.isNotEmpty() || (usernameIds.isNotEmpty() && !webDomain.isNullOrBlank() && hasStrongUsernameSignal)
 
     fun allIds(): List<AutofillId> = (usernameIds + passwordIds).distinct()
   }
@@ -397,14 +531,29 @@ class KalderaShieldAutofillService : AutofillService() {
     private const val FILL_REQUEST_PREFIX = "android-autofill"
     private const val SAVE_REQUEST_PREFIX = "android-autofill-save"
 
+    private val NON_CREDENTIAL_HTML_INPUT_TYPES = setOf(
+      "submit",
+      "button",
+      "hidden",
+      "checkbox",
+      "radio",
+      "file",
+      "image",
+      "reset",
+      "range",
+      "color",
+      "search",
+    )
+
     /**
      * K-1: these two actions are now only a ROUTING HINT that tells
-     * `MainActivity` which registry to consult. They are deliberately not a
-     * capability — every request is still resolved through
-     * `AutofillRequestRegistry`, and an id that is not registered is rejected.
+     * `AutofillAuthActivity` and `MainActivity` which registry to consult.
+     * They are deliberately not a capability — every request is still resolved
+     * through `AutofillRequestRegistry`, and an id that is not registered is
+     * rejected.
      *
      * They are kept (rather than removed) because `MainActivity` still needs
-     * to know whether it was launched for a fill or a save; the Activity is
+     * to know whether it was launched for a fill or a save; both Activities are
      * `android:exported="false"`, so only the system — executing a
      * `PendingIntent` this service created — can deliver them.
      */

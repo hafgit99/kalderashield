@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ANDROID_AUTOFILL_REQUEST_MAX_AGE_MS,
   androidAutofillTargetLabel,
+  cancelPendingAndroidAutofillRequest,
   clearPendingAndroidAutofillRequest,
   clearPendingAndroidAutofillSaveCandidate,
   completePendingAndroidAutofillRequest,
@@ -17,6 +18,7 @@ import {
   openAndroidAutofillSettings,
   requiresEncryptedAutofillSaveResolution,
   resolveEncryptedAndroidAutofillSaveCandidate,
+  subscribeAndroidAutofillRequestCleared,
   subscribeAndroidAutofillRequests,
   subscribeAndroidAutofillSaveCandidates,
 } from './androidAutofill';
@@ -262,6 +264,42 @@ describe('android autofill bridge', () => {
       createdAt: 999,
       source: 'android-autofill',
     });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels pending requests via native cancelPendingRequest with fallback to clearPendingRequest', () => {
+    const cancelPendingRequest = vi.fn(() => true);
+    const clearPendingRequest = vi.fn(() => true);
+    window.KalderaShieldAndroidAutofill = {
+      isSupported: () => true,
+      isEnabled: () => true,
+      openSettings: () => true,
+      getPendingRequest: () => null,
+      clearPendingRequest,
+      cancelPendingRequest,
+      completePendingRequest: () => true,
+    };
+
+    expect(cancelPendingAndroidAutofillRequest('req-cancel-1')).toBe(true);
+    expect(cancelPendingRequest).toHaveBeenCalledWith('req-cancel-1');
+    expect(clearPendingRequest).not.toHaveBeenCalled();
+
+    delete window.KalderaShieldAndroidAutofill.cancelPendingRequest;
+    expect(cancelPendingAndroidAutofillRequest('req-cancel-2')).toBe(true);
+    expect(clearPendingRequest).toHaveBeenCalledWith('req-cancel-2');
+  });
+
+  it('notifies subscribers when native code clears an Autofill request', () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeAndroidAutofillRequestCleared(listener);
+
+    window.__KalderaShieldAndroidAutofill?.onRequestCleared?.('req-cleared-1');
+    window.__KalderaShieldAndroidAutofill?.onRequestCleared?.('');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith('req-cleared-1');
+
+    unsubscribe();
+    window.__KalderaShieldAndroidAutofill?.onRequestCleared?.('req-cleared-2');
     expect(listener).toHaveBeenCalledTimes(1);
   });
 

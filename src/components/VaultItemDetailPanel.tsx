@@ -64,7 +64,9 @@ export default function VaultItemDetailPanel({
   onSecureShare,
 }: VaultItemDetailPanelProps) {
   const { t } = useLanguage();
-  const canApproveAutofill = isAutofillMode && item.category === 'login' && Boolean(item.password) && Boolean(onApproveAutofill);
+  const hasFillableCredential = Boolean(item.password) ||
+    (autofillRequest?.passwordFieldCount === 0 && Boolean(item.username));
+  const canApproveAutofill = isAutofillMode && item.category === 'login' && hasFillableCredential && Boolean(onApproveAutofill);
   const autofillTargetLabel = androidAutofillTargetLabel(autofillRequest);
   const isAutofillMatch = canApproveAutofill && isAndroidAutofillTargetMatch(item, autofillRequest);
   const requiresMismatchConfirmation = canApproveAutofill && Boolean(autofillTargetLabel) && !isAutofillMatch;

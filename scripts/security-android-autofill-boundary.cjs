@@ -362,6 +362,30 @@ if (manifest === null) {
     }
   }
 
+  const autofillAuthActivity = extractManifestElement(manifest, 'activity', '.AutofillAuthActivity');
+  if (autofillAuthActivity === null) {
+    fail('AndroidManifest.xml does not declare .AutofillAuthActivity relay');
+  } else {
+    if (!/android:exported="false"/.test(autofillAuthActivity) || /android:exported="true"/.test(autofillAuthActivity)) {
+      fail('AutofillAuthActivity must be explicitly android:exported="false" (K-1 trust boundary)');
+    } else {
+      pass('AutofillAuthActivity is android:exported="false"');
+    }
+    if (/<intent-filter[\s\S]*?<\/intent-filter>/.test(autofillAuthActivity)) {
+      fail('AutofillAuthActivity must declare no <intent-filter>');
+    } else {
+      pass('AutofillAuthActivity declares no intent-filter');
+    }
+    if (/android:launchMode="singleTask"/.test(autofillAuthActivity)) {
+      fail(
+        'AutofillAuthActivity must NOT use android:launchMode="singleTask" — Android cancels ' +
+        'Autofill setResult() across tasks for singleTask Activities'
+      );
+    } else {
+      pass('AutofillAuthActivity runs in client task (not singleTask) so setResult reaches browser');
+    }
+  }
+
   // A single exported launcher must exist, and it must not be MainActivity.
   const launcherElement = extractManifestElement(manifest, 'activity', '.LauncherActivity');
   if (launcherElement === null) {
@@ -438,13 +462,34 @@ if (kotlinFiles.length === 0) {
   const readWithoutComments = (absolute) => stripKotlinComments(fs.readFileSync(absolute, 'utf8'));
 
   const mainActivityPath = path.join(kotlinDir, 'MainActivity.kt');
+  const autofillAuthPath = path.join(kotlinDir, 'AutofillAuthActivity.kt');
   const servicePath = path.join(kotlinDir, 'KalderaShieldAutofillService.kt');
   const registryPath = path.join(kotlinDir, 'security', 'AutofillRequestRegistry.kt');
   const launcherPath = path.join(kotlinDir, 'LauncherActivity.kt');
 
-  for (const required of [mainActivityPath, servicePath, registryPath, launcherPath]) {
+  for (const required of [mainActivityPath, autofillAuthPath, servicePath, registryPath, launcherPath]) {
     if (!fs.existsSync(required)) {
       fail(`Expected source missing: ${path.relative(rootDir, required)}`);
+    }
+  }
+
+  if (fs.existsSync(autofillAuthPath) && fs.existsSync(servicePath)) {
+    const code = readWithoutComments(autofillAuthPath);
+    const constantMap = buildExtraConstantMap(readWithoutComments(servicePath));
+    const disallowed = collectAutofillExtraReferences(code)
+      .map((reference) => resolveExtraName(reference, constantMap))
+      .filter((name) => !ROUTING_EXTRA_ALLOWLIST.has(name));
+    if (disallowed.length > 0) {
+      fail(
+        `AutofillAuthActivity references non-routing Autofill Intent extras: ${[...new Set(disallowed)].join(', ')}.`,
+      );
+    } else {
+      pass('AutofillAuthActivity reads no Autofill request data from Intent extras');
+    }
+    if (!/AutofillRequestRegistry/.test(code)) {
+      fail('AutofillAuthActivity does not validate requests through AutofillRequestRegistry');
+    } else {
+      pass('AutofillAuthActivity validates requests through AutofillRequestRegistry');
     }
   }
 

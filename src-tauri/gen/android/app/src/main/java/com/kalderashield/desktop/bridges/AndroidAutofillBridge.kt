@@ -1,20 +1,18 @@
 package com.kalderashield.desktop.bridges
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.service.autofill.Dataset
-import android.service.autofill.FillResponse
 import android.util.Log
 import android.view.autofill.AutofillManager
 import android.view.autofill.AutofillValue
 import android.webkit.JavascriptInterface
 import android.widget.RemoteViews
 import com.kalderashield.desktop.MainActivity
-import com.kalderashield.desktop.R
 import com.kalderashield.desktop.model.AutofillLaunchRequest
 import com.kalderashield.desktop.model.AutofillSaveCandidate
+import com.kalderashield.desktop.security.AutofillResultMailbox
 import com.kalderashield.desktop.security.SecureTempFileStorage
 import java.nio.charset.StandardCharsets
 import org.json.JSONObject
@@ -71,11 +69,40 @@ class AndroidAutofillBridge(
         if (current.requestId != requestId) {
             Log.w(
                 AUTOFILL_LOG_TAG,
-                "clearPendingRequest mismatch: pendingRequestId=${current.requestId}, requestedId=$requestId"
+                "clearPendingRequest mismatch: pendingRequestId=${current.requestId}, requestedId=$requestId",
             )
             return false
         }
+        AutofillResultMailbox.cancel(requestId)
         setPendingAutofillRequest(null)
+        return true
+    }
+
+    /**
+     * Explicit user cancellation of an in-flight Autofill session: notifies
+     * [AutofillResultMailbox] and moves KalderaShield back so the relay
+     * [com.kalderashield.desktop.AutofillAuthActivity] delivers RESULT_CANCELED
+     * and returns the user straight to the browser without destroying our
+     * Tauri WebView.
+     */
+    @JavascriptInterface
+    fun cancelPendingRequest(requestId: String): Boolean {
+        val current = getPendingAutofillRequest()
+        if (current != null && current.requestId != requestId) {
+            Log.w(
+                AUTOFILL_LOG_TAG,
+                "cancelPendingRequest mismatch: pendingRequestId=${current.requestId}, requestedId=$requestId",
+            )
+            return false
+        }
+        val shouldReturnToClient = AutofillResultMailbox.hasActiveSession()
+        AutofillResultMailbox.cancel(requestId)
+        setPendingAutofillRequest(null)
+        if (shouldReturnToClient) {
+            activity.runOnUiThread {
+                activity.moveTaskToBack(true)
+            }
+        }
         return true
     }
 
@@ -146,46 +173,69 @@ class AndroidAutofillBridge(
 
         // K-1: `requestId` must resolve through the registry. A JS caller (or a
         // forged Intent that somehow reached us) cannot name a request that
-        // KalderaShieldAutofillService never registered, so there is no FillResponse
+        // KalderaShieldAutofillService never registered, so there is no Dataset
         // to hand back to an arbitrary caller.
         val current = getPendingAutofillRequest() ?: run {
             Log.w(
                 AUTOFILL_LOG_TAG,
-                "Autofill audit event [REJECTED]: completePendingRequest for unregistered requestId=$requestId"
+                "Autofill audit event [REJECTED]: completePendingRequest for unregistered requestId=$requestId",
             )
             return false
         }
         if (current.requestId != requestId) return false
-        if (current.passwordIds.isEmpty()) return false
+        if (current.passwordIds.isEmpty() && current.usernameIds.isEmpty()) return false
 
         return try {
             val presentationLabel = label.ifBlank { "KalderaShield Vault" }
-            val datasetBuilder = Dataset.Builder(createAutofillPresentation(presentationLabel))
-            current.usernameIds.forEach { autofillId ->
-                datasetBuilder.setValue(autofillId, AutofillValue.forText(username))
+            val presentation = createAutofillPresentation(presentationLabel)
+            val datasetBuilder = Dataset.Builder(presentation)
+            var populatedFields = 0
+
+            if (username.isNotEmpty()) {
+                current.usernameIds.forEach { autofillId ->
+                    datasetBuilder.setValue(autofillId, AutofillValue.forText(username), presentation)
+                    populatedFields++
+                }
             }
-            current.passwordIds.forEach { autofillId ->
-                datasetBuilder.setValue(autofillId, AutofillValue.forText(password))
+            if (password.isNotEmpty()) {
+                current.passwordIds.forEach { autofillId ->
+                    datasetBuilder.setValue(autofillId, AutofillValue.forText(password), presentation)
+                    populatedFields++
+                }
             }
 
-            val response = FillResponse.Builder()
-                .addDataset(datasetBuilder.build())
-                .build()
+            if (populatedFields == 0) {
+                Log.w(
+                    AUTOFILL_LOG_TAG,
+                    "Autofill audit event [REJECTED]: no fillable username/password values for requestId=$requestId",
+                )
+                return false
+            }
 
-            val result = Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response)
-            activity.setResult(Activity.RESULT_OK, result)
+            val dataset = datasetBuilder.build()
+            AutofillResultMailbox.complete(requestId, dataset)
             Log.i(
                 AUTOFILL_LOG_TAG,
-                "Autofill audit event [COMPLETED]: requestId=$requestId appPackage=${current.appPackage ?: "unknown"} webDomain=${current.webDomain ?: "unknown"} usernameFields=${current.usernameIds.size} passwordFields=${current.passwordIds.size}"
+                "Autofill audit event [COMPLETED]: requestId=$requestId appPackage=${current.appPackage ?: "unknown"} " +
+                    "webDomain=${current.webDomain ?: "unknown"} usernameFields=${current.usernameIds.size} " +
+                    "passwordFields=${current.passwordIds.size} populatedFields=$populatedFields",
             )
             setPendingAutofillRequest(null)
-            activity.finish()
+
+            // Move MainActivity to the background on the UI thread instead of
+            // calling finish(): keeping MainActivity alive avoids Tauri's
+            // dead-WebView black screen on relaunch, and immediately resumes
+            // AutofillAuthActivity in the client app's task so it can deliver
+            // RESULT_OK + EXTRA_AUTHENTICATION_RESULT to the browser.
+            activity.runOnUiThread {
+                activity.moveTaskToBack(true)
+            }
             true
         } catch (error: Exception) {
             Log.e(
                 AUTOFILL_LOG_TAG,
                 "Autofill audit event [ERROR]: completePendingRequest failed for requestId=$requestId: ${error.message}",
-                error
+                error,
             )
             false
         }

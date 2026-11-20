@@ -152,6 +152,13 @@ export default function UnlockedApp({
     closeConfirm: handleCloseConfirm,
   } = useConfirmModal();
 
+  const handleAutofillFocusList = useCallback(() => {
+    setSelectedItem(null);
+    setMobileActiveView('list');
+    setFilterFavoritesOnly(false);
+    setSelectedCategory('all');
+  }, [setFilterFavoritesOnly, setMobileActiveView, setSelectedCategory, setSelectedItem]);
+
   const {
     pendingAutofillRequest,
     cancelAutofillRequest: handleCancelAutofillRequest,
@@ -161,6 +168,7 @@ export default function UnlockedApp({
     setActiveTab,
     openNewItemForm: handleTriggerNew,
     showNotification,
+    onAutofillFocusList: handleAutofillFocusList,
   });
 
   // Y-23: stable identity — the runtime-security effects bind native

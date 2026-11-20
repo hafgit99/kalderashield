@@ -45,7 +45,24 @@
             android:label="@string/main_activity_title"
             android:name=".MainActivity"
             android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
+
+        <!--
+            Non-exported Autofill authentication relay Activity.
+            Runs in the client app's task (launchMode="standard", taskAffinity="")
+            so Android delivers setResult(RESULT_OK, EXTRA_AUTHENTICATION_RESULT)
+            back to the browser instead of cancelling across tasks, while keeping
+            MainActivity (and its Tauri WebView) singleTask and alive.
+        -->
+        <activity
+            android:name=".AutofillAuthActivity"
+            android:exported="false"
+            android:launchMode="standard"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="false"
+            android:theme="@style/Theme.KalderaShield.AutofillBridge" />
 
         <!-- The single exported surface. Forwards nothing. -->
         <activity

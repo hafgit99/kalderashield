@@ -58,6 +58,7 @@ requestAnimationFrame(() => {
   // fatal-error screen with an explicit recovery path instead.
   import('./App.tsx')
     .then(({ default: App }) => {
+      document.documentElement.classList.remove('splash-root');
       root.render(
         <StrictMode>
           <LanguageProvider>
@@ -69,6 +70,7 @@ requestAnimationFrame(() => {
       );
     })
     .catch((err: unknown) => {
+      document.documentElement.classList.remove('splash-root');
       console.error('Fatal: failed to load the application bundle.', err);
       logSecurityEvent(
         securityEventCodes.appBundleLoadFailed,
