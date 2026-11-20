@@ -166,4 +166,23 @@ describe('encrypted backup envelope', () => {
 
     expect(salts.size).toBe(count);
   });
+
+  it('F-05: rejects backup envelopes when AAD-bound header metadata is tampered', async () => {
+    const envelope = await encryptDataWithPasswordSecure('top secret backup', 'correct horse battery staple');
+    const parsed = JSON.parse(envelope);
+    expect(parsed.aadVersion).toBe(1);
+
+    const tamperedVersion = { ...parsed, version: '9.9' };
+    await expect(
+      decryptDataWithPasswordSecure(JSON.stringify(tamperedVersion), 'correct horse battery staple'),
+    ).rejects.toThrow();
+
+    const tamperedKdf = {
+      ...parsed,
+      kdfParams: { ...parsed.kdfParams, iterations: parsed.kdfParams.iterations + 1 },
+    };
+    await expect(
+      decryptDataWithPasswordSecure(JSON.stringify(tamperedKdf), 'correct horse battery staple'),
+    ).rejects.toThrow();
+  });
 });

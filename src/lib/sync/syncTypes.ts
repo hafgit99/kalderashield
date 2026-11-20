@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { VaultItem } from '../../types';
+
 // ─── Core Sync Types ────────────────────────────────────────────────────────
 
 export type SyncProviderType = 'webdav' | 's3' | 'disabled';
@@ -18,6 +20,8 @@ export interface SyncMetadata {
   checksum: string;
   /** Total number of items in this snapshot */
   itemCount: number;
+  /** F-06: Monotonically increasing sync generation counter (mirrored inside AEAD ciphertext). */
+  syncGeneration?: number;
 }
 
 /**
@@ -122,6 +126,17 @@ export function validateRemoteSyncMetadata(
     return { ok: false, reason: 'itemCount must be a non-negative integer' };
   }
 
+  if (
+    candidate.syncGeneration !== undefined
+    && (
+      typeof candidate.syncGeneration !== 'number'
+      || !Number.isInteger(candidate.syncGeneration)
+      || candidate.syncGeneration < 1
+    )
+  ) {
+    return { ok: false, reason: 'syncGeneration must be a positive integer when present' };
+  }
+
   return {
     ok: true,
     metadata: {
@@ -130,6 +145,7 @@ export function validateRemoteSyncMetadata(
       vaultVersion: candidate.vaultVersion,
       checksum: candidate.checksum.toLowerCase(),
       itemCount: candidate.itemCount,
+      ...(candidate.syncGeneration !== undefined ? { syncGeneration: candidate.syncGeneration } : {}),
     },
   };
 }
@@ -311,6 +327,12 @@ export const syncErrorCodes = {
    * like unreadable metadata: refuse to write over an unverified remote.
    */
   remoteMetadataInvalid: 'sync.remoteMetadataInvalid',
+  /**
+   * F-06: the remote sync snapshot carries an authenticated generation counter
+   * older than the last generation verified by this device (possible replay /
+   * rollback attack by a compromised storage provider).
+   */
+  rollbackDetected: 'sync.rollbackDetected',
 } as const;
 
 export type SyncErrorCode = (typeof syncErrorCodes)[keyof typeof syncErrorCodes];
@@ -340,6 +362,10 @@ export interface SyncResult {
   mergedCount?: number;
   /** Items that could not be auto-resolved */
   conflicts?: SyncConflictItem[];
+  /** F-06: Non-destructive copies of local items overwritten during near-simultaneous conflicts. */
+  conflictCopies?: VaultItem[];
+  /** F-06: Monotonic sync generation counter persisted after a successful upload. */
+  syncGeneration?: number;
   error?: SyncError;
   /**
    * Y-11: the ETag of the remote vault this client successfully uploaded.

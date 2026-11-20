@@ -438,3 +438,75 @@ describe('Y-11 remote overwrite protection', () => {
     expect(provider.uploadVault).not.toHaveBeenCalled();
   });
 });
+
+// ─── F-06: Rollback Protection & Non-Destructive Conflict Copies ────────────
+
+describe('F-06 rollback-protected sync and conflict copies', () => {
+  const makeProvider = (overrides: Partial<SyncProvider> = {}): SyncProvider => ({
+    uploadVault: vi.fn().mockResolvedValue(undefined),
+    downloadVault: vi.fn().mockResolvedValue(null),
+    getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'absent' } as SyncRemoteMetadata),
+    testConnection: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  });
+
+  it('embeds authenticated syncGeneration inside v2 sync envelopes and advances on upload', async () => {
+    const remoteItem = makeItem('r1', '2026-06-01T12:00:00Z', { title: 'Gen 4 Remote' });
+    const { encryptedBlob, metadata } = await buildSyncEnvelope([remoteItem], MASTER_PW, 4);
+    expect(metadata.syncGeneration).toBe(4);
+
+    const provider = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'ok', metadata } as SyncRemoteMetadata),
+      downloadVault: vi.fn().mockResolvedValue(encryptedBlob),
+    });
+
+    const result = await performSync(provider, [], MASTER_PW, { lastVerifiedGeneration: 3 });
+    expect(result.status).toBe('success');
+    expect(result.syncGeneration).toBe(5);
+    expect(provider.uploadVault).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ syncGeneration: 5 }),
+      expect.any(Object),
+    );
+  });
+
+  it('refuses sync when a compromised remote replays an older authenticated generation (rollback attack)', async () => {
+    const staleRemote = await buildSyncEnvelope(
+      [makeItem('old', '2026-06-01T12:00:00Z', { title: 'Stale Snapshot' })],
+      MASTER_PW,
+      2,
+    );
+    // Even if the hostile server lies in plaintext metadata.json and claims generation 9,
+    // the AEAD-authenticated generation (2) inside the ciphertext catches the rollback.
+    const forgedMetadata = {
+      ...staleRemote.metadata,
+      updatedAt: '2099-01-01T00:00:00Z',
+      syncGeneration: 9,
+    };
+
+    const provider = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'ok', metadata: forgedMetadata } as SyncRemoteMetadata),
+      downloadVault: vi.fn().mockResolvedValue(staleRemote.encryptedBlob),
+    });
+
+    const localItems = [makeItem('local', '2026-06-01T10:00:00Z', { title: 'Current Local' })];
+    const result = await performSync(provider, localItems, MASTER_PW, { lastVerifiedGeneration: 5 });
+
+    expect(result.status).toBe('error');
+    expect(result.error?.code).toBe(syncErrorCodes.rollbackDetected);
+    expect(provider.uploadVault).not.toHaveBeenCalled();
+    expect(result.mergedItems).toEqual(localItems);
+  });
+
+  it('preserves a non-destructive conflict copy when near-simultaneous writes have different content', () => {
+    const local = [makeItem('c1', '2026-06-01T10:00:00.000Z', { title: 'Bank', password: 'LocalPassword1!' })];
+    const remote = [makeItem('c1', '2026-06-01T10:00:02.000Z', { title: 'Bank', password: 'RemotePassword2!' })];
+
+    const { merged, conflicts, conflictCopies } = resolveLWWConflicts(local, remote);
+    expect(merged.find((i) => i.id === 'c1')?.password).toBe('RemotePassword2!');
+    expect(conflicts).toHaveLength(1);
+    expect(conflictCopies).toHaveLength(1);
+    expect(conflictCopies[0]?.password).toBe('LocalPassword1!');
+    expect(conflictCopies[0]?.title).toContain('(Conflict Copy)');
+  });
+});

@@ -10,6 +10,7 @@ import {
   getImportedAesGcmKeyCacheSizeForTest,
   derivePerItemKey,
 } from './webcrypto';
+import { buildVaultRowAad } from './rowCrypto/rowAad';
 
 describe('WebCrypto AES-GCM adapter', () => {
   it('derives unique per-item keys for different item IDs using HKDF-SHA256', async () => {
@@ -141,5 +142,18 @@ describe('WebCrypto AES-GCM adapter', () => {
     // but the test checks it runs without errors and size is kept bounded.
     expect(getImportedAesGcmKeyCacheSizeForTest()).toBe(20);
     closeVaultSession();
+  });
+
+  it('F-05: rejects binary and vault-row payloads when AAD context mismatches', async () => {
+    const key = new Uint8Array(32).fill(11);
+    const iv = generateSafeIv();
+    const bin = new Uint8Array([10, 20, 30, 40]).buffer;
+    const aadA = buildVaultRowAad('row-a');
+    const aadB = buildVaultRowAad('row-b');
+
+    const sealedBin = await webCryptoAesGcmEncryptBytes(bin, key, iv, aadA);
+    await expect(webCryptoAesGcmDecryptBytes(sealedBin, key, aadA)).resolves.toEqual(bin);
+    await expect(webCryptoAesGcmDecryptBytes(sealedBin, key, aadB)).rejects.toThrow();
+    await expect(webCryptoAesGcmDecryptBytes(sealedBin, key)).rejects.toThrow();
   });
 });

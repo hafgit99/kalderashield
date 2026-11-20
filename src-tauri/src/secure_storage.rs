@@ -1,7 +1,8 @@
 // Desktop Secure Storage — Tauri IPC bridge
 //
-// Windows: Windows Credential Manager (DPAPI) via `wincred` Tauri commands
-// Linux:   Secret Service D-Bus (GNOME Keyring / KDE Wallet) — TODO in Commit 2
+// Windows: Windows Credential Manager (DPAPI) via `windows-sys`
+// Linux:   Secret Service D-Bus (GNOME Keyring / KDE Wallet) via `keyring`
+// macOS:   Apple Keychain (Security Framework) via `keyring` (`apple-native`)
 //
 // This module mirrors the synchronous Android bridge pattern: during app init,
 // all known keys are loaded into an in-memory cache, and from that point the
@@ -9,8 +10,126 @@
 // fire-and-forget the Rust command *and* update the cache atomically, so every
 // subsequent synchronous read sees the latest value.
 
+use crate::credential_handler::CredentialSession;
+use base64::Engine;
+use chacha20poly1305::{
+    aead::{Aead, KeyInit, Payload},
+    XChaCha20Poly1305, XNonce,
+};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use zeroize::Zeroize;
+
+/// Rust-only OS keychain entry used exclusively for sealing/unsealing desktop
+/// biometric payloads inside Rust. Deliberately NOT in `KNOWN_KEYS`, so the
+/// renderer/WebView can never read or enumerate this key.
+const BIOMETRIC_NATIVE_SEAL_KEY: &str = "KalderaShield_biometric_native_seal_key";
+const BIOMETRIC_SEAL_AAD: &[u8] = b"kalderashield-desktop-bio-seal-v1";
+const BIOMETRIC_SEAL_NONCE_LEN: usize = 24;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SealedDesktopBiometricPayload {
+    v: u8,
+    nonce: String,
+    ciphertext: String,
+}
+
+fn seal_with_key(key: &[u8; 32], plaintext: &[u8]) -> Result<String, String> {
+    let cipher = XChaCha20Poly1305::new_from_slice(key).map_err(|_| "invalid seal key")?;
+    let mut nonce_bytes = [0u8; BIOMETRIC_SEAL_NONCE_LEN];
+    getrandom::fill(&mut nonce_bytes).map_err(|e| format!("CSPRNG failure: {e}"))?;
+    let nonce = XNonce::try_from(&nonce_bytes[..]).map_err(|_| "invalid biometric seal nonce")?;
+    let ciphertext = cipher
+        .encrypt(
+            &nonce,
+            Payload {
+                msg: plaintext,
+                aad: BIOMETRIC_SEAL_AAD,
+            },
+        )
+        .map_err(|_| "biometric seal encryption failed".to_string())?;
+
+    let envelope = SealedDesktopBiometricPayload {
+        v: 1,
+        nonce: base64::engine::general_purpose::STANDARD.encode(nonce_bytes),
+        ciphertext: base64::engine::general_purpose::STANDARD.encode(ciphertext),
+    };
+    serde_json::to_string(&envelope).map_err(|e| format!("biometric seal encode failed: {e}"))
+}
+
+fn unseal_with_key(key: &[u8; 32], sealed_json: &str) -> Result<String, String> {
+    let envelope: SealedDesktopBiometricPayload = serde_json::from_str(sealed_json)
+        .map_err(|_| "invalid sealed biometric envelope".to_string())?;
+    if envelope.v != 1 {
+        return Err("unsupported sealed biometric version".to_string());
+    }
+    let nonce_vec = base64::engine::general_purpose::STANDARD
+        .decode(&envelope.nonce)
+        .map_err(|_| "invalid biometric seal nonce".to_string())?;
+    if nonce_vec.len() != BIOMETRIC_SEAL_NONCE_LEN {
+        return Err("invalid biometric seal nonce length".to_string());
+    }
+    let ciphertext = base64::engine::general_purpose::STANDARD
+        .decode(&envelope.ciphertext)
+        .map_err(|_| "invalid biometric seal ciphertext".to_string())?;
+    let nonce = XNonce::try_from(nonce_vec.as_slice())
+        .map_err(|_| "invalid biometric seal nonce length".to_string())?;
+    let cipher = XChaCha20Poly1305::new_from_slice(key).map_err(|_| "invalid seal key")?;
+    let mut plaintext = cipher
+        .decrypt(
+            &nonce,
+            Payload {
+                msg: &ciphertext,
+                aad: BIOMETRIC_SEAL_AAD,
+            },
+        )
+        .map_err(|_| "biometric seal authentication failed".to_string())?;
+    let result = String::from_utf8(plaintext.clone())
+        .map_err(|_| "biometric seal payload is not utf8".to_string());
+    plaintext.zeroize();
+    result
+}
+
+fn generate_random_seal_key() -> Result<[u8; 32], String> {
+    let mut bytes = Vec::with_capacity(32);
+    for _ in 0..4 {
+        let word = getrandom::u64().map_err(|e| format!("CSPRNG failure: {e}"))?;
+        bytes.extend_from_slice(&word.to_ne_bytes());
+    }
+    let key = <[u8; 32]>::try_from(bytes.as_slice())
+        .map_err(|_| "CSPRNG key length error".to_string())?;
+    bytes.zeroize();
+    Ok(key)
+}
+
+fn load_or_create_biometric_seal_key(create_if_missing: bool) -> Result<[u8; 32], String> {
+    if !platform::is_available() {
+        return Err("desktop secure storage unavailable".to_string());
+    }
+    if let Some(mut encoded) = platform::get_item(BIOMETRIC_NATIVE_SEAL_KEY) {
+        let decoded = base64::engine::general_purpose::STANDARD.decode(&encoded);
+        encoded.zeroize();
+        if let Ok(mut raw) = decoded {
+            if let Ok(key) = <[u8; 32]>::try_from(raw.as_slice()) {
+                raw.zeroize();
+                return Ok(key);
+            }
+            raw.zeroize();
+        }
+    }
+    if !create_if_missing {
+        return Err("biometric seal key not found".to_string());
+    }
+    let mut key = generate_random_seal_key()?;
+    let mut encoded = base64::engine::general_purpose::STANDARD.encode(key);
+    let stored = platform::set_item(BIOMETRIC_NATIVE_SEAL_KEY, &encoded);
+    encoded.zeroize();
+    if !stored {
+        key.zeroize();
+        return Err("failed to persist biometric seal key in OS keychain".to_string());
+    }
+    Ok(key)
+}
 
 /// The in-process credential store.
 ///
@@ -120,20 +239,21 @@ mod platform {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Platform implementation: Linux Secret Service D-Bus (GNOME Keyring / KDE Wallet)
+// Platform implementation: Linux Secret Service D-Bus & macOS Apple Keychain
 // ──────────────────────────────────────────────────────────────────────────────
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod platform {
     use keyring::Entry;
     use std::collections::HashMap;
 
     const SERVICE_NAME: &str = "KalderaShield";
 
-    /// Checks if a Secret Service daemon (GNOME Keyring / KDE Wallet) is active.
+    /// Checks if the native OS keychain provider (Linux Secret Service D-Bus or
+    /// macOS Apple Keychain) is reachable.
     ///
-    /// If no Secret Service provider is available over D-Bus, this returns false
-    /// and the app gracefully falls back to single-factor operation (Faz 1 behaviour).
+    /// If no provider is available, returns false so the app gracefully falls
+    /// back to single-factor operation.
     pub fn is_available() -> bool {
         match Entry::new(SERVICE_NAME, "__probe__") {
             Ok(entry) => match entry.get_password() {
@@ -180,10 +300,10 @@ mod platform {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Platform implementation: fallback (macOS, mobile, etc.)
+// Platform implementation: fallback (mobile / unsupported desktop targets)
 // ──────────────────────────────────────────────────────────────────────────────
 
-#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+#[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
 mod platform {
     use std::collections::HashMap;
 
@@ -220,6 +340,12 @@ const KNOWN_KEYS: &[&str] = &[
     "KalderaShield_password_hint_key",
 ];
 
+/// F-02: Strict key allowlist at the IPC boundary so a renderer cannot read,
+/// write, or delete arbitrary credential entries outside the documented set.
+pub fn is_known_key(key: &str) -> bool {
+    KNOWN_KEYS.contains(&key)
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Init: called once from Tauri setup to prime the cache
 // ──────────────────────────────────────────────────────────────────────────────
@@ -245,6 +371,9 @@ pub fn is_desktop_secure_storage_available() -> bool {
 
 #[tauri::command]
 pub fn get_desktop_secure_item(key: String) -> Option<String> {
+    if !is_known_key(&key) {
+        return None;
+    }
     // Read from the cache first (populated at init).
     if let Ok(store) = DESKTOP_STORE.lock() {
         if let Some(map) = store.as_ref() {
@@ -256,25 +385,38 @@ pub fn get_desktop_secure_item(key: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn set_desktop_secure_item(key: String, value: String) -> bool {
+pub fn set_desktop_secure_item(key: String, mut value: String) -> bool {
+    if !is_known_key(&key) {
+        value.zeroize();
+        return false;
+    }
     let ok = platform::set_item(&key, &value);
     if ok {
         if let Ok(mut store) = DESKTOP_STORE.lock() {
             if let Some(map) = store.as_mut() {
-                map.insert(key, value);
+                if let Some(mut old) = map.insert(key, value) {
+                    old.zeroize();
+                }
+                return true;
             }
         }
     }
+    value.zeroize();
     ok
 }
 
 #[tauri::command]
 pub fn remove_desktop_secure_item(key: String) -> bool {
+    if !is_known_key(&key) {
+        return false;
+    }
     let ok = platform::remove_item(&key);
     if ok {
         if let Ok(mut store) = DESKTOP_STORE.lock() {
             if let Some(map) = store.as_mut() {
-                map.remove(&key);
+                if let Some(mut old) = map.remove(&key) {
+                    old.zeroize();
+                }
             }
         }
     }
@@ -289,4 +431,104 @@ pub fn get_all_desktop_secure_items() -> HashMap<String, String> {
         }
     }
     platform::load_all(KNOWN_KEYS)
+}
+
+/// F-02/F-04: Seals a desktop biometric credentials payload inside Rust using a
+/// Rust-only OS Keychain key (XChaCha20-Poly1305 + AAD). The sealing key never
+/// crosses the IPC boundary into JavaScript. Requires an active unlocked session.
+#[tauri::command]
+pub fn seal_desktop_biometric_bundle(
+    session: tauri::State<'_, CredentialSession>,
+    mut plaintext: String,
+) -> Result<String, String> {
+    if let Err(err) = session.require_active_session() {
+        plaintext.zeroize();
+        return Err(err);
+    }
+    let mut key = load_or_create_biometric_seal_key(true).inspect_err(|_| {
+        plaintext.zeroize();
+    })?;
+    let res = seal_with_key(&key, plaintext.as_bytes());
+    key.zeroize();
+    plaintext.zeroize();
+    res
+}
+
+/// F-02/F-04: Unseals a desktop biometric credentials payload inside Rust using
+/// the Rust-only OS Keychain key after native biometric user presence succeeded.
+#[tauri::command]
+pub fn unseal_desktop_biometric_bundle(sealed_json: String) -> Result<String, String> {
+    let mut key = load_or_create_biometric_seal_key(false)?;
+    let res = unseal_with_key(&key, &sealed_json);
+    key.zeroize();
+    res
+}
+
+/// Removes the Rust-only biometric seal key from the OS keychain.
+#[tauri::command]
+pub fn clear_desktop_biometric_seal_key() -> bool {
+    if !platform::is_available() {
+        return false;
+    }
+    platform::remove_item(BIOMETRIC_NATIVE_SEAL_KEY)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn f02_known_keys_allowlist_accepts_only_documented_keys() {
+        for key in KNOWN_KEYS {
+            assert!(is_known_key(key), "documented key {key} must be allowed");
+        }
+        for rejected in [
+            "",
+            "__probe__",
+            "../other_app",
+            "KalderaShield_arbitrary_key",
+            "KalderaShield_biometric_info ",
+            "kalderashield_biometric_info",
+            BIOMETRIC_NATIVE_SEAL_KEY,
+        ] {
+            assert!(
+                !is_known_key(rejected),
+                "undocumented or Rust-only key {rejected:?} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn f02_ipc_commands_fail_closed_for_unknown_keys() {
+        assert_eq!(get_desktop_secure_item("unknown_key".to_string()), None);
+        assert_eq!(
+            get_desktop_secure_item(BIOMETRIC_NATIVE_SEAL_KEY.to_string()),
+            None
+        );
+        assert!(!set_desktop_secure_item(
+            "unknown_key".to_string(),
+            "secret".to_string()
+        ));
+        assert!(!remove_desktop_secure_item("unknown_key".to_string()));
+    }
+
+    #[test]
+    fn f02_biometric_seal_roundtrip_and_tamper_detection() {
+        let key = generate_random_seal_key().expect("csprng key");
+        let payload = r#"{"masterPassword":"s3cr3t!Password","secretKey":"A3-TEST"}"#;
+        let sealed = seal_with_key(&key, payload.as_bytes()).expect("seal must succeed");
+        assert!(!sealed.contains("s3cr3t!Password"));
+
+        let unsealed = unseal_with_key(&key, &sealed).expect("unseal must succeed");
+        assert_eq!(unsealed, payload);
+
+        let mut wrong_key = generate_random_seal_key().expect("csprng key");
+        if wrong_key == key {
+            wrong_key[0] ^= 0xff;
+        }
+        assert!(unseal_with_key(&wrong_key, &sealed).is_err());
+
+        let tampered = sealed.replace("\"v\":1", "\"v\":2");
+        assert!(unseal_with_key(&key, &tampered).is_err());
+    }
 }

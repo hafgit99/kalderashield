@@ -60,13 +60,51 @@ export class SecureBackupError extends Error {
   }
 }
 
+/**
+ * F-05: Canonical AES-GCM Associated Data (AAD) binding backup envelope header
+ * fields (version, KDF algorithm/parameters, and salt) to the ciphertext tag so
+ * header tampering or parameter substitution breaks authentication immediately.
+ */
+function buildBackupEnvelopeAad(fields: {
+  version: string;
+  kdf: string;
+  memoryKiB: number;
+  iterations: number;
+  parallelism: number;
+  hashLength: number;
+  salt: string;
+}): Uint8Array {
+  const canonical = [
+    'kalderashield-backup-aad-v1',
+    `version=${fields.version}`,
+    `kdf=${fields.kdf}`,
+    `mem=${fields.memoryKiB}`,
+    `iter=${fields.iterations}`,
+    `par=${fields.parallelism}`,
+    `len=${fields.hashLength}`,
+    `salt=${fields.salt}`,
+  ].join('|');
+  return new TextEncoder().encode(canonical);
+}
+
 export async function encryptDataWithPasswordSecure(rawData: string, password: string): Promise<string> {
   const saltBytes = secureRandomBytes(16);
   const saltHex = bytesToHex(saltBytes);
   const kdfParams = { ...BACKUP_KDF_PROFILE };
+  const version = '1.2';
+  const kdf = 'Argon2id';
 
   const aesKey = await deriveArgon2idKey(password, saltHex, kdfParams);
-  const bundle = await webCryptoAesGcmEncrypt(rawData, aesKey, generateSafeIv());
+  const aad = buildBackupEnvelopeAad({
+    version,
+    kdf,
+    memoryKiB: kdfParams.memoryKiB,
+    iterations: kdfParams.iterations,
+    parallelism: kdfParams.parallelism,
+    hashLength: kdfParams.hashLength,
+    salt: saltHex,
+  });
+  const bundle = await webCryptoAesGcmEncrypt(rawData, aesKey, generateSafeIv(), aad);
 
   const encoder = new TextEncoder();
   const cipherBytes = encoder.encode(bundle.ciphertext);
@@ -74,9 +112,10 @@ export async function encryptDataWithPasswordSecure(rawData: string, password: s
 
   return JSON.stringify(
     {
-      version: '1.2',
+      version,
+      aadVersion: 1,
       generator: 'KalderaShield Secure Core',
-      kdf: 'Argon2id',
+      kdf,
       kdfImplementation: 'argon2-browser',
       kdfProfile: 'KalderaShield-backup-cross-platform-v2',
       kdfParams,
@@ -135,7 +174,7 @@ export async function decryptDataWithPasswordSecure(envelopeJsonStr: string, pas
     throw new SecureBackupError(secureBackupErrorCodes.checksumMismatch);
   }
 
-  const decryptWithParams = async (params: { memoryKiB?: unknown; iterations?: unknown; parallelism?: unknown }): Promise<string> => {
+  const decryptWithParams = async (params: { memoryKiB?: unknown; iterations?: unknown; parallelism?: unknown; hashLength?: unknown }): Promise<string> => {
     let aesKey: Uint8Array;
     try {
       aesKey = await deriveArgon2idKey(password, salt, params as Parameters<typeof deriveArgon2idKey>[2]);
@@ -147,6 +186,18 @@ export async function decryptDataWithPasswordSecure(envelopeJsonStr: string, pas
       throw error;
     }
 
+    const aad = parsed.aadVersion === 1
+      ? buildBackupEnvelopeAad({
+          version: String(parsed.version || ''),
+          kdf: String(parsed.kdf || ''),
+          memoryKiB: Number(params.memoryKiB),
+          iterations: Number(params.iterations),
+          parallelism: Number(params.parallelism ?? 1),
+          hashLength: Number(params.hashLength ?? 32),
+          salt,
+        })
+      : undefined;
+
     return webCryptoAesGcmDecrypt(
       {
         iv,
@@ -154,6 +205,7 @@ export async function decryptDataWithPasswordSecure(envelopeJsonStr: string, pas
         ciphertext: payload,
       },
       aesKey,
+      aad,
     );
   };
 

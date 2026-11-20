@@ -1,7 +1,99 @@
+use hmac::{Hmac, KeyInit, Mac};
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 use std::sync::Mutex;
+use subtle::ConstantTimeEq;
 use tauri::State;
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use zeroize::Zeroize;
+
+type HmacSha256 = Hmac<Sha256>;
+
+/// Required byte length for an AES-256 vault encryption key.
+pub const VAULT_KEY_LEN: usize = 32;
+
+/// Best-effort OS memory locking to prevent secret key pages from being swapped
+/// to disk/pagefile. Never fails unlock if OS `RLIMIT_MEMLOCK` is tight.
+#[cfg(target_os = "windows")]
+fn lock_memory(buf: &[u8]) {
+    if buf.is_empty() {
+        return;
+    }
+    unsafe {
+        let _ = windows_sys::Win32::System::Memory::VirtualLock(buf.as_ptr().cast(), buf.len());
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn unlock_memory(buf: &[u8]) {
+    if buf.is_empty() {
+        return;
+    }
+    unsafe {
+        let _ = windows_sys::Win32::System::Memory::VirtualUnlock(buf.as_ptr().cast(), buf.len());
+    }
+}
+
+#[cfg(unix)]
+fn lock_memory(buf: &[u8]) {
+    if buf.is_empty() {
+        return;
+    }
+    extern "C" {
+        fn mlock(addr: *const core::ffi::c_void, len: usize) -> core::ffi::c_int;
+    }
+    unsafe {
+        let _ = mlock(buf.as_ptr().cast(), buf.len());
+    }
+}
+
+#[cfg(unix)]
+fn unlock_memory(buf: &[u8]) {
+    if buf.is_empty() {
+        return;
+    }
+    extern "C" {
+        fn munlock(addr: *const core::ffi::c_void, len: usize) -> core::ffi::c_int;
+    }
+    unsafe {
+        let _ = munlock(buf.as_ptr().cast(), buf.len());
+    }
+}
+
+#[cfg(not(any(target_os = "windows", unix)))]
+fn lock_memory(_buf: &[u8]) {}
+
+#[cfg(not(any(target_os = "windows", unix)))]
+fn unlock_memory(_buf: &[u8]) {}
+
+/// Secret byte buffer that pins its backing pages in RAM where supported and
+/// unconditionally zeroizes and unlocks them on drop.
+struct LockedSecretBytes {
+    bytes: Vec<u8>,
+}
+
+impl LockedSecretBytes {
+    fn new(bytes: Vec<u8>) -> Self {
+        lock_memory(&bytes);
+        Self { bytes }
+    }
+}
+
+impl Drop for LockedSecretBytes {
+    fn drop(&mut self) {
+        self.bytes.zeroize();
+        unlock_memory(&self.bytes);
+    }
+}
+
+fn compute_credential_verifier(salt: &[u8; 32], password_bytes: &[u8]) -> [u8; 32] {
+    let mut mac = <HmacSha256 as KeyInit>::new_from_slice(salt).expect("HMAC accepts 32-byte key");
+    mac.update(b"kalderashield-session-credential-verifier-v1");
+    mac.update(password_bytes);
+    let result = mac.finalize().into_bytes();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&result[..32]);
+    out
+}
 
 /// Y-16: Argon2id cost bounds at the IPC trust boundary.
 ///
@@ -127,21 +219,60 @@ pub fn derive_argon2id_key_internal(
     Ok(hash)
 }
 
-#[derive(Default, Zeroize, ZeroizeOnDrop)]
+/// In-memory session state held in Rust while the vault is unlocked.
+///
+/// F-04 security hardening: raw plaintext master password, backup password, and
+/// account secret key bytes are NEVER retained in RAM after unlock/setup. Only a
+/// per-session CSPRNG-keyed HMAC-SHA256 verifier (for `rotate_rust_session`
+/// verification) and the RAM-locked vault encryption key remain in memory.
+#[derive(Default)]
 pub struct SessionState {
-    active_credential: Option<Vec<u8>>,
-    active_account_secret_key: Option<Vec<u8>>,
-    active_backup_password: Option<Vec<u8>>,
-    active_vault_key: Option<Vec<u8>>,
+    verifier_salt: [u8; 32],
+    active_credential_verifier: Option<[u8; 32]>,
+    active_vault_key: Option<LockedSecretBytes>,
 }
 
 impl SessionState {
     pub fn clear(&mut self) {
-        self.zeroize();
-        self.active_credential = None;
-        self.active_account_secret_key = None;
-        self.active_backup_password = None;
+        self.verifier_salt.zeroize();
+        if let Some(ref mut verifier) = self.active_credential_verifier {
+            verifier.zeroize();
+        }
+        self.active_credential_verifier = None;
         self.active_vault_key = None;
+    }
+
+    fn set_credential_verifier(&mut self, password_bytes: &[u8]) -> Result<(), String> {
+        let mut salt = [0u8; 32];
+        getrandom::fill(&mut salt).map_err(|e| format!("CSPRNG failure: {e}"))?;
+        let verifier = compute_credential_verifier(&salt, password_bytes);
+        self.verifier_salt.zeroize();
+        if let Some(ref mut existing) = self.active_credential_verifier {
+            existing.zeroize();
+        }
+        self.verifier_salt = salt;
+        self.active_credential_verifier = Some(verifier);
+        Ok(())
+    }
+
+    fn verify_credential(&self, candidate_bytes: &[u8]) -> bool {
+        let Some(ref expected) = self.active_credential_verifier else {
+            return false;
+        };
+        let mut actual = compute_credential_verifier(&self.verifier_salt, candidate_bytes);
+        let matches = bool::from(expected.ct_eq(&actual));
+        actual.zeroize();
+        matches
+    }
+
+    fn is_active(&self) -> bool {
+        self.active_credential_verifier.is_some() || self.active_vault_key.is_some()
+    }
+}
+
+impl Drop for SessionState {
+    fn drop(&mut self) {
+        self.clear();
     }
 }
 
@@ -175,11 +306,39 @@ impl CredentialSession {
             .state
             .lock()
             .map_err(|_| NO_ACTIVE_SESSION_ERROR.to_string())?;
-        if state.active_credential.is_some() || state.active_vault_key.is_some() {
+        if state.is_active() {
             Ok(())
         } else {
             Err(NO_ACTIVE_SESSION_ERROR.to_string())
         }
+    }
+
+    /// F-01: updates the active vault key ONLY when a session is already open
+    /// and the supplied key has the exact expected AES-256 byte length (32).
+    ///
+    /// Previously `update_rust_active_vault_key` wrote `state.active_vault_key`
+    /// without calling `require_active_session()`, allowing a locked renderer to
+    /// forge an active session with an arbitrary byte vector and bypass every
+    /// `#42` session gate.
+    pub fn update_active_vault_key(&self, mut new_vault_key: Vec<u8>) -> Result<(), String> {
+        if let Err(err) = self.require_active_session() {
+            new_vault_key.zeroize();
+            return Err(err);
+        }
+        if new_vault_key.len() != VAULT_KEY_LEN {
+            new_vault_key.zeroize();
+            return Err("invalid-vault-key-length".to_string());
+        }
+        let mut state = self.state.lock().map_err(|e| {
+            new_vault_key.zeroize();
+            e.to_string()
+        })?;
+        if !state.is_active() {
+            new_vault_key.zeroize();
+            return Err(NO_ACTIVE_SESSION_ERROR.to_string());
+        }
+        state.active_vault_key = Some(LockedSecretBytes::new(new_vault_key));
+        Ok(())
     }
 
     /// Establishes the credential half of a session. Used by `open_rust_session`
@@ -191,15 +350,14 @@ impl CredentialSession {
     #[cfg(test)]
     pub fn set_active_credential_for_session(&self, password: &str) -> Result<(), String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
-        state.active_credential = Some(password.as_bytes().to_vec());
-        Ok(())
+        state.set_credential_verifier(password.as_bytes())
     }
 
     /// Establishes the vault-key half of a session. `cfg(test)`, see above.
     #[cfg(test)]
     pub fn set_active_vault_key_for_session(&self, key: Vec<u8>) -> Result<(), String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
-        state.active_vault_key = Some(key);
+        state.active_vault_key = Some(LockedSecretBytes::new(key));
         Ok(())
     }
 }
@@ -227,6 +385,7 @@ pub struct RustRotationResult {
     pub new_argon_hash: String,
 }
 
+#[cfg(test)]
 fn resolve_backup_password(password: &str, explicit_backup: Option<String>) -> String {
     if let Some(bp) = explicit_backup {
         bp
@@ -245,7 +404,7 @@ fn resolve_backup_password(password: &str, explicit_backup: Option<String>) -> S
 pub fn open_rust_session(
     session: State<'_, CredentialSession>,
     mut password: String,
-    backup_password: Option<String>,
+    mut backup_password: Option<String>,
     argon_hash: String,
     salt: String,
     kdf_params: Option<RustArgon2idOptions>,
@@ -262,6 +421,9 @@ pub fn open_rust_session(
 
     if !verified {
         password.zeroize();
+        if let Some(ref mut bp) = backup_password {
+            bp.zeroize();
+        }
         if let Some(ref mut sk) = secret_key {
             sk.zeroize();
         }
@@ -273,19 +435,17 @@ pub fn open_rust_session(
     let mut state = session.state.lock().map_err(|e| e.to_string())?;
     state.clear();
 
-    state.active_credential = Some(password.as_bytes().to_vec());
-    let mut bp = resolve_backup_password(&password, backup_password);
-    state.active_backup_password = Some(bp.as_bytes().to_vec());
-    if let Some(ref sk) = secret_key {
-        state.active_account_secret_key = Some(sk.as_bytes().to_vec());
-    }
-    state.active_vault_key = Some(derived_key.clone());
-
+    let verifier_res = state.set_credential_verifier(password.as_bytes());
     password.zeroize();
-    bp.zeroize();
+    if let Some(ref mut bp) = backup_password {
+        bp.zeroize();
+    }
     if let Some(ref mut sk) = secret_key {
         sk.zeroize();
     }
+    verifier_res?;
+
+    state.active_vault_key = Some(LockedSecretBytes::new(derived_key.clone()));
 
     Ok(derived_key)
 }
@@ -294,7 +454,7 @@ pub fn open_rust_session(
 pub fn setup_rust_session(
     session: State<'_, CredentialSession>,
     mut password: String,
-    backup_password: Option<String>,
+    mut backup_password: Option<String>,
     mut secret_key: Option<String>,
     salt: String,
     kdf_params: Option<RustArgon2idOptions>,
@@ -324,19 +484,17 @@ pub fn setup_rust_session(
     let mut state = session.state.lock().map_err(|e| e.to_string())?;
     state.clear();
 
-    state.active_credential = Some(password.as_bytes().to_vec());
-    let mut bp = resolve_backup_password(&password, backup_password);
-    state.active_backup_password = Some(bp.as_bytes().to_vec());
-    if let Some(ref sk) = secret_key {
-        state.active_account_secret_key = Some(sk.as_bytes().to_vec());
-    }
-    state.active_vault_key = Some(derived_key.clone());
-
+    let verifier_res = state.set_credential_verifier(password.as_bytes());
     password.zeroize();
-    bp.zeroize();
+    if let Some(ref mut bp) = backup_password {
+        bp.zeroize();
+    }
     if let Some(ref mut sk) = secret_key {
         sk.zeroize();
     }
+    verifier_res?;
+
+    state.active_vault_key = Some(LockedSecretBytes::new(derived_key.clone()));
 
     Ok(RustSetupResult {
         vault_encryption_key: derived_key,
@@ -350,31 +508,23 @@ pub fn rotate_rust_session(
     session: State<'_, CredentialSession>,
     mut old_password: String,
     mut new_password: String,
-    backup_password: Option<String>,
+    mut backup_password: Option<String>,
     new_salt: String,
     kdf_params: Option<RustArgon2idOptions>,
 ) -> Result<RustRotationResult, String> {
     use argon2::password_hash::PasswordHasher;
     use argon2::{Algorithm, Argon2, Version};
-    use subtle::ConstantTimeEq;
 
     let mut state = session.state.lock().map_err(|e| e.to_string())?;
 
-    let matches_old = match state.active_credential {
-        Some(ref bytes) => {
-            let old_bytes = old_password.as_bytes();
-            if bytes.len() == old_bytes.len() {
-                bool::from(bytes.ct_eq(old_bytes))
-            } else {
-                false
-            }
-        }
-        None => false,
-    };
+    let matches_old = state.verify_credential(old_password.as_bytes());
 
     if !matches_old {
         old_password.zeroize();
         new_password.zeroize();
+        if let Some(ref mut bp) = backup_password {
+            bp.zeroize();
+        }
         return Err("current-master-password-invalid".to_string());
     }
 
@@ -387,6 +537,9 @@ pub fn rotate_rust_session(
     getrandom::fill(&mut rng_bytes).map_err(|e| {
         old_password.zeroize();
         new_password.zeroize();
+        if let Some(ref mut bp) = backup_password {
+            bp.zeroize();
+        }
         format!("CSPRNG failure: {e}")
     })?;
 
@@ -395,18 +548,22 @@ pub fn rotate_rust_session(
         .map_err(|e| {
             old_password.zeroize();
             new_password.zeroize();
+            if let Some(ref mut bp) = backup_password {
+                bp.zeroize();
+            }
             format!("Argon2id hashing failed: {e}")
         })?
         .to_string();
 
-    state.active_credential = Some(new_password.as_bytes().to_vec());
-    let mut bp = resolve_backup_password(&new_password, backup_password);
-    state.active_backup_password = Some(bp.as_bytes().to_vec());
-    state.active_vault_key = Some(new_vault_key.clone());
-
+    let verifier_res = state.set_credential_verifier(new_password.as_bytes());
     old_password.zeroize();
     new_password.zeroize();
-    bp.zeroize();
+    if let Some(ref mut bp) = backup_password {
+        bp.zeroize();
+    }
+    verifier_res?;
+
+    state.active_vault_key = Some(LockedSecretBytes::new(new_vault_key.clone()));
 
     Ok(RustRotationResult {
         new_vault_key,
@@ -426,18 +583,13 @@ pub fn update_rust_active_vault_key(
     session: State<'_, CredentialSession>,
     new_vault_key: Vec<u8>,
 ) -> Result<(), String> {
-    let mut state = session.state.lock().map_err(|e| e.to_string())?;
-    if let Some(ref mut bytes) = state.active_vault_key {
-        bytes.zeroize();
-    }
-    state.active_vault_key = Some(new_vault_key);
-    Ok(())
+    session.update_active_vault_key(new_vault_key)
 }
 
 #[tauri::command]
 pub fn has_rust_session(session: State<'_, CredentialSession>) -> Result<bool, String> {
     let state = session.state.lock().map_err(|e| e.to_string())?;
-    Ok(state.active_credential.is_some() || state.active_vault_key.is_some())
+    Ok(state.is_active())
 }
 
 #[cfg(test)]
@@ -757,5 +909,90 @@ mod tests {
             .is_ok());
         // Wrong password rejects.
         assert!(argon2.verify_password(b"wrong-password", &parsed).is_err());
+    }
+
+    fn random_test_passphrase() -> String {
+        let a = getrandom::u64().expect("csprng");
+        let b = getrandom::u64().expect("csprng");
+        format!("ks-test-{a:016x}-{b:016x}")
+    }
+
+    fn random_test_key_32() -> Vec<u8> {
+        let mut out = Vec::with_capacity(32);
+        for _ in 0..4 {
+            out.extend_from_slice(&getrandom::u64().expect("csprng").to_ne_bytes());
+        }
+        out
+    }
+
+    #[test]
+    fn f01_update_vault_key_refuses_when_locked() {
+        let session = super::CredentialSession::default();
+        let err = session
+            .update_active_vault_key(vec![0u8; 32])
+            .expect_err("must refuse key update when session is locked");
+        assert_eq!(err, super::NO_ACTIVE_SESSION_ERROR);
+        assert_eq!(
+            session
+                .require_active_session()
+                .expect_err("locked session must remain locked"),
+            super::NO_ACTIVE_SESSION_ERROR
+        );
+    }
+
+    #[test]
+    fn f01_update_vault_key_rejects_invalid_length() {
+        let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
+        session
+            .set_active_credential_for_session(&pass)
+            .expect("credential");
+
+        assert_eq!(
+            session
+                .update_active_vault_key(vec![0u8; 1])
+                .expect_err("must reject 1-byte key"),
+            "invalid-vault-key-length"
+        );
+        assert_eq!(
+            session
+                .update_active_vault_key(vec![0u8; 64])
+                .expect_err("must reject 64-byte key"),
+            "invalid-vault-key-length"
+        );
+    }
+
+    #[test]
+    fn f01_update_vault_key_succeeds_when_session_active() {
+        let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
+        session
+            .set_active_credential_for_session(&pass)
+            .expect("credential");
+
+        let new_key = random_test_key_32();
+        assert!(session.update_active_vault_key(new_key).is_ok());
+        assert!(session.require_active_session().is_ok());
+    }
+
+    #[test]
+    fn f04_credential_verifier_validates_without_retaining_plaintext() {
+        let session = super::CredentialSession::default();
+        let pass = random_test_passphrase();
+        let mut wrong = random_test_passphrase();
+        if wrong == pass {
+            wrong.push('x');
+        }
+        session
+            .set_active_credential_for_session(&pass)
+            .expect("set verifier");
+
+        let state = session.state.lock().expect("lock");
+        assert!(state.verify_credential(pass.as_bytes()));
+        assert!(!state.verify_credential(wrong.as_bytes()));
+        let verifier = state
+            .active_credential_verifier
+            .expect("verifier should be populated");
+        assert_ne!(&verifier[..], pass.as_bytes());
     }
 }

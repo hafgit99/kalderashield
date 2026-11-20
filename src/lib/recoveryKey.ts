@@ -42,12 +42,35 @@ const RECOVERY_KDF_PROFILE = {
 
 interface RecoveryKeyBundle {
   version: 1;
+  aadVersion?: 1;
   kdf: 'Argon2id';
   cipher: 'AES-256-GCM';
   salt: string;
   bundle: WebCryptoAesGcmPayload;
   kdfParams: typeof RECOVERY_KDF_PROFILE;
   createdAt: string;
+}
+
+function buildRecoveryBundleAad(fields: {
+  version: number;
+  kdf: string;
+  memoryKiB: number;
+  iterations: number;
+  parallelism: number;
+  hashLength: number;
+  salt: string;
+}): Uint8Array {
+  const canonical = [
+    'kalderashield-recovery-aad-v1',
+    `version=${fields.version}`,
+    `kdf=${fields.kdf}`,
+    `mem=${fields.memoryKiB}`,
+    `iter=${fields.iterations}`,
+    `par=${fields.parallelism}`,
+    `len=${fields.hashLength}`,
+    `salt=${fields.salt}`,
+  ].join('|');
+  return new TextEncoder().encode(canonical);
 }
 
 // ── Word Generation ─────────────────────────────────────────────────────
@@ -199,10 +222,20 @@ export async function setupRecoveryKey(masterPassword: string, recoveryWords: st
   const saltHex = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
 
   const derivedKey = await deriveKeyFromRecoveryWords(recoveryWords, saltHex);
-  const bundle = await webCryptoAesGcmEncrypt(masterPassword, derivedKey, generateSafeIv());
+  const aad = buildRecoveryBundleAad({
+    version: 1,
+    kdf: 'Argon2id',
+    memoryKiB: RECOVERY_KDF_PROFILE.memoryKiB,
+    iterations: RECOVERY_KDF_PROFILE.iterations,
+    parallelism: RECOVERY_KDF_PROFILE.parallelism,
+    hashLength: RECOVERY_KDF_PROFILE.hashLength,
+    salt: saltHex,
+  });
+  const bundle = await webCryptoAesGcmEncrypt(masterPassword, derivedKey, generateSafeIv(), aad);
 
   const recoveryBundle: RecoveryKeyBundle = {
     version: 1,
+    aadVersion: 1,
     kdf: 'Argon2id',
     cipher: 'AES-256-GCM',
     salt: saltHex,
@@ -240,9 +273,20 @@ export async function recoverWithRecoveryKey(recoveryWords: string[]): Promise<s
   }
 
   const derivedKey = await deriveKeyFromRecoveryWords(recoveryWords, bundle.salt);
+  const aad = bundle.aadVersion === 1
+    ? buildRecoveryBundleAad({
+        version: bundle.version,
+        kdf: bundle.kdf,
+        memoryKiB: bundle.kdfParams?.memoryKiB ?? RECOVERY_KDF_PROFILE.memoryKiB,
+        iterations: bundle.kdfParams?.iterations ?? RECOVERY_KDF_PROFILE.iterations,
+        parallelism: bundle.kdfParams?.parallelism ?? RECOVERY_KDF_PROFILE.parallelism,
+        hashLength: bundle.kdfParams?.hashLength ?? RECOVERY_KDF_PROFILE.hashLength,
+        salt: bundle.salt,
+      })
+    : undefined;
 
   try {
-    return await webCryptoAesGcmDecrypt(bundle.bundle, derivedKey);
+    return await webCryptoAesGcmDecrypt(bundle.bundle, derivedKey, aad);
   } catch {
     throw new Error('Recovery failed: words do not match. Check your recovery phrase.');
   }
