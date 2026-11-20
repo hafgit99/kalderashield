@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { invoke } from '@tauri-apps/api/core';
 import { secureRandomBytes } from './random';
 import { APP_NAME, APP_SHORT_NAME } from './branding';
 import {
@@ -94,7 +95,14 @@ export interface BiometricInfoV4 {
   authenticatorType?: 'platform' | 'cross-platform';
 }
 
-type BiometricInfo = BiometricInfoV2 | NativeBiometricInfoV3 | BiometricInfoV4;
+interface NativeBiometricInfoV5 {
+  version: 5;
+  provider: 'Tauri Native Biometric (Rust Keychain Seal)';
+  cipher: 'Rust XChaCha20-Poly1305';
+  sealedBundle: string;
+}
+
+type BiometricInfo = BiometricInfoV2 | NativeBiometricInfoV3 | BiometricInfoV4 | NativeBiometricInfoV5;
 
 const BIOMETRIC_DB_NAME = 'KalderaShield_biometric_db';
 const BIOMETRIC_STORE_NAME = 'biometric_info';
@@ -396,7 +404,7 @@ export function isBiometricEnabled(): boolean {
 
 export function getBiometricType(): 'platform' | 'cross-platform' | 'native' | null {
   if (!cachedBiometricInfo) return null;
-  if (cachedBiometricInfo.version === 3) return 'native';
+  if (cachedBiometricInfo.version === 3 || cachedBiometricInfo.version === 5) return 'native';
   return cachedBiometricInfo.authenticatorType ?? 'platform';
 }
 
@@ -427,6 +435,9 @@ export function disableBiometric(): void {
   removeSecureStorageItem(secureStorageKeys.biometricInfo);
   removeSecureStorageItem(secureStorageKeys.biometricWrappingSecret);
   clearAndroidBiometricKey();
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    invoke<boolean>('clear_desktop_biometric_seal_key').catch(() => undefined);
+  }
   void deleteBiometricFromIndexedDBWithRetry().catch((err) => {
     console.error('Failed to delete biometric from IndexedDB after retries:', err);
   });
@@ -612,6 +623,38 @@ async function registerNativeBiometric(payload: string): Promise<void> {
     throw new BiometricError(biometricErrorCodes.unsupported);
   }
 
+  // F-02/F-04: On desktop runtimes, seal the biometric payload inside Rust
+  // using a Rust-only OS Keychain key (XChaCha20-Poly1305 + AAD) so no raw
+  // wrapping secret ever enters or persists in JavaScript memory/cache.
+  if (
+    !isTauriAndroidRuntime()
+    && !isBiometricAndroidBridgeAvailable()
+    && typeof window !== 'undefined'
+    && '__TAURI_INTERNALS__' in window
+  ) {
+    await authenticateNativeBiometric();
+    try {
+      const sealedBundle = await invoke<string>('seal_desktop_biometric_bundle', { plaintext: payload });
+      const biometricInfo: NativeBiometricInfoV5 = {
+        version: 5,
+        provider: 'Tauri Native Biometric (Rust Keychain Seal)',
+        cipher: 'Rust XChaCha20-Poly1305',
+        sealedBundle,
+      };
+      removeSecureStorageItem(secureStorageKeys.biometricWrappingSecret);
+      if (!saveBiometricToSecureStorage(biometricInfo)) {
+        throw new BiometricError(biometricErrorCodes.unsupported);
+      }
+      cachedBiometricInfo = biometricInfo;
+      await deleteBiometricFromIndexedDB();
+      notifyBiometricListeners();
+      return;
+    } catch (err) {
+      if (err instanceof BiometricError) throw err;
+      // Fall back to v3 path if desktop seal command is unavailable (e.g. test harnesses)
+    }
+  }
+
   const wrappingSecret = secureRandomBytes(32);
 
   // RUST-O4: when the auth-bound AndroidKeyStore bridge is available, only the
@@ -674,6 +717,21 @@ async function authenticateBiometricRaw(): Promise<string> {
   const biometricInfo = cachedBiometricInfo;
   if (!biometricInfo) {
     throw new BiometricError(biometricErrorCodes.missingBundle);
+  }
+
+  if (biometricInfo.version === 5) {
+    try {
+      await authenticateNativeBiometric();
+      return await invoke<string>('unseal_desktop_biometric_bundle', {
+        sealedJson: biometricInfo.sealedBundle,
+      });
+    } catch (error) {
+      if (error instanceof BiometricError) throw error;
+      if (error instanceof Error && error.message === 'cancelled') {
+        throw new BiometricError(biometricErrorCodes.authenticationCancelled);
+      }
+      throw new BiometricError(biometricErrorCodes.integrityMismatch);
+    }
   }
 
   if (biometricInfo.version === 3) {

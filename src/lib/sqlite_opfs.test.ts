@@ -321,7 +321,8 @@ describe('SQLite OPFS persistence engine', () => {
     ) as { enc_metadata: string };
     const demoKey = await derivePerItemKey(demoVaultKey, 'active-item');
     try {
-      const opened = await webCryptoAesGcmDecrypt(JSON.parse(demoRow.enc_metadata), demoKey);
+      const { buildVaultRowAad } = await import('./rowCrypto/rowAad');
+      const opened = await webCryptoAesGcmDecrypt(JSON.parse(demoRow.enc_metadata), demoKey, buildVaultRowAad('active-item'));
       expect(JSON.parse(opened).title).toBe('Active Item');
     } finally {
       demoKey.fill(0);
@@ -1203,10 +1204,12 @@ expect(saved[0]!.id).toHaveLength(9);
       // The raw vault key must no longer open the row.
       await expect(webCryptoAesGcmDecrypt(payload, vaultKey)).rejects.toBeTruthy();
 
-      // The per-item key must.
+      // The per-item key with matching row AAD must open it, while missing/wrong AAD must fail.
       const itemKey = await derivePerItemKey(vaultKey, row.id);
       try {
-        const plaintext = await webCryptoAesGcmDecrypt(payload, itemKey);
+        const { buildVaultRowAad } = await import('./rowCrypto/rowAad');
+        await expect(webCryptoAesGcmDecrypt(payload, itemKey)).rejects.toBeTruthy();
+        const plaintext = await webCryptoAesGcmDecrypt(payload, itemKey, buildVaultRowAad(row.id));
         expect(JSON.parse(plaintext).title).toBe(row.id === 'bulk-row-1' ? 'Bulk One' : 'Bulk Two');
       } finally {
         itemKey.fill(0);

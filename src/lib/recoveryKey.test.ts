@@ -204,4 +204,19 @@ describe('recoveryKey', () => {
     await setupRecoveryKey('SecureVault123!', words);
     expect(secureStorageModule.setSecureStorageItem).toHaveBeenCalled();
   });
+
+  it('F-05: rejects recovery bundles when AAD-bound header metadata is tampered', async () => {
+    const words = generateRecoveryWords();
+    await setupRecoveryKey('RecoveryAadPass!2026', words);
+
+    const raw = store.get('KalderaShield_recovery_key_bundle');
+    expect(raw).toBeTruthy();
+    const parsed = JSON.parse(raw!);
+    expect(parsed.aadVersion).toBe(1);
+
+    parsed.kdfParams = { ...parsed.kdfParams, iterations: parsed.kdfParams.iterations + 1 };
+    store.set('KalderaShield_recovery_key_bundle', JSON.stringify(parsed));
+
+    await expect(recoverWithRecoveryKey(words)).rejects.toThrow('Recovery failed');
+  });
 });

@@ -18,6 +18,7 @@
 
 import type { VaultItem } from '../types';
 import { webCryptoAesGcmDecrypt, webCryptoAesGcmEncrypt, generateSafeIv, derivePerItemKey, type WebCryptoAesGcmPayload } from './webcrypto';
+import { buildVaultRowAad } from './rowCrypto/rowAad';
 import { logSecurityEvent, securityEventCodes } from './securityEvents';
 import type { VaultDatabaseRow } from './vaultDatabaseFormat';
 import { maybeDelay, VAULT_ITEM_KDF } from './sqliteOpfsShared';
@@ -103,10 +104,14 @@ export async function decryptVaultRows(options: DecryptVaultRowsOptions): Promis
             throw new Error('legacy-custom-crypto-row-unsupported');
           }
           const encryptedPayload: WebCryptoAesGcmPayload = JSON.parse(row.enc_metadata);
+          const rowAad = encryptedPayload.aadVersion === 1 ? buildVaultRowAad(row.id) : undefined;
           const itemKey = await derivePerItemKey(derivedKey, row.id);
           try {
-            decryptedJson = await webCryptoAesGcmDecrypt(encryptedPayload, itemKey);
+            decryptedJson = await webCryptoAesGcmDecrypt(encryptedPayload, itemKey, rowAad);
           } catch {
+            if (encryptedPayload.aadVersion === 1) {
+              throw new Error('vault-row-aad-authentication-failed');
+            }
             // Pre-HKDF rows were encrypted with the raw derived key. The
             // fallback is allowed once per row: the row is immediately
             // re-encrypted under its per-item key below.
@@ -123,7 +128,10 @@ export async function decryptVaultRows(options: DecryptVaultRowsOptions): Promis
           // One-time upgrade: re-encrypt the row under its per-item key so
           // the raw-master-key fallback never fires again for this row.
           const upgradeKey = await derivePerItemKey(derivedKey, row.id);
-          const upgraded = await webCryptoAesGcmEncrypt(decryptedJson, upgradeKey, generateSafeIv());
+          const upgraded = {
+            ...(await webCryptoAesGcmEncrypt(decryptedJson, upgradeKey, generateSafeIv(), buildVaultRowAad(row.id))),
+            aadVersion: 1 as const,
+          };
           upgradeKey.fill(0);
           row.enc_metadata = JSON.stringify(upgraded);
           row.enc_kdf = VAULT_ITEM_KDF;
@@ -138,7 +146,10 @@ export async function decryptVaultRows(options: DecryptVaultRowsOptions): Promis
 
         if (isLegacyRow || shouldMigrateStaticSalt || shouldMigrateKdf) {
           const itemMigrationKey = await derivePerItemKey(migrationKey, row.id);
-          const encrypted = await webCryptoAesGcmEncrypt(decryptedJson, itemMigrationKey, generateSafeIv());
+          const encrypted = {
+            ...(await webCryptoAesGcmEncrypt(decryptedJson, itemMigrationKey, generateSafeIv(), buildVaultRowAad(row.id))),
+            aadVersion: 1 as const,
+          };
           itemMigrationKey.fill(0);
           row.enc_metadata = JSON.stringify(encrypted);
           row.enc_kdf = VAULT_ITEM_KDF;

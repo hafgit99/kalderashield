@@ -988,6 +988,9 @@ pub fn run() {
             secure_storage::set_desktop_secure_item,
             secure_storage::remove_desktop_secure_item,
             secure_storage::get_all_desktop_secure_items,
+            secure_storage::seal_desktop_biometric_bundle,
+            secure_storage::unseal_desktop_biometric_bundle,
+            secure_storage::clear_desktop_biometric_seal_key,
             restart_app
         ])
         .build(tauri::generate_context!())

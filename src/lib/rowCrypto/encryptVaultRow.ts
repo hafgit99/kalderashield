@@ -21,6 +21,7 @@ import type { VaultItem } from '../../types';
 import type { VaultDatabaseRow } from '../vaultDatabaseFormat';
 import { buildVaultItemRow } from '../sqliteOpfsShared';
 import { webCryptoAesGcmEncrypt, generateSafeIv, derivePerItemKey } from '../webcrypto';
+import { buildVaultRowAad } from './rowAad';
 
 export interface EncryptRowOptions {
   /** Vault key; the per-item key is derived from this. */
@@ -51,11 +52,13 @@ export async function encryptVaultRow(
   const toEncrypt = { ...item, id: itemId };
   const perItemKey = await derivePerItemKey(derivedKey, itemId);
   try {
-    const encrypted = await webCryptoAesGcmEncrypt(
+    const encryptedPayload = await webCryptoAesGcmEncrypt(
       JSON.stringify(toEncrypt),
       perItemKey,
       generateSafeIv(),
+      buildVaultRowAad(itemId),
     );
+    const encrypted = { ...encryptedPayload, aadVersion: 1 as const };
 
     const row = buildVaultItemRow({
       id: itemId,

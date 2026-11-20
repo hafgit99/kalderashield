@@ -1,3 +1,48 @@
+#[cfg(any(target_os = "linux", test))]
+use std::path::{Path, PathBuf};
+
+/// Trusted immutable system binary directories searched instead of user `PATH`.
+#[cfg(target_os = "linux")]
+const TRUSTED_LINUX_BIN_DIRS: &[&str] = &["/usr/bin", "/bin"];
+
+/// F-09: Resolves a fixed system binary name strictly inside trusted root-owned
+/// directories without consulting `PATH`, rejecting any path separators or
+/// traversal characters.
+#[cfg(any(target_os = "linux", test))]
+pub fn resolve_trusted_system_binary_in(
+    binary_name: &str,
+    trusted_dirs: &[&str],
+) -> Option<PathBuf> {
+    if binary_name.is_empty()
+        || !binary_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return None;
+    }
+
+    for dir in trusted_dirs {
+        let candidate = Path::new(dir).join(binary_name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn run_trusted_system_command(binary_name: &str, args: &[&str]) -> Option<std::process::Output> {
+    let binary_path = resolve_trusted_system_binary_in(binary_name, TRUSTED_LINUX_BIN_DIRS)?;
+    let mut cmd = std::process::Command::new(binary_path);
+    cmd.env_clear();
+    for env_key in ["XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"] {
+        if let Ok(val) = std::env::var(env_key) {
+            cmd.env(env_key, val);
+        }
+    }
+    cmd.args(args).output().ok()
+}
+
 #[cfg(target_os = "linux")]
 use tauri::{AppHandle, Emitter};
 
@@ -65,8 +110,7 @@ fn check_running_recorders_proc() -> bool {
 
 #[cfg(target_os = "linux")]
 fn check_pipewire_recording() -> bool {
-    use std::process::Command;
-    if let Ok(output) = Command::new("pw-dump").output() {
+    if let Some(output) = run_trusted_system_command("pw-dump", &[]) {
         if output.status.success() {
             if let Ok(json_str) = std::str::from_utf8(&output.stdout) {
                 if let Ok(val) = serde_json::from_str::<serde_json::Value>(json_str) {
@@ -120,11 +164,10 @@ fn check_pipewire_recording() -> bool {
 
 #[cfg(target_os = "linux")]
 fn check_dbus_screencast_sessions() -> bool {
-    use std::process::Command;
-    if let Ok(output) = Command::new("busctl")
-        .args(["--user", "tree", "org.freedesktop.portal.Desktop"])
-        .output()
-    {
+    if let Some(output) = run_trusted_system_command(
+        "busctl",
+        &["--user", "tree", "org.freedesktop.portal.Desktop"],
+    ) {
         if output.status.success() {
             if let Ok(stdout_str) = std::str::from_utf8(&output.stdout) {
                 if stdout_str.contains("/org/freedesktop/portal/desktop/session/") {
@@ -133,10 +176,10 @@ fn check_dbus_screencast_sessions() -> bool {
             }
         }
     }
-    if let Ok(output) = Command::new("busctl")
-        .args(["--user", "tree", "org.freedesktop.portal.ScreenCast"])
-        .output()
-    {
+    if let Some(output) = run_trusted_system_command(
+        "busctl",
+        &["--user", "tree", "org.freedesktop.portal.ScreenCast"],
+    ) {
         if output.status.success() {
             if let Ok(stdout_str) = std::str::from_utf8(&output.stdout) {
                 if stdout_str.contains("/org/freedesktop/portal/desktop/session/")
@@ -147,17 +190,17 @@ fn check_dbus_screencast_sessions() -> bool {
             }
         }
     }
-    if let Ok(output) = Command::new("dbus-send")
-        .args([
+    if let Some(output) = run_trusted_system_command(
+        "dbus-send",
+        &[
             "--session",
             "--dest=org.freedesktop.portal.Desktop",
             "--type=method_call",
             "--print-reply",
             "/org/freedesktop/portal/desktop",
             "org.freedesktop.DBus.Introspectable.Introspect",
-        ])
-        .output()
-    {
+        ],
+    ) {
         if output.status.success() {
             if let Ok(stdout_str) = std::str::from_utf8(&output.stdout) {
                 if stdout_str.contains("node name=\"session\"") || stdout_str.contains("/session/")
@@ -198,4 +241,50 @@ pub fn start_linux_screen_capture_monitor(app_handle: AppHandle) {
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn f09_trusted_binary_resolver_rejects_traversal_and_path_injection() {
+        let dir = std::env::temp_dir();
+        let dir_str = dir.to_string_lossy().to_string();
+        for bad in [
+            "",
+            "../bin/sh",
+            "/usr/bin/busctl",
+            "busctl;id",
+            "busctl --help",
+            "a\\b",
+        ] {
+            assert_eq!(
+                resolve_trusted_system_binary_in(bad, &[dir_str.as_str()]),
+                None,
+                "unsafe binary name {bad:?} must be refused"
+            );
+        }
+    }
+
+    #[test]
+    fn f09_trusted_binary_resolver_finds_binary_only_in_trusted_dirs() {
+        let unique = format!("ks-f09-test-{}", std::process::id());
+        let dir = std::env::temp_dir().join(&unique);
+        let _ = std::fs::create_dir_all(&dir);
+        let bin = dir.join("pw-dump");
+        std::fs::write(&bin, b"stub").expect("create test stub");
+
+        let dir_str = dir.to_string_lossy().to_string();
+        assert_eq!(
+            resolve_trusted_system_binary_in("pw-dump", &[dir_str.as_str()]),
+            Some(bin.clone())
+        );
+        assert_eq!(
+            resolve_trusted_system_binary_in("nonexistent-tool", &[dir_str.as_str()]),
+            None
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

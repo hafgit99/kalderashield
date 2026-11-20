@@ -258,6 +258,19 @@ async function parseVaultEnvelope(filePath, password) {
 
     try {
       const decipher = crypto.createDecipheriv('aes-256-gcm', key, ivBuf);
+      if (envelope.aadVersion === 1) {
+        const aadCanonical = [
+          'kalderashield-backup-aad-v1',
+          `version=${String(envelope.version || '')}`,
+          `kdf=${String(envelope.kdf || '')}`,
+          `mem=${Number(kdfParams?.memoryKiB)}`,
+          `iter=${Number(kdfParams?.iterations)}`,
+          `par=${Number(kdfParams?.parallelism ?? 1)}`,
+          `len=${Number(kdfParams?.hashLength ?? 32)}`,
+          `salt=${String(salt)}`,
+        ].join('|');
+        decipher.setAAD(Buffer.from(aadCanonical, 'utf8'));
+      }
       decipher.setAuthTag(tagBuf);
       const decrypted = Buffer.concat([decipher.update(payloadBuf), decipher.final()]).toString('utf8');
       const parsedItems = JSON.parse(decrypted);

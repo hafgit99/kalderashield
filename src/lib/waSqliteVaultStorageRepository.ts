@@ -29,6 +29,7 @@ import {
   webCryptoAesGcmEncrypt,
   type WebCryptoAesGcmPayload,
 } from './webcrypto';
+import { buildVaultRowAad } from './rowCrypto/rowAad';
 
 export const WA_SQLITE_WRITE_NOT_READY_ERROR = 'wa-sqlite-repository-write-not-ready';
 export const WA_SQLITE_INVALID_MASTER_PASSWORD_ERROR = 'wa-sqlite-invalid-master-password';
@@ -751,12 +752,17 @@ WHERE typeof(id) = 'text' AND length(id) > 0;
     }
 
     try {
+      const parsedPayload = JSON.parse(metadata) as WebCryptoAesGcmPayload;
+      const rowAad = parsedPayload.aadVersion === 1 ? buildVaultRowAad(fallback.id) : undefined;
       const perItemKey = await derivePerItemKey(key, fallback.id);
       let decryptedJson: string;
       try {
-        decryptedJson = await webCryptoAesGcmDecrypt(JSON.parse(metadata) as WebCryptoAesGcmPayload, perItemKey);
+        decryptedJson = await webCryptoAesGcmDecrypt(parsedPayload, perItemKey, rowAad);
       } catch {
-        decryptedJson = await webCryptoAesGcmDecrypt(JSON.parse(metadata) as WebCryptoAesGcmPayload, key);
+        if (parsedPayload.aadVersion === 1) {
+          throw new Error(WA_SQLITE_ROW_DECRYPT_ERROR);
+        }
+        decryptedJson = await webCryptoAesGcmDecrypt(parsedPayload, key);
       } finally {
         perItemKey.fill(0);
       }
@@ -799,7 +805,10 @@ WHERE typeof(id) = 'text' AND length(id) > 0;
       updatedAt,
     };
     const perItemKey = await derivePerItemKey(key, id);
-    const encrypted = await webCryptoAesGcmEncrypt(JSON.stringify(itemToEncrypt), perItemKey, generateSafeIv());
+    const encrypted = {
+      ...(await webCryptoAesGcmEncrypt(JSON.stringify(itemToEncrypt), perItemKey, generateSafeIv(), buildVaultRowAad(id))),
+      aadVersion: 1 as const,
+    };
     perItemKey.fill(0);
 
     return {

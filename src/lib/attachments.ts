@@ -69,6 +69,12 @@ export interface AttachmentRecord {
    * Omitted on the oldest records, which are treated as `'master-password'`.
    */
   keySource?: 'vault-key' | 'master-password';
+  /** F-05: When 1, AES-GCM tag authenticates `kalderashield-attachment-aad-v1|id=<id>`. */
+  aadVersion?: 1;
+}
+
+function buildAttachmentAad(attachmentId: string): Uint8Array {
+  return new TextEncoder().encode(`kalderashield-attachment-aad-v1|id=${attachmentId}`);
 }
 
 /**
@@ -151,14 +157,16 @@ async function encryptAttachmentDataWithVaultKey(
   vaultKey: Uint8Array,
   attachmentId: string,
   rawBuffer: ArrayBuffer,
-): Promise<Pick<AttachmentRecord, 'algorithm' | 'data' | 'encrypted' | 'iv' | 'tag' | 'kdf' | 'keySource'>> {
+): Promise<Pick<AttachmentRecord, 'algorithm' | 'data' | 'encrypted' | 'iv' | 'tag' | 'kdf' | 'keySource' | 'aadVersion'>> {
   const key = await deriveAttachmentKeyFromVaultKey(vaultKey, attachmentId);
-  const encrypted = await webCryptoAesGcmEncryptBytes(rawBuffer, key, generateSafeIv());
+  const aad = buildAttachmentAad(attachmentId);
+  const encrypted = await webCryptoAesGcmEncryptBytes(rawBuffer, key, generateSafeIv(), aad);
 
   return {
     algorithm: 'AES-256-GCM',
     kdf: 'HKDF-SHA-256',
     keySource: 'vault-key',
+    aadVersion: 1,
     data: encrypted.ciphertext,
     encrypted: true,
     iv: encrypted.iv,
@@ -177,6 +185,7 @@ async function decryptAttachmentDataWithVaultKey(
     throw new AttachmentError(attachmentErrorCodes.missingEncryptionMetadata);
   }
   const key = await deriveAttachmentKeyFromVaultKey(vaultKey, record.id);
+  const aad = record.aadVersion === 1 ? buildAttachmentAad(record.id) : undefined;
   return webCryptoAesGcmDecryptBytes(
     {
       iv: record.iv,
@@ -184,6 +193,7 @@ async function decryptAttachmentDataWithVaultKey(
       ciphertext: record.data,
     },
     key,
+    aad,
   );
 }
 
@@ -220,7 +230,7 @@ async function decryptAttachmentDataWithMasterPassword(
 export async function encryptAttachmentData(
   attachmentId: string,
   rawBuffer: ArrayBuffer,
-): Promise<Pick<AttachmentRecord, 'algorithm' | 'data' | 'encrypted' | 'iv' | 'tag' | 'kdf' | 'keySource'>> {
+): Promise<Pick<AttachmentRecord, 'algorithm' | 'data' | 'encrypted' | 'iv' | 'tag' | 'kdf' | 'keySource' | 'aadVersion'>> {
   const result = await withActiveVaultEncryptionKey(async (vaultKey) => {
     return await encryptAttachmentDataWithVaultKey(vaultKey, attachmentId, rawBuffer);
   });
