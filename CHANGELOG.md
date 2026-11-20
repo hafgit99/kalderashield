@@ -2,6 +2,39 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.29.0 - Security architecture hardening
+
+### Security
+
+- **Fail-closed session gate on `update_rust_active_vault_key`.** Updating the
+  in-memory Rust vault key now requires an already-active `CredentialSession`
+  and an exact 32-byte key length, closing a potential lock-screen session-gate
+  bypass.
+- **Rust session memory hygiene & OS page locking.** Unlocked Rust sessions no
+  longer retain raw master password, backup password, or account secret key
+  bytes in RAM; rotation verification uses a per-session CSPRNG-keyed
+  HMAC-SHA256 verifier, and the active vault encryption key is pinned with
+  `VirtualLock` (Windows) / `mlock` (Unix) and zeroized on drop.
+- **Desktop secure storage allowlist, macOS Keychain & Rust-only biometric
+  sealing.** Native desktop secure storage now enforces a strict `KNOWN_KEYS`
+  IPC allowlist, enables Apple Keychain support on macOS (`keyring`
+  `apple-native`), and seals desktop biometric bundles inside Rust with
+  XChaCha20-Poly1305 + AAD using a Rust-only OS keychain key that is never
+  exposed to JavaScript.
+- **Complete AES-256-GCM AAD binding.** Vault item rows (OPFS and wa-sqlite),
+  encrypted backups (including offline `kalderashield-cli`), 24-word recovery
+  bundles, and new vault attachments now authenticate canonical Associated Data
+  (`aadVersion: 1`) while preserving full backward compatibility with existing
+  data.
+- **Rollback-protected sync & conflict preservation.** Sync envelopes
+  (`kalderashield-sync-v2`) embed a monotonic `syncGeneration` inside the
+  authenticated ciphertext to fail closed on replay/rollback attacks
+  (`sync.rollbackDetected`) and preserve non-destructive conflict copies on
+  near-simultaneous edits.
+- **Hardened Linux screen-capture detection.** System probe binaries
+  (`pw-dump`, `busctl`, `dbus-send`) are resolved strictly from `/usr/bin` and
+  `/bin` with a cleared environment instead of searching user `PATH`.
+
 ## 7.0.28.0 - Android Autofill, lock screen scroll & vault setup hardening
 
 ### Fixed
