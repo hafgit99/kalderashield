@@ -86,14 +86,14 @@ const FALLBACK_RE = new RegExp(
  * the files statically by default (`--static-parse`, default true), and a
  * static parser cannot expand an `it.each` table: it sees the call, not the
  * cases. So `vitest list --json` reports 2379 entries for this suite while
- * `vitest run` executes 2453 tests. The four that go missing are the expanded
+ * `vitest run` executes 2459 tests. The four that go missing are the expanded
  * cases of the `it.each` tables, and the per-file numbers move around with
  * them -- which is how a measurement that used to be exact became a guess
  * that was four short.
  *
  * `--no-static-parse` makes vitest import the test files and collect the
  * tasks the way a run does, so the each-cases are expanded and the list is
- * the same set the runner executes: 2453 tests in 264 files, matching
+ * the same set the runner executes: 2459 tests in 264 files, matching
  * `npm run test:unit` exactly. It costs about a minute instead of ten
  * seconds, because the files have to be imported rather than parsed, and
  * that is the price of publishing a number that is true.
