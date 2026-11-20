@@ -390,10 +390,21 @@ export async function verifyMasterPassword(password: string, secretKey?: string 
   }
 }
 
-/**
- * Safe utility to store the master password with Argon2id signature.
- */
-export async function setupMasterPassword(password: string): Promise<void> {
+let vaultSetupInFlight = false;
+
+async function runExclusiveVaultSetup(action: () => Promise<void>): Promise<void> {
+  if (vaultSetupInFlight) {
+    throw new Error('vault-setup-already-in-progress');
+  }
+  vaultSetupInFlight = true;
+  try {
+    await action();
+  } finally {
+    vaultSetupInFlight = false;
+  }
+}
+
+async function setupMasterPasswordInternal(password: string): Promise<void> {
   await initializeStorage();
   
   if (isDesktopRuntime()) {
@@ -449,97 +460,106 @@ export async function setupMasterPassword(password: string): Promise<void> {
   setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
 }
 
+/**
+ * Safe utility to store the master password with Argon2id signature.
+ */
+export async function setupMasterPassword(password: string): Promise<void> {
+  return runExclusiveVaultSetup(() => setupMasterPasswordInternal(password));
+}
+
 export async function setupMasterPasswordWithSecretKey(
   password: string,
   secretKey: string,
   rememberSecretKeyOnThisDevice: boolean,
 ): Promise<void> {
-  // A second key is only worth offering where it can actually be kept. Off
-  // Android `rememberAccountSecretKey` fails closed and stores nothing, so
-  // sealing the vault with `master + secret` left the user unable to open it
-  // again without transcribing a 45-character key on every launch -- while the
-  // setup screen showed a "remember on this device" checkbox that promised the
-  // opposite. The profile was written unconditionally, so the key became
-  // mandatory on every later unlock regardless of what the user was told.
-  //
-  // Without a store to keep it in, the vault is set up on the master password
-  // alone. That is a deliberate reduction in what this platform protects.
-  //
-  // This branch is no longer reachable from the UI: the lock screen only
-  // offers a key where `isRememberSecretKeySupported()` is true, and drops it
-  // silently where it is false. It stays as the backstop for a caller that
-  // hands over a key anyway -- the one thing that must never happen is a vault
-  // sealed with a secret nobody holds a copy of, which locks the user out
-  // permanently rather than merely weakening their setup.
-  if (!isRememberSecretKeySupported()) {
-    await setupMasterPassword(password);
-    forgetRememberedAccountSecretKey();
-    removeIndexedDbItemSync(STORAGE_KEYS.SECRET_PROFILE);
-    return;
-  }
-
-  const normalizedSecretKey = normalizeAccountSecretKey(secretKey);
-  const credential = combineMasterPasswordAndSecretKey(password, normalizedSecretKey);
-
-  await initializeStorage();
-
-  if (isDesktopRuntime()) {
-    const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    const kdfParams = getDefaultKdfProfile();
-    
-    const result = await invoke<{
-      vaultEncryptionKey: number[];
-      argonHash: string;
-      salt: string;
-    }>('setup_rust_session', {
-      password: credential,
-      backupPassword: password,
-      secretKey: normalizedSecretKey,
-      salt,
-      kdfParams,
-    });
-
-    const vaultKeyBytes = new Uint8Array(result.vaultEncryptionKey);
-    const repo = getVaultStorageRepository();
-    if (repo.setupMasterWithHash) {
-      // K-3: pass the derived key so the first persisted state is signed.
-      // Omitting it left the initial state unsigned; the very next write then
-      // saw a ledger-free, tag-less state and refused, and a rotation against
-      // it could not verify the stored tag. `setupMasterPassword` has always
-      // passed it here — the two setup paths simply disagreed.
-      await repo.setupMasterWithHash(result.argonHash, result.salt, kdfParams, vaultKeyBytes);
-    } else {
-      await repo.setupMaster(credential, vaultKeyBytes);
+  return runExclusiveVaultSetup(async () => {
+    // A second key is only worth offering where it can actually be kept. Off
+    // Android `rememberAccountSecretKey` fails closed and stores nothing, so
+    // sealing the vault with `master + secret` left the user unable to open it
+    // again without transcribing a 45-character key on every launch -- while the
+    // setup screen showed a "remember on this device" checkbox that promised the
+    // opposite. The profile was written unconditionally, so the key became
+    // mandatory on every later unlock regardless of what the user was told.
+    //
+    // Without a store to keep it in, the vault is set up on the master password
+    // alone. That is a deliberate reduction in what this platform protects.
+    //
+    // This branch is no longer reachable from the UI: the lock screen only
+    // offers a key where `isRememberSecretKeySupported()` is true, and drops it
+    // silently where it is false. It stays as the backstop for a caller that
+    // hands over a key anyway -- the one thing that must never happen is a vault
+    // sealed with a secret nobody holds a copy of, which locks the user out
+    // permanently rather than merely weakening their setup.
+    if (!isRememberSecretKeySupported()) {
+      await setupMasterPasswordInternal(password);
+      forgetRememberedAccountSecretKey();
+      removeIndexedDbItemSync(STORAGE_KEYS.SECRET_PROFILE);
+      return;
     }
-    
-    openVaultSession(credential, password, vaultKeyBytes);
-  } else {
-    await getVaultStorageRepository().setupMaster(credential);
-    await openDerivedVaultSession(credential, password);
-  }
 
-  try {
-    await migrateLegacyAttachmentsToAesGcm();
-  } catch (err) {
-    logSecurityEvent(
-      securityEventCodes.attachmentLegacyMigrationFailed,
-      'Legacy attachment migration failed after setup.',
-      'warning',
-      { error: err instanceof Error ? err.message : String(err) },
-    );
-  }
-  setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
-  setIndexedDbItemSync(STORAGE_KEYS.SECRET_PROFILE, JSON.stringify({
-    enabled: true,
-  }));
+    const normalizedSecretKey = normalizeAccountSecretKey(secretKey);
+    const credential = combineMasterPasswordAndSecretKey(password, normalizedSecretKey);
 
-  if (rememberSecretKeyOnThisDevice) {
-    rememberAccountSecretKey(normalizedSecretKey);
-  } else {
-    forgetRememberedAccountSecretKey();
-  }
+    await initializeStorage();
+
+    if (isDesktopRuntime()) {
+      const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      const kdfParams = getDefaultKdfProfile();
+      
+      const result = await invoke<{
+        vaultEncryptionKey: number[];
+        argonHash: string;
+        salt: string;
+      }>('setup_rust_session', {
+        password: credential,
+        backupPassword: password,
+        secretKey: normalizedSecretKey,
+        salt,
+        kdfParams,
+      });
+
+      const vaultKeyBytes = new Uint8Array(result.vaultEncryptionKey);
+      const repo = getVaultStorageRepository();
+      if (repo.setupMasterWithHash) {
+        // K-3: pass the derived key so the first persisted state is signed.
+        // Omitting it left the initial state unsigned; the very next write then
+        // saw a ledger-free, tag-less state and refused, and a rotation against
+        // it could not verify the stored tag. `setupMasterPassword` has always
+        // passed it here — the two setup paths simply disagreed.
+        await repo.setupMasterWithHash(result.argonHash, result.salt, kdfParams, vaultKeyBytes);
+      } else {
+        await repo.setupMaster(credential, vaultKeyBytes);
+      }
+      
+      openVaultSession(credential, password, vaultKeyBytes);
+    } else {
+      await getVaultStorageRepository().setupMaster(credential);
+      await openDerivedVaultSession(credential, password);
+    }
+
+    try {
+      await migrateLegacyAttachmentsToAesGcm();
+    } catch (err) {
+      logSecurityEvent(
+        securityEventCodes.attachmentLegacyMigrationFailed,
+        'Legacy attachment migration failed after setup.',
+        'warning',
+        { error: err instanceof Error ? err.message : String(err) },
+      );
+    }
+    setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
+    setIndexedDbItemSync(STORAGE_KEYS.SECRET_PROFILE, JSON.stringify({
+      enabled: true,
+    }));
+
+    if (rememberSecretKeyOnThisDevice) {
+      rememberAccountSecretKey(normalizedSecretKey);
+    } else {
+      forgetRememberedAccountSecretKey();
+    }
+  });
 }
 
 export async function changeMasterPassword(oldPassword: string, newPassword: string): Promise<void> {

@@ -8,12 +8,19 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Debug
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.view.WindowManager
 import android.webkit.WebView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.kalderashield.desktop.bridges.AndroidAutofillBridge
 import com.kalderashield.desktop.bridges.AndroidBiometricKeyStoreBridge
 import com.kalderashield.desktop.bridges.AndroidFileBridge
@@ -26,8 +33,10 @@ import com.kalderashield.desktop.model.AutofillLaunchRequest
 import com.kalderashield.desktop.model.AutofillSaveCandidate
 import com.kalderashield.desktop.model.PendingSave
 import com.kalderashield.desktop.security.AutofillRequestRegistry
+import com.kalderashield.desktop.security.AutofillResultMailbox
 import com.kalderashield.desktop.security.AutofillSecurityLog
 import com.kalderashield.desktop.security.RuntimeSecurityPosture
+import java.util.concurrent.atomic.AtomicInteger
 import org.json.JSONObject
 
 class MainActivity : TauriActivity() {
@@ -48,6 +57,7 @@ class MainActivity : TauriActivity() {
   private lateinit var runtimePosture: RuntimeSecurityPosture
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    activeMainActivityCount.incrementAndGet()
     WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
     window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
     enableEdgeToEdge()
@@ -57,6 +67,41 @@ class MainActivity : TauriActivity() {
 
     captureAutofillIntent(intent)
     super.onCreate(savedInstanceState)
+
+    // With enableEdgeToEdge() on Android 15/16, resize the WebView host above the
+    // navigation bar and soft keyboard (IME) so tall screens (e.g. LockScreen with
+    // large system font scaling) always scroll cleanly to their bottom controls.
+    findViewById<View>(android.R.id.content)?.let { contentView ->
+      ViewCompat.setOnApplyWindowInsetsListener(contentView) { view, insets ->
+        val bottomInsets = insets.getInsets(
+          WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.ime()
+        ).bottom
+        if (view.paddingBottom != bottomInsets) {
+          view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, bottomInsets)
+        }
+        insets
+      }
+      ViewCompat.requestApplyInsets(contentView)
+    }
+
+    // Keep MainActivity alive on root back-press instead of letting Activity.finish()
+    // destroy the single Tauri WebView while KalderaShieldAutofillService keeps the
+    // process alive (which would leave the next launch on a black screen — Tauri #11609).
+    onBackPressedDispatcher.addCallback(
+      this,
+      object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+          val activeRequestId = pendingAutofillRequestId
+          if (activeRequestId != null) {
+            pendingAutofillRequestId = null
+            AutofillRequestRegistry.consumeFillRequest(activeRequestId)
+            AutofillResultMailbox.cancel(activeRequestId)
+            notifyAutofillCleared(activeRequestId)
+          }
+          moveTaskToBack(true)
+        }
+      },
+    )
   }
 
   override fun onAttachedToWindow() {
@@ -68,6 +113,13 @@ class MainActivity : TauriActivity() {
     super.onWindowFocusChanged(hasFocus)
     if (hasFocus) {
       window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+      webViewRef?.let { wv ->
+        wv.requestLayout()
+        wv.invalidate()
+      }
+      if (pendingAutofillRequestId != null) {
+        notifyAutofillIntent()
+      }
       dismissPrivacyShield()
     }
   }
@@ -79,19 +131,55 @@ class MainActivity : TauriActivity() {
     captureAutofillIntent(intent)
     notifyAutofillIntent()
     notifyAutofillSaveCandidate()
-    dismissPrivacyShield()
   }
 
   override fun onResume() {
     super.onResume()
+    webViewRef?.let { wv ->
+      wv.onResume()
+      wv.resumeTimers()
+      wv.requestLayout()
+      wv.invalidate()
+    }
     notifyAutofillIntent()
     notifyAutofillSaveCandidate()
     dismissPrivacyShield()
+    if (pendingAutofillRequestId != null) {
+      webViewRef?.postDelayed({
+        notifyAutofillIntent()
+        dismissPrivacyShield()
+      }, 200L)
+    }
+  }
+
+  override fun onDestroy() {
+    val hadWebView = webViewRef != null
+    webViewRef = null
+    val remaining = activeMainActivityCount.decrementAndGet()
+    super.onDestroy()
+
+    // Workaround for Tauri Android #11609: when the user explicitly swipes the app
+    // away from Recents, WryActivity.onDestroy tears down the single RustWebView,
+    // but the OS keeps the process alive because KalderaShieldAutofillService is
+    // bound. Reclaiming the zombie process ensures the next MainActivity launch
+    // (including from Autofill) initializes a fresh WebView instead of a black screen.
+    if (hadWebView && isFinishing && !isChangingConfigurations && remaining <= 0 && !AutofillResultMailbox.hasActiveSession()) {
+      Handler(Looper.getMainLooper()).post {
+        if (activeMainActivityCount.get() <= 0 && !AutofillResultMailbox.hasActiveSession()) {
+          Process.killProcess(Process.myPid())
+        }
+      }
+    }
   }
 
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
     webViewRef = webView
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      // Prevent Android's AutofillManager from invoking KalderaShieldAutofillService
+      // recursively on KalderaShield's own lock-screen or vault inputs.
+      webView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+    }
     hardenWebView(webView)
 
     val fileBridge = AndroidFileBridge(
@@ -163,6 +251,10 @@ class MainActivity : TauriActivity() {
       notifyAutofillIntent()
       notifyAutofillSaveCandidate()
     }
+    webView.postDelayed({
+      notifyAutofillIntent()
+      notifyAutofillSaveCandidate()
+    }, 350L)
   }
 
   @Suppress("DEPRECATION")
@@ -378,8 +470,10 @@ class MainActivity : TauriActivity() {
     // Reading through the registry is already freshness-gated: an expired id
     // resolves to null and is evicted there, so there is nothing to mirror
     // here any more.
-    if (pendingAutofillRequestId != null && currentAutofillRequest() == null) {
+    val currentId = pendingAutofillRequestId
+    if (currentId != null && currentAutofillRequest() == null) {
       pendingAutofillRequestId = null
+      notifyAutofillCleared(currentId)
     }
     if (pendingAutofillSaveCandidateId != null && currentAutofillSaveCandidate() == null) {
       pendingAutofillSaveCandidateId = null
@@ -390,6 +484,12 @@ class MainActivity : TauriActivity() {
     purgeStaleAutofillRequests()
     val payload = currentAutofillRequest()?.toJson()?.toString() ?: "null"
     val script = "window.__KalderaShieldAndroidAutofill && window.__KalderaShieldAndroidAutofill.onRequest($payload)"
+    evaluateOnWebView(script)
+  }
+
+  private fun notifyAutofillCleared(requestId: String) {
+    val script = "window.__KalderaShieldAndroidAutofill && window.__KalderaShieldAndroidAutofill.onRequestCleared && " +
+      "window.__KalderaShieldAndroidAutofill.onRequestCleared(${JSONObject.quote(requestId)})"
     evaluateOnWebView(script)
   }
 
@@ -539,6 +639,7 @@ class MainActivity : TauriActivity() {
   }
 
   companion object {
+    private val activeMainActivityCount = AtomicInteger(0)
     private const val REQUEST_SAVE_FILE = 7101
     private const val REQUEST_OPEN_FILE = 7102
     private const val AUTOFILL_LOG_TAG = "KalderaShieldAutofill"

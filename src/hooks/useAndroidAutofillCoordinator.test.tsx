@@ -15,6 +15,7 @@ const autofillState = vi.hoisted(() => ({
   pendingRequest: null as any,
   pendingSaveCandidate: null as any,
   requestListeners: [] as Array<(request: any) => void>,
+  requestClearedListeners: [] as Array<(requestId: string) => void>,
   saveListeners: [] as Array<(candidate: any) => void>,
   fresh: true,
   completeResult: true,
@@ -23,6 +24,12 @@ const autofillState = vi.hoisted(() => ({
 
 const androidAutofillMock = vi.hoisted(() => ({
   ANDROID_AUTOFILL_REQUEST_MAX_AGE_MS: 5 * 60 * 1000,
+  cancelPendingAndroidAutofillRequest: vi.fn((requestId?: string) => {
+    if (!requestId || autofillState.pendingRequest?.requestId === requestId) {
+      autofillState.pendingRequest = null;
+    }
+    return true;
+  }),
   clearPendingAndroidAutofillRequest: vi.fn((requestId?: string) => {
     if (!requestId || autofillState.pendingRequest?.requestId === requestId) {
       autofillState.pendingRequest = null;
@@ -58,6 +65,12 @@ const androidAutofillMock = vi.hoisted(() => ({
     autofillState.requestListeners.push(listener);
     return () => {
       autofillState.requestListeners = autofillState.requestListeners.filter((candidate) => candidate !== listener);
+    };
+  }),
+  subscribeAndroidAutofillRequestCleared: vi.fn((listener: (requestId: string) => void) => {
+    autofillState.requestClearedListeners.push(listener);
+    return () => {
+      autofillState.requestClearedListeners = autofillState.requestClearedListeners.filter((candidate) => candidate !== listener);
     };
   }),
   subscribeAndroidAutofillSaveCandidates: vi.fn((listener: (candidate: any) => void) => {
@@ -119,16 +132,18 @@ function renderCoordinator(unlocked = true) {
   const setActiveTab = vi.fn();
   const openNewItemForm = vi.fn();
   const showNotification = vi.fn();
+  const onAutofillFocusList = vi.fn();
   const hook = renderHook(() =>
     useAndroidAutofillCoordinator({
       unlocked,
       setActiveTab,
       openNewItemForm,
       showNotification,
+      onAutofillFocusList,
     }),
   );
 
-  return { ...hook, setActiveTab, openNewItemForm, showNotification };
+  return { ...hook, setActiveTab, openNewItemForm, showNotification, onAutofillFocusList };
 }
 
 describe('useAndroidAutofillCoordinator', () => {
@@ -136,6 +151,7 @@ describe('useAndroidAutofillCoordinator', () => {
     autofillState.pendingRequest = null;
     autofillState.pendingSaveCandidate = null;
     autofillState.requestListeners = [];
+    autofillState.requestClearedListeners = [];
     autofillState.saveListeners = [];
     autofillState.fresh = true;
     autofillState.completeResult = true;
@@ -204,7 +220,7 @@ describe('useAndroidAutofillCoordinator', () => {
       result.current.cancelAutofillRequest();
     });
 
-    expect(androidAutofillMock.clearPendingAndroidAutofillRequest).toHaveBeenCalledWith('cancel-me');
+    expect(androidAutofillMock.cancelPendingAndroidAutofillRequest).toHaveBeenCalledWith('cancel-me');
     expect(securityMock.logAndroidAutofillSecurityEvent).toHaveBeenCalledWith('cancelled', expect.objectContaining({ requestId: 'cancel-me' }));
     expect(result.current.pendingAutofillRequest).toBeNull();
     expect(showNotification).toHaveBeenLastCalledWith({
@@ -212,6 +228,20 @@ describe('useAndroidAutofillCoordinator', () => {
       message: 'autofill.cancelled.message',
       type: 'info',
     });
+  });
+
+  it('focuses the vault list and clears state when native notifies cancellation', () => {
+    autofillState.pendingRequest = request({ requestId: 'native-cancel' });
+    const { result, onAutofillFocusList } = renderCoordinator(true);
+
+    expect(onAutofillFocusList).toHaveBeenCalledTimes(1);
+    expect(result.current.pendingAutofillRequest).toMatchObject({ requestId: 'native-cancel' });
+
+    act(() => {
+      autofillState.requestClearedListeners[0]!('native-cancel');
+    });
+
+    expect(result.current.pendingAutofillRequest).toBeNull();
   });
 
   it('approves a fresh autofill request and completes the native bridge', () => {

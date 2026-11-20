@@ -11,6 +11,12 @@ import { useSensitiveReveal } from './hooks/useSensitiveReveal';
 import { useClipboardFeedback } from './hooks/useClipboardFeedback';
 import { AppSplashLoader } from './components/AppSplashLoader';
 import { useLanguage } from './i18n/LanguageContext';
+import {
+  getPendingAndroidAutofillRequest,
+  isAndroidAutofillRequestFresh,
+  subscribeAndroidAutofillRequestCleared,
+  subscribeAndroidAutofillRequests,
+} from './lib/androidAutofill';
 import { initializeStorage, isVaultStorageUnavailableError } from './lib/storage';
 
 const UnlockedApp = React.lazy(() => import('./UnlockedApp'));
@@ -75,6 +81,33 @@ export default function App() {
     clearCopiedField,
   });
 
+  const [isAutofillPendingOnLock, setIsAutofillPendingOnLock] = useState(() => {
+    const pending = getPendingAndroidAutofillRequest();
+    return Boolean(pending && isAndroidAutofillRequestFresh(pending));
+  });
+
+  useEffect(() => {
+    if (unlocked) return;
+
+    const refreshPending = () => {
+      const pending = getPendingAndroidAutofillRequest();
+      setIsAutofillPendingOnLock(Boolean(pending && isAndroidAutofillRequestFresh(pending)));
+    };
+    refreshPending();
+
+    const unsubRequest = subscribeAndroidAutofillRequests((request) => {
+      setIsAutofillPendingOnLock(isAndroidAutofillRequestFresh(request));
+    });
+    const unsubCleared = subscribeAndroidAutofillRequestCleared(() => {
+      setIsAutofillPendingOnLock(false);
+    });
+
+    return () => {
+      unsubRequest();
+      unsubCleared();
+    };
+  }, [unlocked]);
+
   // 1. Y-13: the vault exists but storage is temporarily unavailable. Show a
   // dedicated retry screen — never a password prompt that cannot succeed, and
   // never a path that would set up a new vault over this one.
@@ -99,7 +132,7 @@ export default function App() {
   // 2. If locked, render LockScreen IMMEDIATELY (0.3s cold start).
   // Storage hydration continues in the background while user sees master password prompt.
   if (!unlocked) {
-    return <LockScreen />;
+    return <LockScreen isAutofillPending={isAutofillPendingOnLock} />;
   }
 
   // 3. While storage is still hydrating in background AND user is unlocked, show splash.

@@ -1450,4 +1450,43 @@ expect(saved[0]!.id).toHaveLength(9);
       'vault-database-integrity-corrupted',
     );
   });
+
+  it('rolls back encryption_salt and user_secrets when a concurrent setupMasterWithHash is rejected by integrity gating', async () => {
+    const sqlite = await freshSqliteInstance();
+    const kdfParams = { memoryKiB: 65536, iterations: 4, parallelism: 2, hashLength: 32 };
+    const saltA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const saltB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const keyA = new Uint8Array(32).fill(0x11);
+    const keyB = new Uint8Array(32).fill(0x22);
+
+    // 1. First setup seals the vault under saltA / keyA.
+    await sqlite.setupMasterWithHash('$argon2id$hash-a', saltA, kdfParams, keyA);
+    expect(sqlite.getCurrentVaultEncryptionSalt()).toBe(saltA);
+    expect(sqlite.getArgonHash()).toBe('$argon2id$hash-a');
+
+    // 2. A racing duplicate setup with saltB / keyB fails integrity verification
+    //    against the already-sealed v2 baseline and MUST roll back in-memory state.
+    await expect(
+      sqlite.setupMasterWithHash('$argon2id$hash-b', saltB, kdfParams, keyB),
+    ).rejects.toThrow('vault-database-integrity-tampered');
+
+    expect(sqlite.getCurrentVaultEncryptionSalt()).toBe(saltA);
+    expect(sqlite.getArgonHash()).toBe('$argon2id$hash-a');
+
+    // 3. Subsequent import with keyA writes saltA (not poisoned saltB) and
+    //    remains completely readable after a full cold reload with keyA.
+    await sqlite.saveVaultItemsWithKey([sampleItem({ id: 'imported-1', title: 'Bank Login' })], keyA);
+    const lastWriteCall = writeDesktopVaultDatabase.mock.calls.at(-1);
+    expect(lastWriteCall).toBeDefined();
+    const persistedJson = (lastWriteCall as unknown[])[0] as string;
+    const persisted = JSON.parse(persistedJson) as VersionedVaultDatabaseState;
+    expect(persisted.encryption_salt).toBe(saltA);
+    expect(persisted.user_secrets[0]?.argon_hash).toBe('$argon2id$hash-a');
+
+    readDesktopVaultDatabase.mockResolvedValueOnce(persistedJson);
+    const reloaded = await freshSqliteInstance();
+    const items = await reloaded.getVaultItemsWithKey(keyA);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.title).toBe('Bank Login');
+  });
 });

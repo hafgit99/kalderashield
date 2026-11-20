@@ -11,6 +11,7 @@ declare global {
       openSettings(): boolean;
       getPendingRequest(): string | null;
       clearPendingRequest(requestId: string): boolean;
+      cancelPendingRequest?(requestId: string): boolean;
       completePendingRequest(requestId: string, username: string, password: string, label: string): boolean;
       getPendingSaveCandidate?(): string | null;
       clearPendingSaveCandidate?(requestId: string): boolean;
@@ -27,6 +28,7 @@ declare global {
     };
     __KalderaShieldAndroidAutofill?: {
       onRequest(request: AndroidAutofillRequest | null): void;
+      onRequestCleared?(requestId: string): void;
       onSave(candidate: AndroidAutofillSaveCandidate | null): void;
     };
   }
@@ -70,11 +72,13 @@ export interface AndroidAutofillSaveCandidate {
 }
 
 type AndroidAutofillRequestListener = (request: AndroidAutofillRequest) => void;
+type AndroidAutofillRequestClearedListener = (requestId: string) => void;
 type AndroidAutofillSaveCandidateListener = (candidate: AndroidAutofillSaveCandidate) => void;
 
 export const ANDROID_AUTOFILL_REQUEST_MAX_AGE_MS = 5 * 60 * 1000;
 
 const listeners = new Set<AndroidAutofillRequestListener>();
+const clearedListeners = new Set<AndroidAutofillRequestClearedListener>();
 const saveCandidateListeners = new Set<AndroidAutofillSaveCandidateListener>();
 
 function androidAutofillBridge(): NonNullable<Window['KalderaShieldAndroidAutofill']> | null {
@@ -156,6 +160,10 @@ function ensureAndroidAutofillCallback(): void {
       if (!isAndroidAutofillRequest(request)) return;
       listeners.forEach((listener) => listener(request));
     },
+    onRequestCleared(requestId) {
+      if (typeof requestId !== 'string' || !requestId) return;
+      clearedListeners.forEach((listener) => listener(requestId));
+    },
     onSave(candidate) {
       if (!isAndroidAutofillSaveCandidate(candidate)) return;
       saveCandidateListeners.forEach((listener) => listener(candidate));
@@ -223,6 +231,20 @@ export function clearPendingAndroidAutofillRequest(requestId: string): boolean {
   if (!bridge) return false;
 
   try {
+    return Boolean(bridge.clearPendingRequest(requestId));
+  } catch {
+    return false;
+  }
+}
+
+export function cancelPendingAndroidAutofillRequest(requestId: string): boolean {
+  const bridge = androidAutofillBridge();
+  if (!bridge) return false;
+
+  try {
+    if (typeof bridge.cancelPendingRequest === 'function') {
+      return Boolean(bridge.cancelPendingRequest(requestId));
+    }
     return Boolean(bridge.clearPendingRequest(requestId));
   } catch {
     return false;
@@ -317,6 +339,17 @@ export function subscribeAndroidAutofillRequests(listener: AndroidAutofillReques
 
   return () => {
     listeners.delete(listener);
+  };
+}
+
+export function subscribeAndroidAutofillRequestCleared(
+  listener: AndroidAutofillRequestClearedListener,
+): () => void {
+  ensureAndroidAutofillCallback();
+  clearedListeners.add(listener);
+
+  return () => {
+    clearedListeners.delete(listener);
   };
 }
 

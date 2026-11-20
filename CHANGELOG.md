@@ -2,6 +2,36 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.28.0 - Android Autofill, lock screen scroll & vault setup hardening
+
+### Fixed
+
+- **Android Autofill no longer opens to a black screen.** Dataset-level
+  authentication now relays through a dedicated non-exported
+  `AutofillAuthActivity` and in-process `AutofillResultMailbox`, excludes
+  KalderaShield's own package from self-autofill, reclaims stale WebView
+  processes cleanly, and supports two-step username-only web login flows.
+- **Android lock and setup screens scroll cleanly at large font sizes.** The
+  root `splash-root` overflow lock is cleared once the app mounts, the lock
+  screen uses a scrollable container with `viewport-fit=cover`, and
+  `MainActivity` applies `adjustResize` plus navigation-bar and IME window
+  insets so bottom controls stay reachable when large display/font scaling or
+  the soft keyboard is active.
+- **Vault setup no longer corrupts state on double submission.** Master
+  password setup is serialized with a single-flight guard and a locked submit
+  state in the UI, and `setupMaster` / `setupMasterWithHash` now roll back
+  transactional database state completely if an error occurs before commit.
+
+### Changed
+
+- **Debug builds derive Argon2id keys at native speed.** `argon2` and `blake2`
+  now compile with `opt-level = 3` under `[profile.dev]` (release profiles
+  unchanged), eliminating multi-second setup and unlock stalls during Android
+  and desktop development testing.
+- **Clean extension credential teardown on lock.** Locking the vault now clears
+  extension credentials before closing the native session so background
+  teardown stays quiet.
+
 ## 7.0.27.0 - Android update channel
 
 ### Fixed

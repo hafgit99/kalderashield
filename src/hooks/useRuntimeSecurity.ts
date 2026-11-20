@@ -27,6 +27,12 @@ export function useRuntimeSecurity({
   // render, leaking Tauri listeners and cancelling pending background locks.
   const onLockRef = useRef(onLock);
   const onSensitiveStateClearRef = useRef(onSensitiveStateClear);
+  // Keep any armed background auto-lock deadline across isAutofillMode
+  // transitions so returning from background into an Autofill prompt after
+  // the deadline genuinely elapsed still locks the vault (and shows LockScreen
+  // with the Autofill banner), while returning within the deadline immediately
+  // dismisses the privacy shield so the user never sees a black overlay.
+  const backgroundDeadlineRef = useRef<number | null>(null);
   useEffect(() => {
     onLockRef.current = onLock;
     onSensitiveStateClearRef.current = onSensitiveStateClear;
@@ -68,13 +74,22 @@ export function useRuntimeSecurity({
 
   useEffect(() => {
     if (!unlocked) {
+      backgroundDeadlineRef.current = null;
       setPrivacyShieldVisible(false);
       return;
     }
 
-    // When autofill mode activates, immediately dismiss any
-    // shield that was already raised before the request arrived.
+    // When autofill mode activates, honor any already-elapsed background lock
+    // deadline; otherwise immediately dismiss any privacy shield that was
+    // raised while backgrounded so the user never sees a black overlay.
     if (isAutofillMode) {
+      const armedDeadline = backgroundDeadlineRef.current;
+      backgroundDeadlineRef.current = null;
+      if (armedDeadline !== null && Date.now() >= armedDeadline) {
+        setPrivacyShieldVisible(false);
+        onLockRef.current();
+        return;
+      }
       setPrivacyShieldVisible(false);
     }
 
@@ -86,7 +101,6 @@ export function useRuntimeSecurity({
     // shieldAndScheduleLock() returns early in autofill mode and therefore
     // never armed a deadline in the first place. `null` means "no background
     // lock is pending", which must never be treated as "the deadline passed".
-    let backgroundDeadline: number | null = null;
 
     const clearLockTimer = () => {
       if (lockTimer) {
@@ -104,9 +118,9 @@ export function useRuntimeSecurity({
       setPrivacyShieldVisible(true);
       onSensitiveStateClearRef.current();
       clearLockTimer();
-      backgroundDeadline = Date.now() + backgroundLockDelayMs;
+      backgroundDeadlineRef.current = Date.now() + backgroundLockDelayMs;
       lockTimer = setTimeout(() => {
-        backgroundDeadline = null;
+        backgroundDeadlineRef.current = null;
         onLockRef.current();
       }, backgroundLockDelayMs);
     };
@@ -122,8 +136,8 @@ export function useRuntimeSecurity({
         // N-1: only a real, armed deadline can trigger the lock. A null
         // deadline (autofill suppression, or never backgrounded) is not an
         // elapsed deadline.
-        const deadlinePassed = backgroundDeadline !== null && Date.now() >= backgroundDeadline;
-        backgroundDeadline = null;
+        const deadlinePassed = backgroundDeadlineRef.current !== null && Date.now() >= backgroundDeadlineRef.current;
+        backgroundDeadlineRef.current = null;
         clearLockTimer();
         if (deadlinePassed) {
           onLockRef.current();

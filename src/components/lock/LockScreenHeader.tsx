@@ -12,7 +12,7 @@ export function LockScreenHeader() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <header className="absolute top-[max(env(safe-area-inset-top),0.5rem)] right-[max(env(safe-area-inset-right),1rem)] sm:right-[max(env(safe-area-inset-right),1.5rem)] z-50">
+    <header className="w-full flex justify-end mb-3 lg:mb-0 lg:absolute lg:top-[max(env(safe-area-inset-top),0.5rem)] lg:right-[max(env(safe-area-inset-right),1.5rem)] z-50 shrink-0">
       <div className="flex items-center gap-2 bg-surface-low/60 backdrop-blur-md rounded-lg px-3 py-1.5 border border-outline-variant/10">
         <Languages className="w-4 h-4 text-brand-primary" />
         <select

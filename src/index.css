@@ -78,6 +78,24 @@ input::-webkit-credentials-auto-fill-button {
     padding-left: env(safe-area-inset-left);
   }
 
+  /**
+   * Dedicated scrollable viewport root for the Lock/Setup screen.
+   * Keeps vertical scrolling smooth on Android/mobile even with large system
+   * font scaling or an open soft keyboard, while preserving safe-area insets.
+   */
+  .lock-screen-scroll {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-top: max(env(safe-area-inset-top), 12px);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: max(env(safe-area-inset-bottom), 20px);
+    padding-left: env(safe-area-inset-left);
+  }
+
   .safe-top {
     padding-top: max(env(safe-area-inset-top), 0px);
   }
@@ -320,6 +338,11 @@ input::-webkit-credentials-auto-fill-button {
 @media (max-width: 640px) {
   .safe-screen {
     padding-top: max(env(safe-area-inset-top), 24px);
+  }
+
+  .lock-screen-scroll {
+    padding-top: max(env(safe-area-inset-top), 24px);
+    padding-bottom: max(env(safe-area-inset-bottom), 28px);
   }
 
   .safe-modal {

@@ -1,6 +1,6 @@
 [package]
 name = "kalderashield"
-version = "7.0.27"      
+version = "7.0.28"
 description = "Local-first secure desktop vault."
 authors = ["hafgit99"]
 license = "Apache-2.0"
@@ -66,6 +66,12 @@ objc2-app-kit = { version = "0.3.2", features = ["NSWindow"] }
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3", features = ["sync-secret-service"], default-features = false }
 
+
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
 
 [profile.release]
 opt-level = 3

@@ -6,6 +6,7 @@ import type {
   AndroidAutofillSaveCandidate} from '../lib/androidAutofill';
 import {
   ANDROID_AUTOFILL_REQUEST_MAX_AGE_MS,
+  cancelPendingAndroidAutofillRequest,
   clearPendingAndroidAutofillRequest,
   clearPendingAndroidAutofillSaveCandidate,
   completePendingAndroidAutofillRequest,
@@ -14,6 +15,7 @@ import {
   isAndroidAutofillRequestFresh,
   requiresEncryptedAutofillSaveResolution,
   resolveEncryptedAndroidAutofillSaveCandidate,
+  subscribeAndroidAutofillRequestCleared,
   subscribeAndroidAutofillRequests,
   subscribeAndroidAutofillSaveCandidates,
 } from '../lib/androidAutofill';
@@ -25,6 +27,7 @@ interface UseAndroidAutofillCoordinatorOptions {
   setActiveTab: (tab: ActiveTab) => void;
   openNewItemForm: (prefill?: Partial<VaultItem> | null) => void;
   showNotification: (notification: AppNotification) => void;
+  onAutofillFocusList?: () => void;
 }
 
 export function useAndroidAutofillCoordinator({
@@ -32,6 +35,7 @@ export function useAndroidAutofillCoordinator({
   setActiveTab,
   openNewItemForm,
   showNotification,
+  onAutofillFocusList,
 }: UseAndroidAutofillCoordinatorOptions) {
   const { t } = useLanguage();
   const [pendingAutofillRequest, setPendingAutofillRequest] = useState<AndroidAutofillRequest | null>(() =>
@@ -61,10 +65,23 @@ export function useAndroidAutofillCoordinator({
       setPendingAutofillRequest(pending);
     }
 
-    return subscribeAndroidAutofillRequests((request) => {
+    const unsubRequests = subscribeAndroidAutofillRequests((request) => {
       if (rejectStaleAutofillRequest(request)) return;
       setPendingAutofillRequest(request);
     });
+    const unsubCleared = subscribeAndroidAutofillRequestCleared((clearedRequestId) => {
+      if (notifiedAutofillRequestRef.current === clearedRequestId) {
+        notifiedAutofillRequestRef.current = null;
+      }
+      setPendingAutofillRequest((current) =>
+        current && current.requestId === clearedRequestId ? null : current,
+      );
+    });
+
+    return () => {
+      unsubRequests();
+      unsubCleared();
+    };
   }, [rejectStaleAutofillRequest]);
 
   useEffect(() => {
@@ -86,12 +103,13 @@ export function useAndroidAutofillCoordinator({
     notifiedAutofillRequestRef.current = pendingAutofillRequest.requestId;
     logAndroidAutofillSecurityEvent('requested', pendingAutofillRequest);
     setActiveTab('vault');
+    onAutofillFocusList?.();
     showNotification({
       title: t('autofill.notification.title'),
       message: t('autofill.notification.message'),
       type: 'info',
     });
-  }, [pendingAutofillRequest, rejectStaleAutofillRequest, setActiveTab, showNotification, t, unlocked]);
+  }, [onAutofillFocusList, pendingAutofillRequest, rejectStaleAutofillRequest, setActiveTab, showNotification, t, unlocked]);
 
   // N-8: expire the pending request on a timer, not only on the next event.
   //
@@ -173,7 +191,7 @@ export function useAndroidAutofillCoordinator({
 
   const cancelAutofillRequest = useCallback(() => {
     if (pendingAutofillRequest) {
-      clearPendingAndroidAutofillRequest(pendingAutofillRequest.requestId);
+      cancelPendingAndroidAutofillRequest(pendingAutofillRequest.requestId);
       logAndroidAutofillSecurityEvent('cancelled', pendingAutofillRequest);
     }
 
