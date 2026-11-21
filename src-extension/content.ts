@@ -384,12 +384,171 @@ const EXTENSION_SHADOW_STYLES = `
     display: flex !important;
     flex-direction: column !important;
     gap: 4px !important;
-    max-height: 280px !important;
+    max-height: 380px !important;
     overflow-y: auto !important;
     backdrop-filter: blur(12px) !important;
     font-size: 13px !important;
     color: #f8fafc !important;
     box-sizing: border-box !important;
+  }
+  .KalderaShield-gen-panel {
+    margin-top: 6px !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+    background: rgba(15, 23, 42, 0.92) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+  }
+  .KalderaShield-gen-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .KalderaShield-gen-label {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #34d399 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.4px !important;
+  }
+  .KalderaShield-gen-lengths {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+  .KalderaShield-gen-len-btn {
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #cbd5e1 !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    line-height: 1.4 !important;
+  }
+  .KalderaShield-gen-len-btn.active {
+    background: rgba(16, 185, 129, 0.22) !important;
+    border-color: rgba(16, 185, 129, 0.65) !important;
+    color: #6ee7b7 !important;
+  }
+  .KalderaShield-gen-preview-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    background: rgba(2, 6, 23, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    box-sizing: border-box !important;
+  }
+  .KalderaShield-gen-preview {
+    flex: 1 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+    letter-spacing: 0.4px !important;
+    word-break: break-all !important;
+    user-select: all !important;
+    color: #f8fafc !important;
+  }
+  .KalderaShield-char-letter {
+    color: #f8fafc !important;
+  }
+  .KalderaShield-char-digit {
+    color: #38bdf8 !important;
+  }
+  .KalderaShield-char-symbol {
+    color: #34d399 !important;
+  }
+  .KalderaShield-char-masked {
+    color: #94a3b8 !important;
+    letter-spacing: 1.5px !important;
+  }
+  .KalderaShield-gen-eye-btn {
+    flex-shrink: 0 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #e2e8f0 !important;
+    border-radius: 5px !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .KalderaShield-gen-eye-btn:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+  }
+  .KalderaShield-gen-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+  .KalderaShield-gen-btn {
+    padding: 6px 9px !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    border: none !important;
+    transition: background 0.15s ease, transform 0.1s ease !important;
+    line-height: 1.2 !important;
+  }
+  .KalderaShield-gen-btn:active {
+    transform: scale(0.97) !important;
+  }
+  .KalderaShield-gen-btn-primary {
+    flex: 1 !important;
+    background: #10b981 !important;
+    color: #ffffff !important;
+  }
+  .KalderaShield-gen-btn-primary:hover {
+    background: #059669 !important;
+  }
+  .KalderaShield-gen-btn-secondary {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  }
+  .KalderaShield-gen-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+  .KalderaShield-banner-update {
+    border-color: rgba(59, 130, 246, 0.55) !important;
+  }
+  .KalderaShield-banner-btn-update {
+    background: #2563eb !important;
+    color: #ffffff !important;
+  }
+  .KalderaShield-banner-btn-update:hover {
+    background: #1d4ed8 !important;
+  }
+  .KalderaShield-banner-btn-secondary {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  }
+  .KalderaShield-banner-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.16) !important;
+  }
+  .KalderaShield-banner-select {
+    margin-top: 6px !important;
+    background: rgba(2, 6, 23, 0.85) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(148, 163, 184, 0.35) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    max-width: 240px !important;
+    cursor: pointer !important;
   }
   .KalderaShield-dropdown-item {
     padding: 8px 10px !important;
@@ -703,10 +862,12 @@ function wipeLastFilledCredential() {
   }
 }
 
-// Clean active dropdown on click elsewhere (inspecting composedPath for Shadow DOM elements)
+// Clean active dropdown on click elsewhere (inspecting composedPath & closed shadow host)
 document.addEventListener('click', (e) => {
   const path = e.composedPath ? e.composedPath() : [];
-  const clickedInsideDropdown = activeDropdown && path.includes(activeDropdown);
+  const clickedInsideDropdown =
+    (activeDropdown && path.includes(activeDropdown)) ||
+    (shadowHost !== null && (path.includes(shadowHost) || e.target === shadowHost));
   if (activeDropdown && !clickedInsideDropdown && e.target !== activeTargetInput) {
     closeDropdown();
   }
@@ -755,6 +916,37 @@ function showSecurityToast(message: string): void {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+function showInfoToast(message: string): void {
+  const root = getKalderaShieldShadowRoot();
+  const existing = root.querySelector('.KalderaShield-info-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'KalderaShield-info-toast';
+  toast.style.cssText = `
+    position: fixed !important; top: 20px !important; right: 20px !important; z-index: 2147483647 !important;
+    background: rgba(15, 23, 42, 0.96) !important; color: #ecfdf5 !important; padding: 11px 16px !important;
+    border-radius: 8px !important; border: 1px solid rgba(16, 185, 129, 0.5) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 12px !important; font-weight: 600 !important; box-shadow: 0 8px 24px rgba(0,0,0,0.35) !important;
+    display: flex !important; align-items: center !important; gap: 8px !important; transition: opacity 0.3s ease !important;
+    pointer-events: auto !important;
+  `;
+  const icon = document.createElement('span');
+  icon.textContent = '✓';
+  icon.style.color = '#34d399';
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.appendChild(icon);
+  toast.appendChild(text);
+  root.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
 }
 
 // Handle messages from background service worker
@@ -952,6 +1144,122 @@ function scanAndInject() {
   checkAndAutofillPendingPassword();
 }
 
+let extensionClipboardTimer: ReturnType<typeof setTimeout> | null = null;
+
+function copyToClipboardWithAutoClear(text: string, timeoutMs = 30000): void {
+  if (extensionClipboardTimer) {
+    clearTimeout(extensionClipboardTimer);
+    extensionClipboardTimer = null;
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      extensionClipboardTimer = setTimeout(() => {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then((current) => {
+            if (current === text) {
+              navigator.clipboard.writeText('').catch(() => {});
+            }
+          }).catch(() => {
+            // Security fix D1: Do NOT wipe clipboard if reading fails (preserves user's other data)
+          });
+        }
+      }, timeoutMs);
+    }).catch(() => {});
+  }
+}
+
+function setInputValueSafely(el: HTMLInputElement, val: string): void {
+  // Security fix D2: Call native HTMLInputElement.prototype value setter to protect against prototype tampering
+  const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (nativeSetter) {
+    nativeSetter.call(el, val);
+  } else {
+    el.value = val;
+  }
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function getPasswordFieldHintText(el: HTMLInputElement): string {
+  return `${el.name || ''} ${el.id || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('aria-label') || ''}`.toLowerCase();
+}
+
+export function isCurrentPasswordField(el: HTMLInputElement): boolean {
+  const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase().trim();
+  if (autocomplete === 'current-password') return true;
+  if (autocomplete === 'new-password') return false;
+
+  const hint = getPasswordFieldHintText(el);
+  const currentKeywords = ['current', 'old', 'existing', 'mevcut', 'eski', 'suanki', 'şuanki'];
+  const newKeywords = ['new', 'confirm', 'repeat', 'retype', 'verify', 'again', 'yeni', 'tekrar', 'onay'];
+  const hasCurrent = currentKeywords.some((kw) => hint.includes(kw));
+  const hasNew = newKeywords.some((kw) => hint.includes(kw));
+  return hasCurrent && !hasNew;
+}
+
+export function isNewOrConfirmPasswordField(el: HTMLInputElement): boolean {
+  const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase().trim();
+  if (autocomplete === 'new-password') return true;
+  if (autocomplete === 'current-password') return false;
+
+  const hint = getPasswordFieldHintText(el);
+  const newKeywords = ['new', 'confirm', 'repeat', 'retype', 'verify', 'again', 'yeni', 'tekrar', 'onay', 'dogrula', 'doğrula'];
+  return newKeywords.some((kw) => hint.includes(kw));
+}
+
+export function findFillableNewPasswordTargets(targetInput: HTMLInputElement): HTMLInputElement[] {
+  const targets: HTMLInputElement[] = [];
+  if (targetInput.type === 'password' && !targetInput.disabled && !targetInput.readOnly) {
+    targets.push(targetInput);
+  }
+
+  const scope = targetInput.form || targetInput.closest('form') || targetInput.parentElement?.parentElement;
+  if (!scope) return targets;
+
+  const otherPasswords = Array.from(scope.querySelectorAll('input[type="password"]')) as HTMLInputElement[];
+  for (const pwEl of otherPasswords) {
+    if (pwEl === targetInput || pwEl.disabled || pwEl.readOnly) continue;
+    if (!isElementVisible(pwEl)) continue;
+    if (isCurrentPasswordField(pwEl)) continue;
+
+    // On change-password forms without explicit autocomplete/name hints, avoid overwriting
+    // an already-filled preceding password field (typically the user's current password).
+    const precedesTarget = (pwEl.compareDocumentPosition(targetInput) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    if (precedesTarget && pwEl.value.length > 0 && !isNewOrConfirmPasswordField(pwEl)) {
+      continue;
+    }
+
+    targets.push(pwEl);
+  }
+
+  return targets;
+}
+
+function renderPasswordPreviewContent(container: HTMLElement, password: string, isRevealed: boolean): void {
+  container.textContent = '';
+  if (!isRevealed) {
+    const masked = document.createElement('span');
+    masked.className = 'KalderaShield-char-masked';
+    masked.textContent = '•'.repeat(password.length);
+    container.appendChild(masked);
+    return;
+  }
+
+  for (const ch of password) {
+    const span = document.createElement('span');
+    if (/[0-9]/.test(ch)) {
+      span.className = 'KalderaShield-char-digit';
+    } else if (/[a-zA-Z]/.test(ch)) {
+      span.className = 'KalderaShield-char-letter';
+    } else {
+      span.className = 'KalderaShield-char-symbol';
+    }
+    span.textContent = ch;
+    container.appendChild(span);
+  }
+}
+
 function showDropdown(targetInput: HTMLInputElement, response: any) {
   closeDropdown();
   activeTargetInput = targetInput;
@@ -960,12 +1268,13 @@ function showDropdown(targetInput: HTMLInputElement, response: any) {
   const dropdown = document.createElement('div');
   dropdown.className = 'KalderaShield-dropdown';
   dropdown.style.pointerEvents = 'auto';
-  
+  dropdown.addEventListener('click', (e) => e.stopPropagation());
+
   // Set floating styles and absolute coordinates relative to the page viewport bounds
   dropdown.style.position = 'absolute';
   dropdown.style.left = `${rect.left + window.scrollX}px`;
   dropdown.style.top = `${rect.bottom + window.scrollY + 4}px`;
-  dropdown.style.width = `${Math.max(240, Math.min(360, rect.width))}px`;
+  dropdown.style.width = `${Math.max(296, Math.min(360, rect.width))}px`;
 
   window.addEventListener('scroll', closeDropdown, { passive: true });
   window.addEventListener('resize', closeDropdown, { passive: true });
@@ -988,7 +1297,7 @@ function showDropdown(targetInput: HTMLInputElement, response: any) {
       credentials.forEach((item: any) => {
         const option = document.createElement('div');
         option.className = 'KalderaShield-dropdown-item';
-        
+
         const title = document.createElement('span');
         title.className = 'KalderaShield-dropdown-title';
         title.textContent = item.title;
@@ -1015,14 +1324,14 @@ function showDropdown(targetInput: HTMLInputElement, response: any) {
     }
   }
 
-  // Enjekte edilen "Güvenli Şifre Üret" Butonu
+  // Enjekte edilen "Güvenli Şifre Üret" Butonu ve Görünür Önizleme Paneli
   const genDivider = document.createElement('div');
   genDivider.style.borderTop = '1px solid rgba(255, 255, 255, 0.08)';
   genDivider.style.margin = '4px 0';
   dropdown.appendChild(genDivider);
 
   const genOption = document.createElement('div');
-  genOption.className = 'KalderaShield-dropdown-item';
+  genOption.className = 'KalderaShield-dropdown-item KalderaShield-gen-trigger';
   genOption.style.background = 'rgba(16, 185, 129, 0.1)';
   genOption.style.border = '1px dashed rgba(16, 185, 129, 0.3)';
   genOption.style.marginTop = '4px';
@@ -1035,57 +1344,158 @@ function showDropdown(targetInput: HTMLInputElement, response: any) {
   genTitle.style.alignItems = 'center';
   genTitle.style.gap = '4px';
   genTitle.textContent = translate('section.generate', activeLanguage);
-  
+
   genOption.appendChild(genTitle);
 
-let extensionClipboardTimer: any = null;
+  let genPanel: HTMLDivElement | null = null;
+  let currentGeneratedLength = 20;
+  let currentGeneratedPassword = '';
+  let isPreviewRevealed = true;
 
-function copyToClipboardWithAutoClear(text: string, timeoutMs = 30000) {
-  if (extensionClipboardTimer) {
-    clearTimeout(extensionClipboardTimer);
-    extensionClipboardTimer = null;
-  }
+  const openInlineGeneratorPanel = () => {
+    if (genPanel) return;
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => {
-      extensionClipboardTimer = setTimeout(() => {
-        if (navigator.clipboard && navigator.clipboard.readText) {
-          navigator.clipboard.readText().then((current) => {
-            if (current === text) {
-              navigator.clipboard.writeText('').catch(() => {});
-            }
-          }).catch(() => {
-            // Security fix D1: Do NOT wipe clipboard if reading fails (preserves user's other data)
-          });
-        }
-      }, timeoutMs);
-    }).catch(() => {});
-  }
-}
+    currentGeneratedPassword = generateSecurePassword(currentGeneratedLength);
+    isPreviewRevealed = true;
 
-  genOption.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const generated = generateSecurePassword(18);
-    
-    targetInput.value = generated;
-    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-    targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    genPanel = document.createElement('div');
+    genPanel.className = 'KalderaShield-gen-panel';
 
-    copyToClipboardWithAutoClear(generated, 30000);
+    const header = document.createElement('div');
+    header.className = 'KalderaShield-gen-header';
 
-    const form = targetInput.form || targetInput.closest('form');
-    if (form) {
-      const otherPasswords = form.querySelectorAll('input[type="password"]');
-      otherPasswords.forEach((pwEl) => {
-        if (pwEl !== targetInput) {
-          (pwEl as HTMLInputElement).value = generated;
-          pwEl.dispatchEvent(new Event('input', { bubbles: true }));
-          pwEl.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+    const label = document.createElement('span');
+    label.className = 'KalderaShield-gen-label';
+    label.textContent = translate('generator.previewLabel', activeLanguage);
+
+    const lengthsWrap = document.createElement('div');
+    lengthsWrap.className = 'KalderaShield-gen-lengths';
+    lengthsWrap.setAttribute('aria-label', translate('generator.lengthLabel', activeLanguage));
+
+    const previewBox = document.createElement('div');
+    previewBox.className = 'KalderaShield-gen-preview';
+    previewBox.setAttribute('data-testid', 'generated-password-preview');
+
+    const updatePreview = () => {
+      renderPasswordPreviewContent(previewBox, currentGeneratedPassword, isPreviewRevealed);
+      previewBox.setAttribute('data-revealed', isPreviewRevealed ? 'true' : 'false');
+    };
+
+    const lengthOptions = [16, 20, 24];
+    const lengthButtons: HTMLButtonElement[] = [];
+    for (const len of lengthOptions) {
+      const lenBtn = document.createElement('button');
+      lenBtn.type = 'button';
+      lenBtn.className = `KalderaShield-gen-len-btn${len === currentGeneratedLength ? ' active' : ''}`;
+      lenBtn.textContent = String(len);
+      lenBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        currentGeneratedLength = len;
+        currentGeneratedPassword = generateSecurePassword(currentGeneratedLength);
+        lengthButtons.forEach((b) => b.classList.toggle('active', b === lenBtn));
+        updatePreview();
       });
+      lengthButtons.push(lenBtn);
+      lengthsWrap.appendChild(lenBtn);
     }
 
-    closeDropdown();
+    header.appendChild(label);
+    header.appendChild(lengthsWrap);
+
+    const previewRow = document.createElement('div');
+    previewRow.className = 'KalderaShield-gen-preview-row';
+
+    const eyeBtn = document.createElement('button');
+    eyeBtn.type = 'button';
+    eyeBtn.className = 'KalderaShield-gen-eye-btn';
+    const syncEyeBtn = () => {
+      const toggleLabel = translate(isPreviewRevealed ? 'generator.hideBtn' : 'generator.showBtn', activeLanguage);
+      eyeBtn.textContent = isPreviewRevealed ? '🙈' : '👁️';
+      eyeBtn.title = toggleLabel;
+      eyeBtn.setAttribute('aria-label', toggleLabel);
+    };
+    syncEyeBtn();
+
+    eyeBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      isPreviewRevealed = !isPreviewRevealed;
+      syncEyeBtn();
+      updatePreview();
+    });
+
+    previewRow.appendChild(previewBox);
+    previewRow.appendChild(eyeBtn);
+
+    const actions = document.createElement('div');
+    actions.className = 'KalderaShield-gen-actions';
+
+    const regenBtn = document.createElement('button');
+    regenBtn.type = 'button';
+    regenBtn.className = 'KalderaShield-gen-btn KalderaShield-gen-btn-secondary';
+    regenBtn.textContent = `↻ ${translate('generator.regenerateBtn', activeLanguage)}`;
+    regenBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      currentGeneratedPassword = generateSecurePassword(currentGeneratedLength);
+      updatePreview();
+    });
+
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'KalderaShield-gen-btn KalderaShield-gen-btn-secondary';
+    const defaultCopyLabel = translate('generator.copyBtn', activeLanguage);
+    copyBtn.textContent = defaultCopyLabel;
+    copyBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      copyToClipboardWithAutoClear(currentGeneratedPassword, 30000);
+      copyBtn.textContent = translate('copied.feedback', activeLanguage);
+      setTimeout(() => {
+        copyBtn.textContent = defaultCopyLabel;
+      }, 1500);
+    });
+
+    const useBtn = document.createElement('button');
+    useBtn.type = 'button';
+    useBtn.className = 'KalderaShield-gen-btn KalderaShield-gen-btn-primary';
+    useBtn.textContent = translate('generator.useBtn', activeLanguage);
+    useBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const targets = findFillableNewPasswordTargets(targetInput);
+      if (targets.length === 0) {
+        setInputValueSafely(targetInput, currentGeneratedPassword);
+      } else {
+        for (const el of targets) {
+          setInputValueSafely(el, currentGeneratedPassword);
+        }
+      }
+
+      copyToClipboardWithAutoClear(currentGeneratedPassword, 30000);
+      updateDraftCredential(targetInput);
+      closeDropdown();
+      showInfoToast(translate('generator.filledFeedback', activeLanguage));
+    });
+
+    actions.appendChild(regenBtn);
+    actions.appendChild(copyBtn);
+    actions.appendChild(useBtn);
+
+    genPanel.appendChild(header);
+    genPanel.appendChild(previewRow);
+    genPanel.appendChild(actions);
+
+    updatePreview();
+    genOption.style.display = 'none';
+    dropdown.appendChild(genPanel);
+  };
+
+  genOption.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openInlineGeneratorPanel();
   });
 
   dropdown.appendChild(genOption);
@@ -1105,17 +1515,7 @@ function fillPageCredentials(activeInput: HTMLInputElement, username: string, pa
   const formElement = activeInput?.form || (document.activeElement as HTMLInputElement | null)?.form || null;
   lastFilledCredential = { username, password, timestamp: Date.now(), formElement };
 
-  const fillInput = (el: HTMLInputElement, val: string) => {
-    // Security fix D2: Call native HTMLInputElement.prototype value setter to protect against prototype tampering
-    const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (nativeSetter) {
-      nativeSetter.call(el, val);
-    } else {
-      el.value = val;
-    }
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  };
+  const fillInput = setInputValueSafely;
 
   const passwordInputs = Array.from(document.querySelectorAll('input[type="password"]')) as HTMLInputElement[];
   
@@ -1223,7 +1623,7 @@ export interface CapturedCredentialPayload {
   category?: string;
 }
 
-interface VaultQueryCredential {
+export interface VaultQueryCredential {
   id?: string;
   title?: string;
   username?: string;
@@ -1233,18 +1633,96 @@ interface VaultQueryCredential {
   favorite?: boolean;
 }
 
-// Show premium glassmorphic top prompt banner inside isolated Shadow DOM
-function showSavePromptBanner(cred: CapturedCredentialPayload) {
+export type PendingCredentialClassification =
+  | { action: 'none' }
+  | { action: 'save' }
+  | { action: 'update'; target: VaultQueryCredential; candidates: VaultQueryCredential[] };
+
+export function classifyPendingCredential(
+  cred: CapturedCredentialPayload,
+  matchingList: VaultQueryCredential[],
+  preferredUsername?: string,
+): PendingCredentialClassification {
+  const credPass = cred.password || '';
+  if (!credPass) {
+    return { action: 'none' };
+  }
+
+  const credUser = (cred.username || '').trim().toLowerCase();
+
+  // 1. Exact credential match already exists in vault -> nothing to prompt
+  const exactMatch = matchingList.some((item) => {
+    const itemUser = (item.username || '').trim().toLowerCase();
+    const samePass = Boolean(item.password && item.password === credPass);
+    if (!samePass) return false;
+    if (credUser) {
+      return itemUser === credUser;
+    }
+    return true;
+  });
+
+  if (exactMatch) {
+    return { action: 'none' };
+  }
+
+  // 2. Check if an existing updatable vault entry matches and has a different password
+  const updatable = matchingList.filter((item) => Boolean(item.id && item.id.trim()));
+  if (updatable.length > 0) {
+    if (credUser) {
+      const sameUserDiffPass = updatable.filter((item) => {
+        const itemUser = (item.username || '').trim().toLowerCase();
+        return itemUser === credUser && item.password !== credPass;
+      });
+      if (sameUserDiffPass.length > 0) {
+        return {
+          action: 'update',
+          target: sameUserDiffPass[0]!,
+          candidates: sameUserDiffPass,
+        };
+      }
+    } else {
+      // Change-password / reset-password pages often omit the username field while logged in
+      const diffPassCandidates = updatable.filter((item) => item.password !== credPass);
+      if (diffPassCandidates.length > 0) {
+        const normalizedPreferred = (preferredUsername || '').trim().toLowerCase();
+        const preferred = normalizedPreferred
+          ? diffPassCandidates.find((item) => (item.username || '').trim().toLowerCase() === normalizedPreferred)
+          : undefined;
+        return {
+          action: 'update',
+          target: preferred || diffPassCandidates[0]!,
+          candidates: diffPassCandidates,
+        };
+      }
+    }
+  }
+
+  return { action: 'save' };
+}
+
+function dismissBannerElement(banner: HTMLElement): void {
+  banner.classList.remove('show');
+  setTimeout(() => banner.remove(), 400);
+}
+
+// Show premium glassmorphic top prompt banner inside isolated Shadow DOM (Save or Update mode)
+function showSavePromptBanner(
+  cred: CapturedCredentialPayload,
+  classification: PendingCredentialClassification = { action: 'save' },
+) {
   const root = getKalderaShieldShadowRoot();
   if (root.querySelector('.KalderaShield-banner')) return;
 
+  const isUpdateMode = classification.action === 'update';
+  let selectedTarget: VaultQueryCredential | null = isUpdateMode ? classification.target : null;
+
   const banner = document.createElement('div');
-  banner.className = 'KalderaShield-banner';
+  banner.className = isUpdateMode ? 'KalderaShield-banner KalderaShield-banner-update' : 'KalderaShield-banner';
   banner.style.pointerEvents = 'auto';
-  
+
   const info = document.createElement('div');
   info.className = 'KalderaShield-banner-info';
-  
+
   const logo = document.createElement('div');
   logo.className = 'KalderaShield-banner-logo';
   logo.innerHTML =
@@ -1252,63 +1730,155 @@ function showSavePromptBanner(cred: CapturedCredentialPayload) {
     'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>' +
     '<path d="m9 12 2 2 4-4"/></svg>';
-  
+
   const text = document.createElement('div');
   text.className = 'KalderaShield-banner-text';
-  
+
   const title = document.createElement('span');
   title.className = 'KalderaShield-banner-title';
-  title.textContent = translate('banner.saveTitle', activeLanguage);
-  
+  title.textContent = translate(isUpdateMode ? 'banner.updateTitle' : 'banner.saveTitle', activeLanguage);
+
   const desc = document.createElement('span');
   desc.className = 'KalderaShield-banner-desc';
-  desc.textContent = translate('banner.saveDesc', activeLanguage) + (cred.username ? ` (${cred.username})` : '');
-  
+
+  if (isUpdateMode && selectedTarget) {
+    const accountSummary = [selectedTarget.title, selectedTarget.username || cred.username]
+      .filter((part) => Boolean(part && part.trim()))
+      .join(' · ');
+    desc.textContent = translate('banner.updateDesc', activeLanguage) + (accountSummary ? ` (${accountSummary})` : '');
+  } else {
+    desc.textContent = translate('banner.saveDesc', activeLanguage) + (cred.username ? ` (${cred.username})` : '');
+  }
+
   text.appendChild(title);
   text.appendChild(desc);
+
+  if (isUpdateMode && classification.candidates.length > 1) {
+    const select = document.createElement('select');
+    select.className = 'KalderaShield-banner-select';
+    select.setAttribute('aria-label', translate('banner.updateAccountLabel', activeLanguage));
+
+    classification.candidates.forEach((candidate, idx) => {
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      const labelTitle = candidate.title || window.location.hostname;
+      const labelUser = candidate.username || '---';
+      opt.textContent = `${labelTitle} (${labelUser})`;
+      if (candidate.id && selectedTarget?.id && candidate.id === selectedTarget.id) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', () => {
+      const idx = Number(select.value);
+      const picked = classification.candidates[idx];
+      if (picked) {
+        selectedTarget = picked;
+        const accountSummary = [picked.title, picked.username || cred.username]
+          .filter((part) => Boolean(part && part.trim()))
+          .join(' · ');
+        desc.textContent = translate('banner.updateDesc', activeLanguage) + (accountSummary ? ` (${accountSummary})` : '');
+      }
+    });
+
+    text.appendChild(select);
+  }
+
   info.appendChild(logo);
   info.appendChild(text);
-  
+
   const actions = document.createElement('div');
   actions.className = 'KalderaShield-banner-actions';
-  
-  const saveBtn = document.createElement('button');
-  saveBtn.className = 'KalderaShield-banner-btn KalderaShield-banner-btn-save';
-  saveBtn.textContent = translate('banner.saveBtn', activeLanguage);
-  saveBtn.addEventListener('click', () => {
-    chrome.runtime.sendMessage({
-      action: 'save_new_credential',
-      credential: {
-        title: cred.title || document.title || window.location.hostname,
-        username: cred.username || '',
-        password: cred.password || '',
-        url: cred.url || window.location.href,
-        category: 'login'
-      }
-    }, () => {
-      banner.classList.remove('show');
-      setTimeout(() => banner.remove(), 400);
+
+  if (isUpdateMode && selectedTarget) {
+    const updateBtn = document.createElement('button');
+    updateBtn.type = 'button';
+    updateBtn.className = 'KalderaShield-banner-btn KalderaShield-banner-btn-update';
+    updateBtn.textContent = translate('banner.updateBtn', activeLanguage);
+    updateBtn.addEventListener('click', () => {
+      const activeTarget = selectedTarget;
+      if (!activeTarget || !activeTarget.id) return;
+      chrome.runtime.sendMessage({
+        action: 'update_existing_credential',
+        credential: {
+          id: activeTarget.id,
+          title: activeTarget.title || cred.title || document.title || window.location.hostname,
+          username: activeTarget.username || cred.username || '',
+          password: cred.password || '',
+          url: cred.url || activeTarget.url || window.location.href,
+          category: activeTarget.category || 'login',
+        },
+      }, (res) => {
+        dismissBannerElement(banner);
+        if (res && res.error === 'vault_locked') {
+          showSecurityToast(translate('locked.title', activeLanguage));
+        } else if (!res || !res.error) {
+          showInfoToast(translate('banner.updatedFeedback', activeLanguage));
+        }
+      });
     });
-  });
-  
+
+    const saveAsNewBtn = document.createElement('button');
+    saveAsNewBtn.type = 'button';
+    saveAsNewBtn.className = 'KalderaShield-banner-btn KalderaShield-banner-btn-secondary';
+    saveAsNewBtn.textContent = translate('banner.saveAsNewBtn', activeLanguage);
+    saveAsNewBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({
+        action: 'save_new_credential',
+        credential: {
+          title: cred.title || document.title || window.location.hostname,
+          username: cred.username || '',
+          password: cred.password || '',
+          url: cred.url || window.location.href,
+          category: 'login',
+        },
+      }, () => {
+        dismissBannerElement(banner);
+      });
+    });
+
+    actions.appendChild(updateBtn);
+    actions.appendChild(saveAsNewBtn);
+  } else {
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'KalderaShield-banner-btn KalderaShield-banner-btn-save';
+    saveBtn.textContent = translate('banner.saveBtn', activeLanguage);
+    saveBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({
+        action: 'save_new_credential',
+        credential: {
+          title: cred.title || document.title || window.location.hostname,
+          username: cred.username || '',
+          password: cred.password || '',
+          url: cred.url || window.location.href,
+          category: 'login',
+        },
+      }, () => {
+        dismissBannerElement(banner);
+      });
+    });
+    actions.appendChild(saveBtn);
+  }
+
   const dismissBtn = document.createElement('button');
+  dismissBtn.type = 'button';
   dismissBtn.className = 'KalderaShield-banner-btn KalderaShield-banner-btn-dismiss';
   dismissBtn.textContent = translate('banner.dismissBtn', activeLanguage);
   dismissBtn.addEventListener('click', () => {
     chrome.runtime.sendMessage({ action: 'clear_pending_credential' }, () => {
-      banner.classList.remove('show');
-      setTimeout(() => banner.remove(), 400);
+      dismissBannerElement(banner);
     });
   });
-  
-  actions.appendChild(saveBtn);
+
   actions.appendChild(dismissBtn);
-  
+
   banner.appendChild(info);
   banner.appendChild(actions);
-  
+
   root.appendChild(banner);
-  
+
   // Animation delay
   setTimeout(() => {
     banner.classList.add('show');
@@ -1318,6 +1888,7 @@ function showSavePromptBanner(cred: CapturedCredentialPayload) {
 // Global state tracking for robust multi-step or separated DOM field detection
 let lastActiveUsername = '';
 let lastActivePassword = '';
+let pendingCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isNonUsernameInput(el: HTMLInputElement): boolean {
   if (!el || el.type === 'password' || el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'search' || el.type === 'checkbox' || el.type === 'radio' || el.type === 'file') {
@@ -1429,30 +2000,55 @@ function findAssociatedUsernameInput(passwordInput: HTMLInputElement): HTMLInput
   return null;
 }
 
+// Smartly select the new/active password input from a set of password inputs (critical for Change Password forms)
+export function selectSubmittedPasswordInput(inputs: HTMLInputElement[]): HTMLInputElement | null {
+  const filled = inputs.filter((el) => el.value && el.value.length >= 4);
+  if (filled.length === 0) {
+    return inputs[0] || null;
+  }
+  if (filled.length === 1) {
+    return filled[0]!;
+  }
+
+  // Exclude explicit current/old password fields when a new/confirm password field is present
+  const nonCurrent = filled.filter((el) => !isCurrentPasswordField(el));
+  const pool = nonCurrent.length > 0 ? nonCurrent : filled;
+
+  // Prefer explicit new/confirm password fields
+  const explicitNew = pool.filter((el) => isNewOrConfirmPasswordField(el));
+  if (explicitNew.length > 0) {
+    return explicitNew[explicitNew.length - 1]!;
+  }
+
+  // If two trailing fields have the exact same value (new password + confirm password), pick that
+  for (let i = pool.length - 1; i > 0; i--) {
+    if (pool[i]!.value === pool[i - 1]!.value) {
+      return pool[i]!;
+    }
+  }
+
+  // Otherwise pick the last filled non-current password field (e.g. [old, new])
+  return pool[pool.length - 1]!;
+}
+
 // Helper to find active password input on the page or inside container
 function findPasswordInput(context?: HTMLElement | null): HTMLInputElement | null {
   if (context) {
-    const pw = context.querySelector('input[type="password"]') as HTMLInputElement;
-    if (pw && pw.value) return pw;
-  }
+    const ctxPasswords = Array.from(context.querySelectorAll('input[type="password"]')) as HTMLInputElement[];
+    const selected = selectSubmittedPasswordInput(ctxPasswords);
+    if (selected && selected.value) return selected;
 
-  // Search inside nearest form
-  if (context) {
     const form = context.closest('form');
     if (form) {
-      const pw = form.querySelector('input[type="password"]') as HTMLInputElement;
-      if (pw && pw.value) return pw;
+      const formPasswords = Array.from(form.querySelectorAll('input[type="password"]')) as HTMLInputElement[];
+      const formSelected = selectSubmittedPasswordInput(formPasswords);
+      if (formSelected && formSelected.value) return formSelected;
     }
   }
 
   // Fallback: document-level password inputs with values
   const allPasswords = Array.from(document.querySelectorAll('input[type="password"]')) as HTMLInputElement[];
-  const filled = allPasswords.filter(p => p.value && p.value.length >= 4);
-  if (filled.length > 0) {
-    return filled[filled.length - 1]!;
-  }
-
-  return allPasswords[0] || null;
+  return selectSubmittedPasswordInput(allPasswords);
 }
 
 // Update draft credential in background script as user types/blurs
@@ -1461,8 +2057,15 @@ function updateDraftCredential(inputEl: HTMLInputElement) {
   let username = '';
 
   if (inputEl.type === 'password') {
-    password = inputEl.value;
-    const userInput = findAssociatedUsernameInput(inputEl);
+    const scope = inputEl.form || inputEl.closest('form');
+    const preferredPwInput = scope ? findPasswordInput(scope) : inputEl;
+    const effectivePwInput =
+      isCurrentPasswordField(inputEl) && preferredPwInput && preferredPwInput !== inputEl && preferredPwInput.value.length >= 4
+        ? preferredPwInput
+        : inputEl;
+
+    password = effectivePwInput.value;
+    const userInput = findAssociatedUsernameInput(effectivePwInput);
     username = userInput?.value ? userInput.value.trim() : (lastActiveUsername || '');
   } else {
     // If user is typing in a non-password field:
@@ -1501,6 +2104,45 @@ function updateDraftCredential(inputEl: HTMLInputElement) {
   });
 }
 
+function evaluatePendingCredential(): void {
+  chrome.runtime.sendMessage({ action: 'get_pending_credential' }, (response) => {
+    if (response && response.credential) {
+      const cred = response.credential as CapturedCredentialPayload;
+      if (!cred.password || cred.password.length < 4) {
+        chrome.runtime.sendMessage({ action: 'clear_pending_credential' });
+        return;
+      }
+      try {
+        const credDomain = extractRegistrableDomainFromUrl(cred.url || window.location.href);
+        const currentDomain = extractRegistrableDomainFromUrl(window.location.href);
+
+        if (!credDomain || !currentDomain || credDomain === currentDomain) {
+          chrome.runtime.sendMessage(
+            { action: 'query_credentials', url: window.location.href },
+            (dbResponse) => {
+              const matchingList: VaultQueryCredential[] =
+                dbResponse && Array.isArray(dbResponse.credentials) ? dbResponse.credentials : [];
+              const classification = classifyPendingCredential(
+                cred,
+                matchingList,
+                lastFilledCredential?.username || lastActiveUsername,
+              );
+
+              if (classification.action === 'none') {
+                chrome.runtime.sendMessage({ action: 'clear_pending_credential' });
+              } else {
+                showSavePromptBanner(cred, classification);
+              }
+            }
+          );
+        }
+      } catch (e) {
+        console.warn('Pending credentials verification failed:', e);
+      }
+    }
+  });
+}
+
 // Intercept form submissions
 function handleFormSubmit(formOrEl?: HTMLElement | null) {
   const passwordInput = findPasswordInput(formOrEl);
@@ -1525,6 +2167,15 @@ function handleFormSubmit(formOrEl?: HTMLElement | null) {
       url: window.location.href
     }
   });
+
+  // Also check on-page for SPA / AJAX password changes that do not trigger a full page reload
+  if (pendingCheckTimer) {
+    clearTimeout(pendingCheckTimer);
+  }
+  pendingCheckTimer = setTimeout(() => {
+    pendingCheckTimer = null;
+    evaluatePendingCredential();
+  }, 1200);
 }
 
 // Setup listeners for submission and real-time typing
@@ -1547,18 +2198,17 @@ document.addEventListener('submit', (e) => {
 }, true);
 
 document.addEventListener('click', (e) => {
-  const target = e.target as HTMLElement;
-  if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT')) {
+  const rawTarget = e.target as HTMLElement | null;
+  const target = rawTarget?.closest?.('button, input[type="submit"], input[type="button"]') as HTMLElement | null;
+  if (target) {
     const type = target.getAttribute('type');
-    const textContent = (target.textContent || '').toLowerCase();
-    const isSubmit = type === 'submit' || 
-                     textContent.includes('giriş') ||
-                     textContent.includes('login') ||
-                     textContent.includes('kaydet') ||
-                     textContent.includes('save') ||
-                     textContent.includes('register') ||
-                     textContent.includes('sign') ||
-                     textContent.includes('oturumu aç');
+    const textContent = `${target.textContent || ''} ${(target as HTMLInputElement).value || ''}`.toLowerCase();
+    const submitKeywords = [
+      'giriş', 'login', 'kaydet', 'save', 'register', 'sign', 'oturumu aç',
+      'güncelle', 'değiştir', 'update', 'change', 'reset', 'sıfırla', 'yenile',
+      'confirm', 'onayla', 'continue', 'devam', 'submit', 'oluştur', 'create', 'üye ol', 'kayıt',
+    ];
+    const isSubmit = type === 'submit' || submitKeywords.some((kw) => textContent.includes(kw));
     if (isSubmit) {
       handleFormSubmit(target.closest('form') || target.parentElement);
     }
@@ -1567,42 +2217,7 @@ document.addEventListener('click', (e) => {
 
 // Initial check for pending credentials on load
 setTimeout(() => {
-  chrome.runtime.sendMessage({ action: 'get_pending_credential' }, (response) => {
-    if (response && response.credential) {
-      const cred = response.credential;
-      if (!cred.password || cred.password.length < 4) {
-        chrome.runtime.sendMessage({ action: 'clear_pending_credential' });
-        return;
-      }
-      try {
-        const credDomain = extractRegistrableDomainFromUrl(cred.url || window.location.href);
-        const currentDomain = extractRegistrableDomainFromUrl(window.location.href);
-        
-        if (!credDomain || !currentDomain || credDomain === currentDomain) {
-          // Verify if it doesn't already exist in matches to prevent duplicate save prompts
-          chrome.runtime.sendMessage(
-            { action: 'query_credentials', url: window.location.href },
-            (dbResponse) => {
-              const matchingList = (dbResponse && dbResponse.credentials) ? dbResponse.credentials : [];
-              const exists = matchingList.some((item: VaultQueryCredential) => {
-                const sameUser = !cred.username || !item.username || item.username.toLowerCase() === cred.username.toLowerCase();
-                const samePass = Boolean(item.password && cred.password && item.password === cred.password);
-                return sameUser && samePass;
-              });
-
-              if (!exists) {
-                showSavePromptBanner(cred);
-              } else {
-                chrome.runtime.sendMessage({ action: 'clear_pending_credential' });
-              }
-            }
-          );
-        }
-      } catch (e) {
-        console.warn('Pending credentials verification failed:', e);
-      }
-    }
-  });
+  evaluatePendingCredential();
 }, 800);
 
 // Setup mutation observer to scan for dynamically loaded SPA fields

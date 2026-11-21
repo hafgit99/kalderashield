@@ -568,6 +568,28 @@ pub fn revoke_all_sessions(
     rotate_pairing_token_now(pairing_token, session_generation, token_path)
 }
 
+/// Updates the password of a cached extension credential matching `credential_id` in place.
+/// Returns `true` if a cached entry was found and updated, `false` otherwise.
+pub fn apply_cached_credential_password_update(
+    cache: &mut ExtensionCredentialCache,
+    credential_id: &str,
+    new_password: &str,
+) -> bool {
+    let trimmed_id = credential_id.trim();
+    if trimmed_id.is_empty() || new_password.is_empty() {
+        return false;
+    }
+
+    let mut updated = false;
+    for item in &mut cache.credentials {
+        if item.id == trimmed_id {
+            item.password = new_password.to_string();
+            updated = true;
+        }
+    }
+    updated
+}
+
 pub fn start_tcp_server(
     app_handle: tauri::AppHandle,
     pairing_token: Arc<Mutex<String>>,
@@ -991,6 +1013,38 @@ fn handle_client(
                     }
                 }
                 serde_json::json!({ "status": "ok" })
+            }
+            "update_credential" => {
+                let credential = req["credential"].clone();
+                let cred_id = credential["id"].as_str().map(str::trim).unwrap_or("");
+                let new_password = credential["password"].as_str().unwrap_or("");
+                if cred_id.is_empty() || new_password.is_empty() {
+                    serde_json::json!({ "error": "invalid_credential_payload" })
+                } else {
+                    let mut creds_guard = credentials.lock().unwrap();
+                    let now_ms = credential_lease_expires_at(0);
+                    if creds_guard
+                        .as_ref()
+                        .is_some_and(|cache| cache.expires_at_epoch_ms <= now_ms)
+                    {
+                        *creds_guard = None;
+                    }
+
+                    if let Some(ref mut cache) = *creds_guard {
+                        let cache_updated =
+                            apply_cached_credential_password_update(cache, cred_id, new_password);
+                        let _ = app_handle.emit("update-credential-from-extension", credential);
+                        serde_json::json!({ "status": "ok", "updated": true, "cacheUpdated": cache_updated })
+                    } else {
+                        let windows = app_handle.webview_windows();
+                        if !windows.is_empty() {
+                            for window in windows.values() {
+                                focus_webview_window(window);
+                            }
+                        }
+                        serde_json::json!({ "error": "vault_locked" })
+                    }
+                }
             }
             "get_credentials" => {
                 let url = req["url"].as_str().unwrap_or("");
@@ -2108,5 +2162,54 @@ mod tests {
             .expect("reader thread")
             .expect_err("a revoke during a blocked read must still refuse the request");
         assert_eq!(error.kind(), std::io::ErrorKind::ConnectionAborted);
+    }
+
+    #[test]
+    fn cached_credential_password_update_replaces_matching_id_in_place() {
+        let initial_secret = generate_token();
+        let rotated_secret = generate_token();
+        let other_secret = generate_token();
+
+        let mut cache = super::ExtensionCredentialCache {
+            credentials: vec![
+                super::ExtensionCredential {
+                    id: "cred-1".to_string(),
+                    title: "Example".to_string(),
+                    username: "alice@example.com".to_string(),
+                    password: initial_secret.clone(),
+                    url: "https://example.com/login".to_string(),
+                    category: "login".to_string(),
+                    favorite: false,
+                },
+                super::ExtensionCredential {
+                    id: "cred-2".to_string(),
+                    title: "Other".to_string(),
+                    username: "bob@example.com".to_string(),
+                    password: other_secret.clone(),
+                    url: "https://other.example.com".to_string(),
+                    category: "login".to_string(),
+                    favorite: true,
+                },
+            ],
+            expires_at_epoch_ms: super::credential_lease_expires_at(60_000),
+        };
+
+        assert!(super::apply_cached_credential_password_update(
+            &mut cache,
+            "  cred-1  ",
+            &rotated_secret,
+        ));
+        assert_eq!(cache.credentials[0].password, rotated_secret);
+        assert_eq!(cache.credentials[1].password, other_secret);
+
+        assert!(!super::apply_cached_credential_password_update(
+            &mut cache,
+            "missing-id",
+            &rotated_secret,
+        ));
+        assert!(!super::apply_cached_credential_password_update(
+            &mut cache, "cred-1", "",
+        ));
+        assert_eq!(cache.credentials[0].password, rotated_secret);
     }
 }

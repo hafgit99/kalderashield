@@ -45,7 +45,8 @@ import { useVaultWriteConflict } from './hooks/useVaultWriteConflict';
 import { VaultStaleBanner } from './components/VaultStaleBanner';
 import { useLinuxSecurityStatus } from './hooks/useLinuxSecurityStatus';
 import { useExtensionCredentialSync } from './hooks/useExtensionCredentialSync';
-import { useExtensionCredentialListener } from './hooks/useExtensionCredentialListener';
+import { useExtensionCredentialListener, type ExtensionCredentialUpdatePayload } from './hooks/useExtensionCredentialListener';
+import { recordPasswordHistory } from './lib/passwordHistory';
 import { useKeyboardShortcuts, dispatchFocusSearchShortcut } from './hooks/useKeyboardShortcuts';
 import { useVaultOrganisation } from './hooks/useVaultOrganisation';
 import { useAutoUpdateCheck } from './hooks/useAutoUpdateCheck';
@@ -250,7 +251,49 @@ export default function UnlockedApp({
     [handleTriggerNew],
   );
 
-  useExtensionCredentialListener(handleAddCredentialFromExtension);
+  const handleUpdateCredentialFromExtension = useCallback(
+    async (payload: ExtensionCredentialUpdatePayload) => {
+      const existing = items.find((item) => !item.deleted && item.id === payload.id);
+      if (!existing) {
+        handleTriggerNew({
+          title: payload.title,
+          username: payload.username,
+          password: payload.password,
+          url: payload.url,
+          category: 'login',
+        });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const updatedItem: VaultItem = {
+        ...existing,
+        password: payload.password,
+        passwordHistory: recordPasswordHistory(
+          existing.passwordHistory,
+          existing.password,
+          payload.password,
+          now,
+        ),
+        updatedAt: now,
+      };
+
+      await handleSaveItem(updatedItem);
+      const accountLabel = existing.username || payload.username;
+      const itemLabel = existing.title || payload.title || '—';
+      showNotification({
+        title: t('vaultForm.title.edit'),
+        message: accountLabel ? `${itemLabel} (${accountLabel})` : itemLabel,
+        type: 'success',
+      });
+    },
+    [items, handleSaveItem, handleTriggerNew, showNotification, t],
+  );
+
+  useExtensionCredentialListener(
+    handleAddCredentialFromExtension,
+    handleUpdateCredentialFromExtension,
+  );
 
   // Share & Receive Modals state
   const {
