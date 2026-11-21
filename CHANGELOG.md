@@ -2,6 +2,30 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.30.0 - Browser extension visible generator preview & password update prompts
+
+### Added
+
+- **Visible inline password generator preview in browser extensions.** Clicking
+  "Generate New Secure Password" inside the KalderaShield field dropdown now
+  opens an inline Shadow DOM preview card showing the CSPRNG-generated password
+  in clear color-coded monospace text with Show/Hide toggle, 16/20/24-character
+  length pills, Regenerate, Copy (30s auto-clear), and Use Password controls.
+- **In-place password update prompt for existing saved credentials.** Changing a
+  password on a saved site (including SPA/AJAX forms and password-change pages
+  without a username input) now prompts to update the existing vault entry
+  instead of duplicating it, preserves the previous password in
+  `passwordHistory`, refreshes the Rust Native Messaging cache immediately, and
+  supports all 12 extension languages.
+
+### Fixed
+
+- **Change-password form field detection & closed Shadow DOM interaction.**
+  Generating or submitting passwords on multi-field password-change forms now
+  targets new/confirm password inputs without overwriting `current-password`
+  fields, and clicks inside the closed Shadow DOM generator panel no longer
+  dismiss the dropdown prematurely.
+
 ## 7.0.29.0 - Security architecture hardening
 
 ### Security
