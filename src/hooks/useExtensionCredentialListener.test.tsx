@@ -16,16 +16,21 @@ function emitCredentialEvent(handler: ListenHandler, payload: unknown) {
 }
 
 describe('useExtensionCredentialListener', () => {
-  let unlisten: ReturnType<typeof vi.fn>;
-  let capturedHandler: ListenHandler;
+  let unlistenAdd: ReturnType<typeof vi.fn>;
+  let unlistenUpdate: ReturnType<typeof vi.fn>;
+  let capturedHandlers: Record<string, ListenHandler>;
 
   beforeEach(() => {
-    unlisten = vi.fn();
-    capturedHandler = () => undefined;
+    unlistenAdd = vi.fn();
+    unlistenUpdate = vi.fn();
+    capturedHandlers = {};
     (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {};
-    listenMock.mockReset().mockImplementation((_event: string, handler: ListenHandler) => {
-      capturedHandler = handler;
-      return Promise.resolve(unlisten);
+    listenMock.mockReset().mockImplementation((event: string, handler: ListenHandler) => {
+      capturedHandlers[event] = handler;
+      if (event === 'update-credential-from-extension') {
+        return Promise.resolve(unlistenUpdate);
+      }
+      return Promise.resolve(unlistenAdd);
     });
   });
 
@@ -34,7 +39,11 @@ describe('useExtensionCredentialListener', () => {
     renderHook(() => useExtensionCredentialListener(onAddCredential));
 
     await waitFor(() => expect(listenMock).toHaveBeenCalledWith('add-credential-from-extension', expect.any(Function)));
-    emitCredentialEvent(capturedHandler, { title: 'GitHub', username: 'octo', password: 's3cret' });
+    emitCredentialEvent(capturedHandlers['add-credential-from-extension']!, {
+      title: 'GitHub',
+      username: 'octo',
+      password: 's3cret',
+    });
 
     expect(onAddCredential).toHaveBeenCalledWith({
       title: 'GitHub',
@@ -44,16 +53,59 @@ describe('useExtensionCredentialListener', () => {
     });
   });
 
+  it('forwards valid password-update payloads and ignores incomplete ones', async () => {
+    const onAddCredential = vi.fn();
+    const onUpdateCredential = vi.fn();
+    const { unmount } = renderHook(() =>
+      useExtensionCredentialListener(onAddCredential, onUpdateCredential),
+    );
+
+    await waitFor(() =>
+      expect(listenMock).toHaveBeenCalledWith('update-credential-from-extension', expect.any(Function)),
+    );
+
+    emitCredentialEvent(capturedHandlers['update-credential-from-extension']!, {
+      id: '  item-42  ',
+      title: 'GitHub',
+      username: 'octo',
+      password: 'NewStrongPassword!99',
+      url: 'https://github.com/settings/security',
+    });
+
+    expect(onUpdateCredential).toHaveBeenCalledWith({
+      id: 'item-42',
+      title: 'GitHub',
+      username: 'octo',
+      password: 'NewStrongPassword!99',
+      url: 'https://github.com/settings/security',
+    });
+
+    // Missing id or password must be ignored
+    emitCredentialEvent(capturedHandlers['update-credential-from-extension']!, {
+      id: '',
+      password: 'NewStrongPassword!99',
+    });
+    emitCredentialEvent(capturedHandlers['update-credential-from-extension']!, {
+      id: 'item-42',
+      password: '',
+    });
+    expect(onUpdateCredential).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(unlistenAdd).toHaveBeenCalledTimes(1);
+    expect(unlistenUpdate).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores empty payloads and unsubscribes on unmount', async () => {
     const onAddCredential = vi.fn();
     const { unmount } = renderHook(() => useExtensionCredentialListener(onAddCredential));
 
     await waitFor(() => expect(listenMock).toHaveBeenCalled());
-    emitCredentialEvent(capturedHandler, null);
+    emitCredentialEvent(capturedHandlers['add-credential-from-extension']!, null);
     expect(onAddCredential).not.toHaveBeenCalled();
 
     unmount();
-    expect(unlisten).toHaveBeenCalledTimes(1);
+    expect(unlistenAdd).toHaveBeenCalledTimes(1);
   });
 
   it('does not subscribe outside the Tauri runtime', () => {
@@ -61,4 +113,5 @@ describe('useExtensionCredentialListener', () => {
     const onAddCredential = vi.fn();
     renderHook(() => useExtensionCredentialListener(onAddCredential));
     expect(listenMock).not.toHaveBeenCalled();
-  });});
+  });
+});

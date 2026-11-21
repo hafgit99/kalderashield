@@ -3,6 +3,7 @@ import { extractRegistrableDomainFromUrl } from './psl-utils';
 const HOST_NAME = 'com.kalderashield.desktop';
 
 export interface ExtensionDraftCredential {
+  id?: string;
   title?: string;
   username?: string;
   password?: string;
@@ -170,6 +171,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.runtime.sendNativeMessage(
       HOST_NAME,
       { action: 'add_credential', credential: cred },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse(response);
+        }
+      }
+    );
+    clearPendingCredential();
+    return true;
+  }
+
+  if (request.action === 'update_existing_credential') {
+    // P1-7d: Validate update credential payload schema before forwarding to native host
+    const cred = request.credential;
+    if (!cred || typeof cred !== 'object'
+      || typeof cred.id !== 'string' || !cred.id.trim()
+      || typeof cred.password !== 'string' || !cred.password.length
+      || (cred.username !== undefined && typeof cred.username !== 'string')
+      || (cred.url !== undefined && typeof cred.url !== 'string')
+      || (cred.title !== undefined && typeof cred.title !== 'string')
+      || (cred.category !== undefined && typeof cred.category !== 'string')) {
+      sendResponse({ error: 'invalid_credential_payload' });
+      return false;
+    }
+    const sanitizedCred: ExtensionDraftCredential = {
+      id: cred.id.trim(),
+      title: cred.title,
+      username: cred.username,
+      password: cred.password,
+      url: cred.url,
+      category: cred.category,
+    };
+    chrome.runtime.sendNativeMessage(
+      HOST_NAME,
+      { action: 'update_credential', credential: sanitizedCred },
       (response) => {
         if (chrome.runtime.lastError) {
           sendResponse({ error: chrome.runtime.lastError.message });
