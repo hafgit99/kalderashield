@@ -23,6 +23,7 @@ import {
   verifyMasterPassword,
 } from '../lib/storage';
 import { clearAllSetupFlagsSync, removeIndexedDbItemSync } from '../lib/indexedDbStorage';
+import { resetDesktopSecureStorageForTests, setDesktopSecureStorageCacheForTests } from '../lib/secureStorage';
 import LockScreen from './LockScreen';
 
 vi.mock('../lib/storage', () => ({
@@ -777,5 +778,25 @@ describe('LockScreen', () => {
     const scrollContainer = screen.getByTestId('lock-screen-scroll-container');
     expect(scrollContainer.className).toContain('lock-screen-scroll');
     expect(scrollContainer.className).not.toContain('overflow-hidden');
+  });
+
+  it('reveals and generates the Secret Key on setup once desktop secure storage finishes cold-start hydration', async () => {
+    vi.mocked(isMasterPasswordSet).mockReturnValue(false);
+    vi.mocked(isRememberSecretKeySupported).mockReturnValue(false);
+
+    render(<LockScreen onUnlock={vi.fn()} />);
+    expect(screen.queryByTestId('lock-secret-key-input')).toBeNull();
+
+    // Simulate desktop OS credential store completing initialization after mount
+    vi.mocked(isRememberSecretKeySupported).mockReturnValue(true);
+    await act(async () => {
+      setDesktopSecureStorageCacheForTests({});
+    });
+
+    const input = screen.getByTestId('lock-secret-key-input') as HTMLInputElement;
+    expect(input.value).toMatch(/^A3-/);
+    expect(screen.getByTestId('lock-emergency-kit-button')).toBeTruthy();
+
+    resetDesktopSecureStorageForTests();
   });
 });

@@ -1,5 +1,6 @@
 import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
+import { formatPercent } from '../lib/formatters';
 
 interface VaultItemSecurityAssessmentProps {
   score: number;
@@ -21,7 +22,7 @@ function getBorderClass(score: number): string {
 function getButtonClass(score: number): string {
   if (score >= 85) return 'bg-brand-tertiary/15 text-brand-tertiary hover:bg-brand-tertiary/20';
   if (score >= 50) return 'bg-brand-secondary/15 text-brand-secondary hover:bg-brand-secondary/20';
-  return 'bg-brand-error/15 text-brand-error hover:bg-brand-error/20 animate-pulse';
+  return 'bg-brand-error/15 text-brand-error hover:bg-brand-error/20';
 }
 
 function getDescriptionKey(score: number): TranslationKey {
@@ -35,7 +36,7 @@ function getDescriptionKey(score: number): TranslationKey {
 }
 
 export default function VaultItemSecurityAssessment({ score, onOpenAudit }: VaultItemSecurityAssessmentProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const toneClass = getToneClass(score);
 
   return (
@@ -46,7 +47,7 @@ export default function VaultItemSecurityAssessment({ score, onOpenAudit }: Vaul
         <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
             <path
-              className="text-[#1e201e] stroke-current"
+              className="text-surface-high stroke-current"
               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               fill="none"
               strokeWidth="3"
@@ -60,16 +61,16 @@ export default function VaultItemSecurityAssessment({ score, onOpenAudit }: Vaul
               strokeWidth="3"
             ></path>
           </svg>
-          <div className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-xs truncate ${toneClass}`}>
-            %{score}
+          <div className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-xs whitespace-nowrap tabular-nums ${toneClass}`}>
+            {formatPercent(score, language)}
           </div>
         </div>
         <div className="min-w-0">
           <h4 className="font-bold text-sm text-on-surface">{t('detail.security.title')}</h4>
-          <p className="text-on-surface-variant text-[11px] mt-0.5 leading-relaxed">{t(getDescriptionKey(score))}</p>
+          <p className="text-on-surface-variant text-xs mt-0.5 leading-relaxed">{t(getDescriptionKey(score))}</p>
         </div>
       </div>
-      <button onClick={onOpenAudit} className={`text-xs font-bold px-3 py-2 rounded-lg shrink-0 w-full sm:w-auto ${getButtonClass(score)}`}>
+      <button onClick={onOpenAudit} className={`text-xs font-bold px-3.5 py-2 rounded-lg shrink-0 w-full sm:w-auto cursor-pointer transition-colors ${getButtonClass(score)}`}>
         {t('detail.security.auditAll')}
       </button>
     </div>

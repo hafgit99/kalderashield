@@ -288,7 +288,7 @@ export const es = {
   'vaultForm.attachment.openFailedMessage': 'Se produjo un error al descifrar el archivo.',
   'vaultForm.attachment.encryptFailed': 'Se produjo un error al cifrar el archivo con protección AES-GCM local.',
   'vaultForm.attachment.title': 'Cifrado de archivos locales (máx.: 250 MB)',
-  'vaultForm.attachment.protected': 'HTML5 IndexedDB protegido',
+  'vaultForm.attachment.protected': 'Cifrado local AES-256-GCM',
   'vaultForm.attachment.encrypting': 'Cifrando y bloqueando archivos...',
   'vaultForm.attachment.encryptingDescription': 'Aplicando la integración AES del lado del cliente...',
   'vaultForm.attachment.encrypted': 'CIFRADO AES-GCM',

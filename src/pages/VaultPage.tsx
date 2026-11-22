@@ -147,6 +147,25 @@ function VaultPage({
   onApproveAutofill,
 }: VaultPageProps) {
   const [isFolderSidebarOpen, setIsFolderSidebarOpen] = useState(false);
+  const [isDesktopFolderOpen, setIsDesktopFolderOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('KalderaShield_org_sidebar_open');
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return window.innerWidth >= 1536;
+  });
+
+  const handleToggleFolderSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setIsDesktopFolderOpen((prev) => {
+        const next = !prev;
+        window.localStorage.setItem('KalderaShield_org_sidebar_open', String(next));
+        return next;
+      });
+    } else {
+      setIsFolderSidebarOpen((prev) => !prev);
+    }
+  };
   // M10 Dilim 3: selection state is owned at this level.
   const bulkSelection = useBulkSelection();
   const runBulkAction = useBulkActionRunner(activeItems, onItemsChange);
@@ -197,6 +216,7 @@ function VaultPage({
         onCreateSmartFolder={onCreateSmartFolder}
         onDeleteSmartFolder={onDeleteSmartFolder}
         isOpen={isFolderSidebarOpen}
+        isDesktopOpen={isDesktopFolderOpen}
       />
       <VaultWorkspace
         selectedItem={selectedItem}
@@ -247,7 +267,8 @@ function VaultPage({
         tags={tags}
         onApplyBulkAction={handleApplyBulkAction}
         onSecureShare={onSecureShare}
-        onOpenFolderSidebar={() => setIsFolderSidebarOpen(true)}
+        onOpenFolderSidebar={handleToggleFolderSidebar}
+        isFolderSidebarOpen={isDesktopFolderOpen}
       />
     </>
   );

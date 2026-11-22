@@ -7,6 +7,7 @@ import React from 'react';
 import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
+import { formatPercent } from '../lib/formatters';
 import type { VaultItem } from '../types';
 import { runVaultAudit, calculatePasswordScore, getPasswordAgeInDays, isUnsecureHttpUrl, supportsTwoFactor, getAuditScoreHistory } from '../lib/security';
 import { checkPasswordAgainstHibp, isHibpCheckEnabled, setHibpCheckEnabled } from '../lib/hibp';
@@ -17,7 +18,7 @@ interface SecurityAuditProps {
 }
 
 export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [hibpEnabled, setHibpEnabled] = React.useState<boolean>(() => isHibpCheckEnabled());
   const [pwnedByPassword, setPwnedByPassword] = React.useState<Map<string, number>>(new Map());
   const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>('idle');
@@ -77,9 +78,11 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     };
   }, [items, hibpEnabled]);
 
-  // Group items by security status
+  // Group items by security status (only audit password-bearing / login records)
   const weakItems = items.filter((i) => {
     const pw = i.password || '';
+    const isPasswordItem = i.category === 'login' || pw.length > 0;
+    if (!isPasswordItem) return false;
     return pw.length < 8 || calculatePasswordScore(pw) < 40;
   });
 
@@ -139,10 +142,13 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     }
   }, [hoveredIndex, points]);
 
-  // Bezier curve path generator
+  // Bezier curve path generator (for a single recorded point, render a clean baseline across the chart)
   const bezierPath = React.useMemo(() => {
     if (points.length === 0) return '';
-    if (points.length === 1) return `M ${points[0]!.x} ${points[0]!.y}`;
+    if (points.length === 1) {
+      const y = points[0]!.y;
+      return `M 10 ${y} L 390 ${y}`;
+    }
     let d = `M ${points[0]!.x} ${points[0]!.y}`;
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[i]!;
@@ -158,6 +164,9 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
   const bezierAreaPath = React.useMemo(() => {
     if (points.length === 0) return '';
+    if (points.length === 1) {
+      return `${bezierPath} L 390 95 L 10 95 Z`;
+    }
     return `${bezierPath} L ${points[points.length - 1]!.x} 95 L ${points[0]!.x} 95 Z`;
   }, [points, bezierPath]);
 
@@ -205,7 +214,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 <path
-                  className="text-[#1e201e] stroke-current"
+                  className="text-surface-high stroke-current"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
                   strokeWidth="3.2"
@@ -219,8 +228,8 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                   strokeWidth="3.2"
                 ></path>
               </svg>
-              <div className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-lg sm:text-xl ${scoreFeedback.textColor}`}>
-                %{audit.score}
+              <div className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-lg sm:text-xl whitespace-nowrap tabular-nums ${scoreFeedback.textColor}`}>
+                {formatPercent(audit.score, language)}
               </div>
             </div>
             <div className="text-center sm:text-left">
@@ -330,7 +339,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                 </div>
                 <div className="text-xs font-bold text-brand-tertiary flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
                   <div className="w-1.5 h-1.5 rounded-full bg-brand-tertiary animate-pulse" />
-                  {t('securityAudit.securityLabel')}: %{points[hoveredIndex]!.score}
+                  {t('securityAudit.securityLabel')}: {formatPercent(points[hoveredIndex]!.score, language)}
                 </div>
               </div>
             )}

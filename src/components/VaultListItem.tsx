@@ -1,9 +1,10 @@
-import { Clock, Heart, Sparkles } from 'lucide-react';
+import { Clock, Copy, Heart, KeyRound, Sparkles, User } from 'lucide-react';
 import { memo, useState } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
 import { getLogoForPlatform } from '../lib/display';
+import { getAvatarToneClass } from '../lib/formatters';
 import { getPasswordAgeInDays, getStrengthLabel } from '../lib/security';
 import type { FuzzyScore } from '../lib/fuzzySearch';
 import type { VaultItem } from '../types';
@@ -16,6 +17,7 @@ interface VaultListItemProps {
   item: VaultItem;
   isSelected: boolean;
   onSelect: (item: VaultItem) => void;
+  onCopyText?: (text: string, field: string) => void;
   autofillRecommended?: boolean;
   /** Optional match metadata — when present, matched field text is highlighted. */
   match?: FuzzyScore | null;
@@ -34,6 +36,7 @@ function VaultListItemContent({
   item,
   isSelected,
   onSelect,
+  onCopyText,
   autofillRecommended = false,
   match = null,
   density = 'comfortable',
@@ -41,7 +44,9 @@ function VaultListItemContent({
   const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const logoUrl = getLogoForPlatform(item.title, item.url);
-  const itemStrength = getStrengthLabel(item.password || '');
+  const hasPasswordScore = item.category === 'login' || Boolean(item.password && item.password.length > 0);
+  const itemStrength = hasPasswordScore ? getStrengthLabel(item.password || '') : null;
+  const avatarTone = getAvatarToneClass(item.title || item.id);
 
   // When the user is searching and the match points to title or
   // username, render those fields with a highlight. Other matched
@@ -83,8 +88,12 @@ function VaultListItemContent({
     >
       {/* Icon / Platform Logo */}
       <div
-        className={`rounded-lg bg-surface-low flex items-center justify-center border border-outline-variant/20 shrink-0 overflow-hidden ${
-          isCompact ? 'w-7 h-7 rounded-md' : 'w-10 h-10 rounded-lg'
+        className={`flex items-center justify-center border shrink-0 overflow-hidden ${
+          logoUrl
+            ? 'bg-surface-low border-outline-variant/20'
+            : avatarTone
+        } ${
+          isCompact ? 'w-7 h-7 rounded-md' : 'w-10 h-10 rounded-xl'
         }`}
       >
         {logoUrl ? (
@@ -96,11 +105,11 @@ function VaultListItemContent({
           />
         ) : (
           <span
-            className={`font-display font-bold text-brand-primary ${
-              isCompact ? 'text-xs' : 'text-base'
+            className={`font-display font-bold ${
+              isCompact ? 'text-xs' : 'text-sm'
             }`}
           >
-            {item.title.charAt(0).toUpperCase()}
+            {(item.title || '?').charAt(0).toUpperCase()}
           </span>
         )}
       </div>
@@ -184,12 +193,46 @@ function VaultListItemContent({
         )}
       </div>
 
-      {/* Right side Badges & Strength indicator */}
+      {/* Right side Badges, Hover Quick-Copy & Strength indicator */}
       <div className={`shrink-0 flex items-center ${isCompact ? 'gap-1.5' : 'flex-col items-end gap-1.5'}`}>
+        {onCopyText && (item.username || item.password) && (
+          <div className="hidden lg:flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+            {item.username && (
+              <button
+                type="button"
+                data-testid="vault-item-quick-copy-user"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyText(item.username, `quick_user_${item.id}`);
+                }}
+                title={`${t('loginDetail.copy')} (${t('loginDetail.username')})`}
+                aria-label={`${t('loginDetail.copy')} ${t('loginDetail.username')}`}
+                className="p-1 rounded-md bg-surface-low border border-outline-variant/20 text-on-surface-variant hover:text-brand-primary hover:border-brand-primary/35 transition-colors cursor-pointer"
+              >
+                <User className="w-3 h-3" />
+              </button>
+            )}
+            {item.password && (
+              <button
+                type="button"
+                data-testid="vault-item-quick-copy-password"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopyText(item.password ?? '', `quick_pass_${item.id}`);
+                }}
+                title={`${t('loginDetail.copy')} (${t('loginDetail.password')})`}
+                aria-label={`${t('loginDetail.copy')} ${t('loginDetail.password')}`}
+                className="p-1 rounded-md bg-surface-low border border-outline-variant/20 text-on-surface-variant hover:text-brand-primary hover:border-brand-primary/35 transition-colors cursor-pointer"
+              >
+                {item.category === 'login' ? <KeyRound className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
+        )}
         {autofillRecommended && (
           <span
             data-testid="autofill-recommended-badge"
-            className="inline-flex items-center gap-1 rounded-md border border-brand-primary/20 bg-brand-primary/10 px-1.5 py-0.5 text-[8px] font-bold text-brand-primary"
+            className="inline-flex items-center gap-1 rounded-md border border-brand-primary/20 bg-brand-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-brand-primary"
             title={t('autofill.recommended')}
           >
             <Sparkles className="h-2.5 w-2.5" />
@@ -201,7 +244,7 @@ function VaultListItemContent({
           <span
             data-testid="item-old-password-indicator"
             title={passwordAge >= 180 ? t('passwordAge.warning180') : t('passwordAge.warning90')}
-            className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8px] font-bold ${
+            className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold ${
               passwordAge >= 180
                 ? 'text-red-400 bg-red-400/10 border border-red-500/20'
                 : 'text-amber-400 bg-amber-400/10 border border-amber-500/20'
@@ -211,11 +254,13 @@ function VaultListItemContent({
             {!isCompact && <span>{passwordAge >= 180 ? '180d+' : '90d+'}</span>}
           </span>
         )}
-        <span
-          className={`px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold tracking-wider ${itemStrength.colorClass}`}
-        >
-          {t(strengthLabelKeys[itemStrength.label])}
-        </span>
+        {itemStrength && (
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider ${itemStrength.colorClass}`}
+          >
+            {t(strengthLabelKeys[itemStrength.label])}
+          </span>
+        )}
       </div>
     </div>
   );

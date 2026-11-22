@@ -161,7 +161,7 @@ describe('VaultFormModal', () => {
     expect(screen.getByText('DOCUMENT / NOTE CONTENT')).toBeTruthy();
     expect(screen.getByPlaceholderText('Write private recovery keys, system passwords, API logs, or sensitive notes here...')).toBeTruthy();
     expect(screen.getByText('Local File Encryption (Max: 250MB)')).toBeTruthy();
-    expect(screen.getByText('HTML5 IndexedDB Protected')).toBeTruthy();
+    expect(screen.getByText('Local AES-256-GCM Encrypted')).toBeTruthy();
     expect(screen.getByText('Click or Drag File')).toBeTruthy();
     expect(screen.getByText('Attach PDFs, images, videos, ZIPs, and other files up to 250MB with fully local encryption.')).toBeTruthy();
     expect(screen.getByText('Cancel')).toBeTruthy();

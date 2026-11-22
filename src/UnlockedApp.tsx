@@ -486,7 +486,7 @@ export default function UnlockedApp({
           onLock={handleLock}
         />
 
-        <main className="lg:ml-[280px] ml-0 flex-1 flex flex-col min-h-0 min-w-0 max-w-full overflow-hidden bg-brand-bg">
+        <main className="lg:ml-[240px] ml-0 flex-1 flex flex-col min-h-0 min-w-0 max-w-full overflow-hidden bg-brand-bg">
           <VaultStaleBanner
             isVisible={isVaultStale}
             onRefresh={() => { void refreshDatabaseAndClearStale(); }}
@@ -518,6 +518,7 @@ export default function UnlockedApp({
             onRemoveRecentEntry={removeRecentEntry}
             onClearRecentSearches={clearRecent}
             onCommitSearch={commitSearch}
+            alertCount={auditReport.weakCount + auditReport.reusedCount + (auditReport.unsecureHttpCount ?? 0)}
           />
 
           <UpdateNotificationBanner autoUpdate={autoUpdate} />

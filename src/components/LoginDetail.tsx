@@ -8,6 +8,7 @@ import type { VaultItem } from '../types';
 import { TotpCountdownRing } from './totp/TotpCountdownRing';
 
 import { useSensitiveRevealContext } from '../context/SensitiveRevealContext';
+import { ColoredPassword } from './common/ColoredPassword';
 
 interface LoginDetailProps {
   item: VaultItem;
@@ -80,7 +81,7 @@ export default function LoginDetail({
             className={`p-1.5 rounded-lg cursor-pointer shrink-0 ml-2 transition-all duration-300 focus:outline-none ${
               copiedField === 'username'
                 ? 'ring-2 ring-emerald-400/50 bg-emerald-500/15 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105'
-                : 'text-on-surface-variant hover:text-brand-primary hover:bg-[#1a1c1a]/50'
+                : 'text-on-surface-variant hover:text-brand-primary hover:bg-surface-high/60'
             }`}
             title={t('loginDetail.copy')}
           >
@@ -99,13 +100,17 @@ export default function LoginDetail({
         </label>
         <div className="flex items-center justify-between">
           <span data-testid="login-password-value" className="font-mono text-base tracking-wider break-all text-on-surface select-all">
-            {isPasswordRevealed ? item.password || t('loginDetail.emptyPassword') : '••••••••••••••••'}
+            {isPasswordRevealed
+              ? item.password
+                ? <ColoredPassword password={item.password} />
+                : t('loginDetail.emptyPassword')
+              : '••••••••••••••••'}
           </span>
           <div className="flex items-center gap-2 shrink-0 ml-2">
             <button
               data-testid="login-password-reveal-button"
               onClick={onTogglePasswordReveal}
-              className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-[#1a1c1a]/50 rounded-lg cursor-pointer"
+              className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-surface-high/60 rounded-lg cursor-pointer"
               title={isPasswordRevealed ? t('loginDetail.hide') : t('loginDetail.show')}
             >
               {isPasswordRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -116,7 +121,7 @@ export default function LoginDetail({
               className={`p-1.5 rounded-lg cursor-pointer transition-all duration-300 focus:outline-none ${
                 copiedField === 'password'
                   ? 'ring-2 ring-emerald-400/50 bg-emerald-500/15 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105'
-                  : 'text-on-surface-variant hover:text-brand-primary hover:bg-[#1a1c1a]/50'
+                  : 'text-on-surface-variant hover:text-brand-primary hover:bg-surface-high/60'
               }`}
               title={t('loginDetail.copy')}
             >

@@ -165,7 +165,9 @@ export default function VaultItemDetailPanel({
         </div>
       )}
 
-      <VaultItemSecurityAssessment score={score} onOpenAudit={onOpenAudit} />
+      {(item.category === 'login' || Boolean(item.password)) && (
+        <VaultItemSecurityAssessment score={score} onOpenAudit={onOpenAudit} />
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4 lg:gap-5">
         <div className="space-y-3 sm:space-y-4 min-w-0">

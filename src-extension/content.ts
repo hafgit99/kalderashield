@@ -376,10 +376,10 @@ const EXTENSION_SHADOW_STYLES = `
   .KalderaShield-dropdown {
     position: absolute !important;
     z-index: 2147483647 !important;
-    background: #0f172a !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: #121614 !important;
+    border: 1px solid rgba(52, 211, 153, 0.2) !important;
     border-radius: 10px !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55) !important;
     padding: 6px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -388,15 +388,15 @@ const EXTENSION_SHADOW_STYLES = `
     overflow-y: auto !important;
     backdrop-filter: blur(12px) !important;
     font-size: 13px !important;
-    color: #f8fafc !important;
+    color: #e7ece9 !important;
     box-sizing: border-box !important;
   }
   .KalderaShield-gen-panel {
     margin-top: 6px !important;
     padding: 10px !important;
     border-radius: 8px !important;
-    background: rgba(15, 23, 42, 0.92) !important;
-    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    background: rgba(16, 20, 18, 0.96) !important;
+    border: 1px solid rgba(52, 211, 153, 0.35) !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
@@ -411,7 +411,7 @@ const EXTENSION_SHADOW_STYLES = `
   .KalderaShield-gen-label {
     font-size: 11px !important;
     font-weight: 700 !important;
-    color: #34d399 !important;
+    color: #7cb9a0 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.4px !important;
   }
@@ -440,8 +440,8 @@ const EXTENSION_SHADOW_STYLES = `
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
-    background: rgba(2, 6, 23, 0.85) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(10, 14, 12, 0.92) !important;
+    border: 1px solid rgba(52, 211, 153, 0.16) !important;
     border-radius: 6px !important;
     padding: 8px 10px !important;
     box-sizing: border-box !important;
@@ -461,10 +461,10 @@ const EXTENSION_SHADOW_STYLES = `
     color: #f8fafc !important;
   }
   .KalderaShield-char-digit {
-    color: #38bdf8 !important;
+    color: #7aa2cf !important;
   }
   .KalderaShield-char-symbol {
-    color: #34d399 !important;
+    color: #7cb9a0 !important;
   }
   .KalderaShield-char-masked {
     color: #94a3b8 !important;
@@ -507,11 +507,11 @@ const EXTENSION_SHADOW_STYLES = `
   }
   .KalderaShield-gen-btn-primary {
     flex: 1 !important;
-    background: #10b981 !important;
+    background: #3d8c6e !important;
     color: #ffffff !important;
   }
   .KalderaShield-gen-btn-primary:hover {
-    background: #059669 !important;
+    background: #32745b !important;
   }
   .KalderaShield-gen-btn-secondary {
     background: rgba(255, 255, 255, 0.1) !important;
@@ -657,8 +657,8 @@ const EXTENSION_SHADOW_STYLES = `
     top: 12px !important;
     right: 12px !important;
     z-index: 2147483647 !important;
-    background: #0f172a !important;
-    border: 1px solid rgba(16, 185, 129, 0.4) !important;
+    background: #121614 !important;
+    border: 1px solid rgba(52, 211, 153, 0.4) !important;
     border-radius: 12px !important;
     padding: 12px 16px !important;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important;
@@ -1077,6 +1077,12 @@ function scanAndInject() {
   const inputs = document.querySelectorAll('input');
   inputs.forEach((inputEl) => {
     const input = inputEl as HTMLInputElement;
+    if (
+      input.getAttribute('data-kalderashield-ignore') === 'true' ||
+      input.closest('[data-kalderashield-ignore="true"]')
+    ) {
+      return;
+    }
     if (!isLoginInput(input)) return;
     
     // Avoid double injection

@@ -288,7 +288,7 @@ export const ru = {
   'vaultForm.attachment.openFailedMessage': 'Произошла ошибка при расшифровке файла.',
   'vaultForm.attachment.encryptFailed': 'Произошла ошибка при шифровании файла с помощью локальной защиты AES-GCM.',
   'vaultForm.attachment.title': 'Локальное шифрование файлов (макс.: 250 МБ)',
-  'vaultForm.attachment.protected': 'HTML5 IndexedDB защищен',
+  'vaultForm.attachment.protected': 'Локальное шифрование AES-256-GCM',
   'vaultForm.attachment.encrypting': 'Шифрование и блокировка файла...',
   'vaultForm.attachment.encryptingDescription': 'Применение интеграции AES на стороне клиента...',
   'vaultForm.attachment.encrypted': 'ШИФРОВАНИЕ AES-GCM',
