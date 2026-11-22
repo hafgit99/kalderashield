@@ -41,6 +41,8 @@ interface TopBarProps {
   onClearRecentSearches: () => void;
   /** Commit a query to the recent-search history (called on Enter / submit). */
   onCommitSearch: (query: string) => void;
+  /** Number of active vault security alerts (controls the status bell indicator). */
+  alertCount?: number;
 }
 
 export default function TopBar({
@@ -69,6 +71,7 @@ export default function TopBar({
   onRemoveRecentEntry,
   onClearRecentSearches,
   onCommitSearch,
+  alertCount = 0,
 }: TopBarProps) {
   const { t } = useLanguage();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -174,10 +177,15 @@ export default function TopBar({
               value={searchQuery}
               onChange={(event) => onSearchChange(event.target.value)}
               onKeyDown={handleSearchKeyDown}
-              className="w-full bg-surface-low border border-outline-variant/15 rounded-lg pl-9 pr-12 py-2 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary/25 text-on-surface placeholder-on-surface-variant/50 focus:outline-none transition-all"
+              className="w-full bg-surface-low border border-outline-variant/20 rounded-lg pl-9 pr-20 py-2 text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary/35 text-on-surface placeholder-on-surface-variant/60 focus:outline-none transition-all"
               placeholder={t('top.searchPlaceholder')}
               aria-label={t('top.searchPlaceholder')}
             />
+            {!searchQuery && (
+              <kbd className="hidden md:inline-flex items-center pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono font-medium text-on-surface-variant/75 bg-surface-lowest border border-outline-variant/25 rounded">
+                Ctrl K
+              </kbd>
+            )}
             <button
               ref={advancedButtonRef}
               type="button"
@@ -248,7 +256,12 @@ export default function TopBar({
             title={t('top.notifications')}
           >
             <Bell className="w-4.5 h-4.5" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-error rounded-full"></span>
+            {alertCount > 0 && (
+              <span
+                data-testid="topbar-alert-dot"
+                className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-error rounded-full"
+              />
+            )}
           </button>
           <button
             data-testid="topbar-lock-button"

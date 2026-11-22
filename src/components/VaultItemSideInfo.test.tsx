@@ -28,12 +28,13 @@ afterEach(() => {
 });
 
 describe('VaultItemSideInfo', () => {
-  it('renders metadata and notes for regular vault items', () => {
+  it('renders formatted metadata dates with raw ISO tooltips and notes for regular vault items', () => {
     render(<VaultItemSideInfo item={baseItem} />);
 
     expect(screen.getByText('BİLGİLER VE TARİHÇE')).toBeTruthy();
-    expect(screen.getByText('2026-06-10T12:00:00.000Z')).toBeTruthy();
-    expect(screen.getByText('2026-06-11T12:00:00.000Z')).toBeTruthy();
+    expect(screen.getByTitle('2026-06-10T12:00:00.000Z')).toBeTruthy();
+    expect(screen.getByTitle('2026-06-11T12:00:00.000Z')).toBeTruthy();
+    expect(screen.queryByText('2026-06-10T12:00:00.000Z')).toBeNull();
     expect(screen.getByText('Giriş Bilgisi')).toBeTruthy();
     expect(screen.getByText('Recovery code is stored offline.')).toBeTruthy();
   });

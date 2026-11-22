@@ -36,6 +36,7 @@ interface OrganisationSidebarProps {
   onDeleteSmartFolder: (id: string) => void;
   onUpdateTag: (id: string, patch: { name?: string; color?: TagColorKey }) => void;
   isOpen?: boolean;
+  isDesktopOpen?: boolean;
 }
 
 /**
@@ -63,6 +64,7 @@ export default function OrganisationSidebar({
   onCreateSmartFolder,
   onDeleteSmartFolder,
   isOpen = false,
+  isDesktopOpen = true,
 }: OrganisationSidebarProps) {
   const { t } = useLanguage();
   const [tagManagerOpen, setTagManagerOpen] = useState(false);
@@ -117,9 +119,9 @@ export default function OrganisationSidebar({
     <aside
       data-testid="organisation-sidebar"
       aria-label={t('organisation.title')}
-      className={`fixed lg:static left-0 top-0 h-full lg:h-auto w-[280px] lg:w-[260px] xl:w-[300px] bg-surface-lowest lg:bg-surface-lowest/40 border-r border-outline-variant/15 flex flex-col overflow-y-auto z-40 lg:z-auto transition-transform duration-300 lg:transition-none lg:translate-x-0 ${
+      className={`fixed lg:static left-0 top-0 h-full lg:h-auto w-[260px] lg:w-[228px] xl:w-[244px] bg-surface-lowest lg:bg-surface-lowest/40 border-r border-outline-variant/15 flex flex-col overflow-y-auto z-40 lg:z-auto transition-transform duration-300 lg:transition-none lg:translate-x-0 shrink-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
+      } ${!isDesktopOpen ? 'lg:hidden' : ''}`}
     >
       <div className="p-4 space-y-4">
         <section aria-labelledby="org-section-folders">

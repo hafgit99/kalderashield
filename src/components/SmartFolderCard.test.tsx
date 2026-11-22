@@ -182,11 +182,10 @@ describe('SmartFolderCard', () => {
     );
 
     expect(screen.getByText('Favoriler')).toBeTruthy();
-    expect(screen.getByText('YERLEŞİK')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /akıllı klasörü sil|sil|delete/i })).toBeNull();
   });
 
-  it('renders the localized description and stops event propagation on rename click', () => {
+  it('exposes the localized description as tooltip and stops event propagation on rename click', () => {
     const onSelect = vi.fn();
     const onRename = vi.fn();
     const builtInFolder: SmartFolder = {
@@ -212,7 +211,7 @@ describe('SmartFolderCard', () => {
       </LanguageProvider>,
     );
 
-    expect(screen.getByText('Favori olarak işaretlediğiniz ögeler.')).toBeTruthy();
+    expect(screen.getByTitle('Favori olarak işaretlediğiniz ögeler.')).toBeTruthy();
     fireEvent.click(screen.getByText('✎'));
     expect(onRename).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();

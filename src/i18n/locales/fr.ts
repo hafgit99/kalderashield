@@ -288,7 +288,7 @@ export const fr = {
   'vaultForm.attachment.openFailedMessage': 'Une erreur s\'est produite lors du décryptage du fichier.',
   'vaultForm.attachment.encryptFailed': 'Une erreur s\'est produite lors du chiffrement du fichier avec la protection AES-GCM locale.',
   'vaultForm.attachment.title': 'Cryptage de fichiers locaux (maximum : 250 Mo)',
-  'vaultForm.attachment.protected': 'HTML5 IndexedDB Protégé',
+  'vaultForm.attachment.protected': 'Chiffrement local AES-256-GCM',
   'vaultForm.attachment.encrypting': 'Cryptage et verrouillage du fichier...',
   'vaultForm.attachment.encryptingDescription': 'Application de l\'intégration AES côté client...',
   'vaultForm.attachment.encrypted': 'AES-GCM CHIFFRÉ',

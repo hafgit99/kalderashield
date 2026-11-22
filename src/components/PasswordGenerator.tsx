@@ -18,7 +18,9 @@ import {
   Lock
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { formatPercent } from '../lib/formatters';
 import { progressWidthClass } from '../lib/progressWidth';
+import { ColoredPassword } from './common/ColoredPassword';
 import type { GeneratorOptions } from '../types';
 import { generatePassword, calculatePasswordScore, getStrengthLabel } from '../lib/security';
 import type { DicewareOptions } from '../lib/diceware';
@@ -35,7 +37,7 @@ interface PasswordGeneratorProps {
 }
 
 export default function PasswordGenerator({ onCopyText, copiedField }: PasswordGeneratorProps = {}) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [mode, setMode] = useState<'character' | 'diceware'>('character');
 
   // Character-based states
@@ -222,9 +224,9 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div
             data-testid="password-generator-output"
-            className="font-mono text-xs sm:text-sm md:text-lg break-all tracking-wide text-brand-primary select-all bg-surface-lowest/40 p-3 sm:p-4 rounded-xl border border-outline-variant/10 flex-1 min-h-[52px] flex items-center"
+            className="font-mono text-sm md:text-lg break-all tracking-wide text-on-surface select-all bg-surface-lowest/60 p-3.5 sm:p-4 rounded-xl border border-outline-variant/15 flex-1 min-h-[54px] flex items-center"
           >
-            {password || t('passwordGenerator.empty')}
+            {password ? <ColoredPassword password={password} /> : t('passwordGenerator.empty')}
           </div>
           <div className="flex gap-2">
             <button
@@ -285,7 +287,9 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
                 } ${progressWidthClass(score)}`}
               ></div>
             </div>
-            <span className="text-xs font-mono font-bold text-on-surface-variant ml-2">% {score}</span>
+            <span className="text-xs font-mono font-bold text-on-surface-variant ml-2 whitespace-nowrap tabular-nums shrink-0">
+              {formatPercent(score, language)}
+            </span>
           </div>
         </div>
       </div>

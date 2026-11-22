@@ -2,6 +2,38 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.0.31.0 - Design system refresh, Light Mode & Secret Key cold-start fix
+
+### Added
+
+- **Self-hosted Inter & JetBrains Mono typography.** Bundled `@fontsource-variable/inter`
+  and `@fontsource-variable/jetbrains-mono` offline-first `.woff2` fonts into the
+  application and sealed them in the asset integrity manifest.
+- **Full Light Mode & muted dark design tokens.** Added complete `html.light`
+  theme support across all 5 color palettes with a Dark/Light toggle in Settings,
+  refined dark accents to glare-free muted tones (sage-emerald `#4ea885` default),
+  and harmonized browser extension Shadow DOM surfaces with the desktop palette.
+- **Spacious 3-column desktop vault layout & tabbed Settings.** Narrowed the
+  navigation (`240px`) and vault list (`350–380px`) columns, turned smart folders
+  into compact single-line filter rows with a collapsible desktop folder drawer,
+  added deterministic tinted item avatars and hover quick-copy buttons, added
+  syntax-colored revealed passwords (`ColoredPassword`), keyboard shortcut hints
+  (`Ctrl K`, `Ctrl L`), and category filter tabs in Settings.
+
+### Fixed
+
+- **Desktop Secret Key cold-start hydration.** Subscribed `LockScreen` and
+  `SettingsPanel` reactively to desktop OS secure-storage initialization so
+  Secret Key generation and the Emergency Kit card appear immediately on cold
+  start when the OS credential store becomes ready.
+- **Accurate auditing & human-readable metadata.** Non-password items (payment
+  cards, secure notes, identities, passkeys) are no longer flagged as `%0` weak
+  passwords in item detail or Security Audit; timestamps now display in
+  localized human-readable format with raw ISO tooltips, percentages follow
+  locale placement without line wrapping, the top-bar alert dot reflects real
+  active findings, and internal app password fields opt out of extension icon
+  overlay via `data-kalderashield-ignore="true"`.
+
 ## 7.0.30.0 - Browser extension visible generator preview & password update prompts
 
 ### Added

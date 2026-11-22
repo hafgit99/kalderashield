@@ -21,7 +21,7 @@
  *
  * The cost is that the sentence is split at the link, so a translator cannot
  * reorder them. That is the right trade for two occurrences on one page rather
- * than rewriting the link-prefixing that the other 264 pages depend on.
+ * than rewriting the link-prefixing that the other 265 pages depend on.
  */
 const fs = require('fs');
 const path = require('path');

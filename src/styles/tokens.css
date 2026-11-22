@@ -7,36 +7,36 @@
 
 :root {
   /* ==========================================================================
-     1. DEFAULT THEME: EMERALD (DARK MODE)
+     1. DEFAULT THEME: EMERALD (DARK MODE — MUTED SAGE / FOREST)
      ========================================================================== */
-  --surface-lowest: #0d0f0d;
-  --surface-low: #1a1c1a;
-  --brand-bg: #121412;
-  --surface-container: #1e201e;
-  --surface-high: #292a28;
-  --surface-highest: #333533;
-  --outline-variant: #3b403b;
+  --surface-lowest: #0e100f;
+  --surface-low: #161917;
+  --brand-bg: #121413;
+  --surface-container: #1c201e;
+  --surface-high: #252a27;
+  --surface-highest: #2f3532;
+  --outline-variant: #3b423e;
 
-  --brand-primary: #dce1ff;
-  --brand-on-primary: #292f48;
-  --brand-secondary: #acc9eb;
-  --brand-on-secondary: #13324e;
-  --brand-tertiary: #d1e9cc;
-  --brand-on-tertiary: #213521;
-  --brand-error: #ffb4ab;
-  --brand-on-error: #690005;
+  --brand-primary: #4ea885;
+  --brand-on-primary: #071711;
+  --brand-secondary: #7aa2cf;
+  --brand-on-secondary: #0f2136;
+  --brand-tertiary: #7cb9a0;
+  --brand-on-tertiary: #0a241a;
+  --brand-error: #e08585;
+  --brand-on-error: #450a0a;
 
-  --on-surface: #e2e3df;
-  --on-surface-variant: #aeb5aa;
+  --on-surface: #e4e7e5;
+  --on-surface-variant: #9ba39e;
 
   /* Glassmorphism & Elevation */
-  --glass-bg: rgba(24, 26, 24, 0.72);
+  --glass-bg: rgba(22, 25, 23, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-panel-bg: rgba(16, 18, 16, 0.82);
-  --surface-card-bg: rgba(26, 28, 26, 0.68);
-  --surface-border: rgba(220, 225, 255, 0.08);
-  --shadow-color: rgba(0, 0, 0, 0.22);
-  --shadow-elevation: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --surface-panel-bg: rgba(18, 20, 19, 0.9);
+  --surface-card-bg: rgba(26, 30, 28, 0.74);
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --shadow-color: rgba(0, 0, 0, 0.28);
+  --shadow-elevation: 0 12px 32px rgba(0, 0, 0, 0.42);
 
   /* Radius Scales */
   --radius-xs: 4px;
@@ -49,125 +49,206 @@
 }
 
 /* ==========================================================================
-   2. PALETTE: OCEAN BLUE
+   2. PALETTE: OCEAN BLUE (DARK — REFINED SLATE BLUE)
    ========================================================================== */
 html.palette-blue,
 body.palette-blue {
-  --surface-lowest: #0b0f17;
+  --surface-lowest: #0b0f16;
   --surface-low: #131924;
-  --brand-bg: #0f141e;
-  --surface-container: #1b2333;
-  --surface-high: #242f44;
-  --surface-highest: #2d3b54;
-  --outline-variant: #3a4b66;
-  --brand-primary: #38bdf8;
-  --brand-on-primary: #0369a1;
-  --brand-secondary: #60a5fa;
-  --brand-on-secondary: #1d4ed8;
-  --brand-tertiary: #93c5fd;
-  --brand-on-tertiary: #1e3a8a;
-  --brand-error: #fca5a5;
-  --brand-on-error: #7f1d1d;
-  --on-surface: #e2e8f0;
-  --on-surface-variant: #94a3b8;
+  --brand-bg: #0f141d;
+  --surface-container: #192130;
+  --surface-high: #222c40;
+  --surface-highest: #2c3850;
+  --outline-variant: #394761;
+  --brand-primary: #5aa9d6;
+  --brand-on-primary: #071b29;
+  --brand-secondary: #8b9de0;
+  --brand-on-secondary: #151936;
+  --brand-tertiary: #7cb9a0;
+  --brand-on-tertiary: #0a241a;
+  --brand-error: #e08585;
+  --brand-on-error: #450a0a;
+  --on-surface: #e4eaf2;
+  --on-surface-variant: #94a1b2;
 
-  --glass-bg: rgba(19, 25, 36, 0.72);
+  --glass-bg: rgba(19, 25, 36, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-panel-bg: rgba(15, 20, 30, 0.82);
-  --surface-card-bg: rgba(27, 35, 51, 0.68);
-  --surface-border: rgba(56, 189, 248, 0.1);
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --surface-panel-bg: rgba(15, 20, 29, 0.9);
+  --surface-card-bg: rgba(25, 33, 48, 0.74);
+  --surface-border: rgba(90, 169, 214, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.32);
 }
 
 /* ==========================================================================
-   3. PALETTE: AMETHYST PURPLE
+   3. PALETTE: AMETHYST PURPLE (DARK — MUTED VIOLET)
    ========================================================================== */
 html.palette-purple,
 body.palette-purple {
-  --surface-lowest: #0e0a16;
-  --surface-low: #171124;
-  --brand-bg: #120d1d;
-  --surface-container: #211933;
-  --surface-high: #2b2144;
-  --surface-highest: #362a54;
-  --outline-variant: #443566;
-  --brand-primary: #c084fc;
-  --brand-on-primary: #6b21a8;
-  --brand-secondary: #f472b6;
-  --brand-on-secondary: #9d174d;
-  --brand-tertiary: #e9d5ff;
-  --brand-on-tertiary: #581c87;
-  --brand-error: #fca5a5;
-  --brand-on-error: #7f1d1d;
-  --on-surface: #f3e8ff;
-  --on-surface-variant: #c084fc;
+  --surface-lowest: #0e0c14;
+  --surface-low: #161321;
+  --brand-bg: #120f1b;
+  --surface-container: #1f1a2e;
+  --surface-high: #29223b;
+  --surface-highest: #342b4a;
+  --outline-variant: #44395e;
+  --brand-primary: #a386d9;
+  --brand-on-primary: #1a0f33;
+  --brand-secondary: #d482ac;
+  --brand-on-secondary: #360c22;
+  --brand-tertiary: #7cb9a0;
+  --brand-on-tertiary: #0a241a;
+  --brand-error: #e08585;
+  --brand-on-error: #450a0a;
+  --on-surface: #ece8f5;
+  --on-surface-variant: #a39bb5;
 
-  --glass-bg: rgba(23, 17, 36, 0.72);
+  --glass-bg: rgba(22, 19, 33, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-panel-bg: rgba(18, 13, 29, 0.82);
-  --surface-card-bg: rgba(33, 25, 51, 0.68);
-  --surface-border: rgba(192, 132, 252, 0.1);
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --surface-panel-bg: rgba(18, 15, 27, 0.9);
+  --surface-card-bg: rgba(31, 26, 46, 0.74);
+  --surface-border: rgba(163, 134, 217, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.32);
 }
 
 /* ==========================================================================
-   4. PALETTE: AMBER ORANGE
+   4. PALETTE: AMBER ORANGE / CALDERA EMBER (DARK — MUTED COPPER)
    ========================================================================== */
 html.palette-orange,
 body.palette-orange {
-  --surface-lowest: #120d0a;
-  --surface-low: #1d1511;
-  --brand-bg: #17100d;
-  --surface-container: #291e18;
-  --surface-high: #362720;
-  --surface-highest: #443128;
-  --outline-variant: #563e33;
-  --brand-primary: #fb923c;
-  --brand-on-primary: #7c2d12;
-  --brand-secondary: #fcd34d;
-  --brand-on-secondary: #78350f;
-  --brand-tertiary: #fdba74;
-  --brand-on-tertiary: #7c2d12;
-  --brand-error: #fca5a5;
-  --brand-on-error: #7f1d1d;
-  --on-surface: #ffedd5;
-  --on-surface-variant: #fb923c;
+  --surface-lowest: #120e0c;
+  --surface-low: #1c1613;
+  --brand-bg: #16120f;
+  --surface-container: #261f1a;
+  --surface-high: #312822;
+  --surface-highest: #3d322a;
+  --outline-variant: #4f4036;
+  --brand-primary: #d98a54;
+  --brand-on-primary: #291204;
+  --brand-secondary: #d9b262;
+  --brand-on-secondary: #2e2006;
+  --brand-tertiary: #7cb9a0;
+  --brand-on-tertiary: #0a241a;
+  --brand-error: #e08585;
+  --brand-on-error: #450a0a;
+  --on-surface: #f2ece7;
+  --on-surface-variant: #b0a49b;
 
-  --glass-bg: rgba(29, 21, 17, 0.72);
+  --glass-bg: rgba(28, 22, 19, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-panel-bg: rgba(23, 16, 13, 0.82);
-  --surface-card-bg: rgba(41, 30, 24, 0.68);
-  --surface-border: rgba(251, 146, 60, 0.1);
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --surface-panel-bg: rgba(22, 18, 15, 0.9);
+  --surface-card-bg: rgba(38, 31, 26, 0.74);
+  --surface-border: rgba(217, 138, 84, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.32);
 }
 
 /* ==========================================================================
-   5. PALETTE: CRIMSON RED
+   5. PALETTE: CRIMSON RED (DARK — MUTED ROSE)
    ========================================================================== */
 html.palette-red,
 body.palette-red {
-  --surface-lowest: #120a0a;
-  --surface-low: #1d1111;
-  --brand-bg: #170d0d;
-  --surface-container: #291818;
-  --surface-high: #362020;
-  --surface-highest: #442828;
-  --outline-variant: #563333;
-  --brand-primary: #f87171;
-  --brand-on-primary: #7f1d1d;
-  --brand-secondary: #fb7185;
-  --brand-on-secondary: #9f1239;
-  --brand-tertiary: #fecdd3;
-  --brand-on-tertiary: #881337;
-  --brand-error: #fca5a5;
-  --brand-on-error: #7f1d1d;
-  --on-surface: #ffe4e6;
-  --on-surface-variant: #f87171;
+  --surface-lowest: #120d0e;
+  --surface-low: #1c1416;
+  --brand-bg: #161011;
+  --surface-container: #261b1d;
+  --surface-high: #312326;
+  --surface-highest: #3e2d30;
+  --outline-variant: #4f3a3e;
+  --brand-primary: #d9777f;
+  --brand-on-primary: #2e090d;
+  --brand-secondary: #db8292;
+  --brand-on-secondary: #330b14;
+  --brand-tertiary: #7cb9a0;
+  --brand-on-tertiary: #0a241a;
+  --brand-error: #e08585;
+  --brand-on-error: #450a0a;
+  --on-surface: #f3eaec;
+  --on-surface-variant: #b3a1a5;
 
-  --glass-bg: rgba(29, 17, 17, 0.72);
+  --glass-bg: rgba(28, 20, 22, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --surface-panel-bg: rgba(23, 13, 13, 0.82);
-  --surface-card-bg: rgba(41, 24, 24, 0.68);
-  --surface-border: rgba(248, 113, 113, 0.1);
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --surface-panel-bg: rgba(22, 16, 17, 0.9);
+  --surface-card-bg: rgba(38, 27, 29, 0.74);
+  --surface-border: rgba(217, 119, 127, 0.12);
+  --shadow-color: rgba(0, 0, 0, 0.32);
+}
+
+/* ==========================================================================
+   6. LIGHT MODE — CLEAN HIGH-CONTRAST SURFACES (ALL 5 PALETTES)
+   ========================================================================== */
+html.light {
+  --surface-lowest: #ffffff;
+  --surface-low: #f1f5f3;
+  --brand-bg: #f6f8f7;
+  --surface-container: #ffffff;
+  --surface-high: #e8eeeb;
+  --surface-highest: #dce4e0;
+  --outline-variant: #94a39c;
+
+  --brand-primary: #059669;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #2563eb;
+  --brand-on-secondary: #ffffff;
+  --brand-tertiary: #047857;
+  --brand-on-tertiary: #ffffff;
+  --brand-error: #dc2626;
+  --brand-on-error: #ffffff;
+
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --surface-panel-bg: rgba(255, 255, 255, 0.94);
+  --surface-card-bg: rgba(255, 255, 255, 0.86);
+  --surface-border: rgba(15, 23, 42, 0.1);
+  --shadow-color: rgba(15, 23, 42, 0.08);
+  --shadow-elevation: 0 12px 32px rgba(15, 23, 42, 0.1);
+}
+
+html.light.palette-blue {
+  --surface-low: #eff4f9;
+  --brand-bg: #f5f8fc;
+  --surface-high: #e3ecf6;
+  --surface-highest: #d5e2f0;
+  --outline-variant: #94a3b8;
+  --brand-primary: #0284c7;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #4f46e5;
+  --surface-border: rgba(2, 132, 199, 0.15);
+}
+
+html.light.palette-purple {
+  --surface-low: #f4f1fa;
+  --brand-bg: #f8f6fc;
+  --surface-high: #ebe4f6;
+  --surface-highest: #dfd4f0;
+  --outline-variant: #a195b8;
+  --brand-primary: #7c3aed;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #db2777;
+  --surface-border: rgba(124, 58, 237, 0.15);
+}
+
+html.light.palette-orange {
+  --surface-low: #faf4ef;
+  --brand-bg: #fcf8f5;
+  --surface-high: #f2e7dd;
+  --surface-highest: #e8d8ca;
+  --outline-variant: #b39f90;
+  --brand-primary: #ea580c;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #d97706;
+  --surface-border: rgba(234, 88, 12, 0.15);
+}
+
+html.light.palette-red {
+  --surface-low: #faf1f2;
+  --brand-bg: #fcf6f7;
+  --surface-high: #f2e3e5;
+  --surface-highest: #e8d2d6;
+  --outline-variant: #b3969b;
+  --brand-primary: #dc2626;
+  --brand-on-primary: #ffffff;
+  --brand-secondary: #e11d48;
+  --surface-border: rgba(220, 38, 38, 0.15);
 }

@@ -554,7 +554,7 @@ export default function VaultFormModal({
           />
 
           {/* Footer Action buttons row */}
-          <div className="sticky bottom-0 z-10 flex justify-end gap-3 pt-3 sm:pt-4 border-t border-outline-variant/10 bg-surface-container/95 p-4 sm:p-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 safe-bottom">
+          <div className="sticky bottom-0 z-10 flex justify-end gap-3 pt-3 sm:pt-4 border-t border-outline-variant/15 bg-surface-container/95 backdrop-blur-md p-4 sm:p-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 safe-bottom">
             <Button
               type="button"
               onClick={onClose}

@@ -2,6 +2,7 @@ import { AlertTriangle, Calendar, Clock } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
+import { formatLocalizedDateTime } from '../lib/formatters';
 import { getPasswordAgeInDays, isUnsecureHttpUrl } from '../lib/security';
 import type { VaultItem } from '../types';
 
@@ -26,32 +27,42 @@ function getCategoryLabelKey(category: VaultItem['category']): TranslationKey {
 }
 
 export default function VaultItemSideInfo({ item }: VaultItemSideInfoProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   const passwordAge = (item.category === 'login' || Boolean(item.password))
     ? getPasswordAgeInDays(item.updatedAt || item.createdAt)
     : 0;
   const isHttp = isUnsecureHttpUrl(item.url);
+  const formattedCreatedAt = formatLocalizedDateTime(item.createdAt, language);
+  const formattedUpdatedAt = formatLocalizedDateTime(item.updatedAt, language);
 
   return (
     <div className="space-y-3 sm:space-y-4 text-left">
       <div className="glass-panel p-4 sm:p-5 rounded-xl space-y-3">
-        <label className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
+        <label className="block text-[11px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
           {t('detail.side.title')}
         </label>
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-on-surface-variant">{t('detail.side.created')}</span>
-          <span className="text-on-surface font-semibold flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-on-surface-variant" />
-            <span>{item.createdAt}</span>
-          </span>
+        <div className="flex justify-between items-center gap-2 text-xs">
+          <span className="text-on-surface-variant shrink-0">{t('detail.side.created')}</span>
+          <time
+            dateTime={item.createdAt}
+            title={item.createdAt}
+            className="text-on-surface font-semibold flex items-center gap-1.5 text-right tabular-nums"
+          >
+            <Calendar className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
+            <span>{formattedCreatedAt}</span>
+          </time>
         </div>
-        <div className="flex justify-between items-center text-xs border-t border-outline-variant/10 pt-2.5">
-          <span className="text-on-surface-variant">{t('detail.side.updated')}</span>
-          <span className="text-on-surface font-semibold flex items-center gap-1">
-            <Calendar className="w-3 h-3 text-on-surface-variant" />
-            <span>{item.updatedAt}</span>
-          </span>
+        <div className="flex justify-between items-center gap-2 text-xs border-t border-outline-variant/10 pt-2.5">
+          <span className="text-on-surface-variant shrink-0">{t('detail.side.updated')}</span>
+          <time
+            dateTime={item.updatedAt}
+            title={item.updatedAt}
+            className="text-on-surface font-semibold flex items-center gap-1.5 text-right tabular-nums"
+          >
+            <Calendar className="w-3.5 h-3.5 text-on-surface-variant shrink-0" />
+            <span>{formattedUpdatedAt}</span>
+          </time>
         </div>
         {passwordAge >= 90 && (
           <div className="flex justify-between items-center text-xs border-t border-outline-variant/10 pt-2.5">

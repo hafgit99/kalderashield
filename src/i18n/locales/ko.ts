@@ -288,7 +288,7 @@ export const ko = {
   'vaultForm.attachment.openFailedMessage': '파일을 해독하는 동안 오류가 발생했습니다.',
   'vaultForm.attachment.encryptFailed': '로컬 AES-GCM 보호를 사용하여 파일을 암호화하는 동안 오류가 발생했습니다.',
   'vaultForm.attachment.title': '로컬 파일 암호화(최대: 250MB)',
-  'vaultForm.attachment.protected': 'HTML5 IndexedDB 보호됨',
+  'vaultForm.attachment.protected': '로컬 AES-256-GCM 암호화됨',
   'vaultForm.attachment.encrypting': '파일 암호화 및 잠금 중...',
   'vaultForm.attachment.encryptingDescription': '클라이언트 측 AES 통합 적용 중...',
   'vaultForm.attachment.encrypted': 'AES-GCM 암호화됨',

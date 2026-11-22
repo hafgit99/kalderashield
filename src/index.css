@@ -5,9 +5,9 @@
 
 
 @theme {
-  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Custom KalderaShield theme colors mapping to CSS custom properties */
   --color-surface-lowest: var(--surface-lowest);
@@ -138,8 +138,8 @@ input::-webkit-credentials-auto-fill-button {
   }
 
   .surface-card-hover:hover {
-    background: rgba(30, 32, 30, 0.86);
-    border-color: rgba(220, 225, 255, 0.14);
+    background: var(--surface-high);
+    border-color: var(--outline-variant);
   }
 
   .toolbar-button {
@@ -149,15 +149,15 @@ input::-webkit-credentials-auto-fill-button {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.5rem;
-    border: 1px solid rgba(220, 225, 255, 0.08);
-    background: rgba(26, 28, 26, 0.68);
-    color: rgb(171 174 169);
+    border: 1px solid var(--surface-border);
+    background: var(--surface-card-bg);
+    color: var(--on-surface-variant);
     transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
   }
 
   .toolbar-button:hover {
-    background: rgba(41, 42, 40, 0.88);
-    border-color: rgba(220, 225, 255, 0.18);
+    background: var(--surface-high);
+    border-color: var(--outline-variant);
     color: var(--color-brand-primary);
   }
 
@@ -274,7 +274,7 @@ input::-webkit-credentials-auto-fill-button {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.625rem;
-    border: 1px solid rgba(220, 225, 255, 0.1);
+    border: 1px solid var(--surface-border);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -292,16 +292,17 @@ input::-webkit-credentials-auto-fill-button {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--outline-variant);
+  opacity: 0.45;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--on-surface-variant);
 }
 
 /* Subtle pulse animation for system health */

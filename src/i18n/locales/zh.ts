@@ -289,7 +289,7 @@ export const zh = {
     'vaultForm.attachment.openFailedMessage': '解密文件时发生错误。',
     'vaultForm.attachment.encryptFailed': '使用本地 AES-GCM 保护加密文件时发生错误。',
     'vaultForm.attachment.title': '本地文件加密（最大 250MB）',
-    'vaultForm.attachment.protected': 'HTML5 IndexedDB 保护',
+    'vaultForm.attachment.protected': '本地 AES-256-GCM 加密保护',
     'vaultForm.attachment.encrypting': '正在加密并锁定文件...',
     'vaultForm.attachment.encryptingDescription': '正在应用客户端 AES 集成...',
     'vaultForm.attachment.encrypted': 'AES-GCM 已加密',

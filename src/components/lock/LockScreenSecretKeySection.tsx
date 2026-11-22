@@ -84,6 +84,7 @@ export function LockScreenSecretKeySection({
           data-lpignore="true"
           data-1p-ignore="true"
           data-bwignore="true"
+          data-kalderashield-ignore="true"
           data-form-type="other"
           className="w-full bg-surface-lowest border border-outline-variant/30 rounded-xl px-3 py-2.5 sm:py-3 text-on-surface focus:ring-2 focus:ring-brand-primary/20 focus:outline-none transition-all text-center tracking-wider text-xs font-mono"
           placeholder="A3-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"

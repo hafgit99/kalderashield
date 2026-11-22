@@ -81,6 +81,7 @@ interface VaultWorkspaceProps {
   tags?: TagDefinition[];
   onApplyBulkAction?: (action: BulkActionDescriptor) => void;
   onOpenFolderSidebar?: () => void;
+  isFolderSidebarOpen?: boolean;
 }
 
 export function VaultWorkspaceContent({
@@ -133,6 +134,7 @@ export function VaultWorkspaceContent({
   onApplyBulkAction = () => {},
   onSecureShare = () => {},
   onOpenFolderSidebar = () => {},
+  isFolderSidebarOpen = false,
 }: VaultWorkspaceProps) {
   // M10 Dilim 3: selection state is owned here — UnlockedApp no longer
   // re-renders (and defeats this memo) on every selection toggle.
@@ -239,7 +241,7 @@ export function VaultWorkspaceContent({
   return (
     <>
       <section
-        className={`w-full min-w-0 max-w-full lg:max-w-[480px] xl:max-w-[540px] lg:w-[480px] xl:w-[540px] border-r border-outline-variant/15 flex flex-col bg-surface-lowest/55 h-full overflow-hidden shrink-0 ${
+        className={`w-full min-w-0 max-w-full lg:max-w-[350px] xl:max-w-[380px] lg:w-[350px] xl:w-[380px] border-r border-outline-variant/15 flex flex-col bg-surface-lowest/55 h-full overflow-hidden shrink-0 ${
           mobileActiveView === 'detail' ? 'hidden lg:flex' : 'flex'
         }`}
       >
@@ -251,16 +253,22 @@ export function VaultWorkspaceContent({
           onClear={bulkSelection.clear}
           onApply={onApplyBulkAction}
         />
-        <div className="p-5 pb-2 space-y-3 shrink-0">
+        <div className="p-4 sm:p-5 pb-2 space-y-3 shrink-0">
           <h2 className="font-display text-lg font-bold text-on-surface flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                data-testid="vault-folder-sidebar-toggle"
                 onClick={onOpenFolderSidebar}
-                className="lg:hidden toolbar-button cursor-pointer text-brand-primary flex items-center justify-center p-1.5"
+                aria-pressed={isFolderSidebarOpen}
+                className={`toolbar-button cursor-pointer flex items-center justify-center p-1.5 ${
+                  isFolderSidebarOpen
+                    ? '!bg-brand-primary/15 !text-brand-primary !border-brand-primary/30'
+                    : ''
+                }`}
                 title={t('organisation.title', 'Folders')}
               >
-                <Layers className="w-4.5 h-4.5" />
+                <Layers className="w-4 h-4" />
               </button>
               <span>{t('vaultList.title')}</span>
             </div>
@@ -518,6 +526,7 @@ export function VaultWorkspaceContent({
                         item={item}
                         isSelected={selectedItem?.id === item.id}
                         onSelect={onSelectItem}
+                        onCopyText={onCopyText}
                         autofillRecommended={isAutofillMode && isAndroidAutofillTargetMatch(item, autofillRequest)}
                         match={matchByItemId.get(item.id) ?? null}
                         density={density}

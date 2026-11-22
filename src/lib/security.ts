@@ -269,6 +269,7 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
   }
 
   let totalIndividualScore = 0;
+  let passwordAuditedCount = 0;
   let weakCount = 0;
   let reusedCount = 0;
   let secureCount = 0;
@@ -287,24 +288,29 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
 
   items.forEach((item) => {
     const pw = item.password || '';
-    // O-5: the fast heuristic systematically over-reports (password123! → 70
-    // "not weak" while zxcvbn rates it 0). Verify every "not weak" verdict
-    // with real zxcvbn entropy scoring before trusting it; scores below the
-    // weak threshold are already classified without the expensive call.
-    let score = fastPasswordScore(pw);
-    if (score >= 40) {
-      score = calculatePasswordScore(pw);
-    }
-    totalIndividualScore += score;
+    const isPasswordItem = item.category === 'login' || pw.length > 0;
 
-    if (pw.length < 8 || score < 40) {
-      weakCount++;
-    } else if (score >= 85) {
-      secureCount++;
-    }
+    if (isPasswordItem) {
+      passwordAuditedCount++;
+      // O-5: the fast heuristic systematically over-reports (password123! → 70
+      // "not weak" while zxcvbn rates it 0). Verify every "not weak" verdict
+      // with real zxcvbn entropy scoring before trusting it; scores below the
+      // weak threshold are already classified without the expensive call.
+      let score = fastPasswordScore(pw);
+      if (score >= 40) {
+        score = calculatePasswordScore(pw);
+      }
+      totalIndividualScore += score;
 
-    if (pw && (passwordFreq[pw] ?? 0) > 1) {
-      reusedCount++;
+      if (pw.length < 8 || score < 40) {
+        weakCount++;
+      } else if (score >= 85) {
+        secureCount++;
+      }
+
+      if (pw && (passwordFreq[pw] ?? 0) > 1) {
+        reusedCount++;
+      }
     }
 
     if (item.category === 'login') {
@@ -324,9 +330,10 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
 
   // Calculate overall security rating
   // Deduct penalty for vulnerabilities like reused or weak items
-  const averageScore = totalIndividualScore / items.length;
-  const reusedPenalty = (reusedCount / items.length) * 35;
-  const weakPenalty = (weakCount / items.length) * 45;
+  const denominator = passwordAuditedCount > 0 ? passwordAuditedCount : items.length;
+  const averageScore = passwordAuditedCount > 0 ? totalIndividualScore / passwordAuditedCount : 100;
+  const reusedPenalty = (reusedCount / denominator) * 35;
+  const weakPenalty = (weakCount / denominator) * 45;
 
   // NIST / Advanced security checks penalties
   const unsecureHttpPenalty = Math.min(20, unsecureHttpCount * 5);

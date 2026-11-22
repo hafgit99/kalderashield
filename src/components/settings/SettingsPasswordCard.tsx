@@ -74,9 +74,10 @@ export function SettingsPasswordCard({
               data-lpignore="true"
               data-1p-ignore="true"
               data-bwignore="true"
+              data-kalderashield-ignore="true"
               data-form-type="other"
-              className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface"
-              placeholder="????????"
+              className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface placeholder-on-surface-variant/45"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -95,9 +96,10 @@ export function SettingsPasswordCard({
               data-lpignore="true"
               data-1p-ignore="true"
               data-bwignore="true"
+              data-kalderashield-ignore="true"
               data-form-type="other"
-              className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface"
-              placeholder="????????"
+              className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface placeholder-on-surface-variant/45"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -118,9 +120,10 @@ export function SettingsPasswordCard({
             data-lpignore="true"
             data-1p-ignore="true"
             data-bwignore="true"
+            data-kalderashield-ignore="true"
             data-form-type="other"
-            className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface"
-            placeholder="????????"
+            className="w-full bg-surface-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 text-on-surface placeholder-on-surface-variant/45"
+            placeholder="••••••••"
             required
           />
         </div>

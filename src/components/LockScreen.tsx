@@ -100,10 +100,10 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const requiresSecretKey = isAccountSecretKeyRequired();
   const rememberedSecretKey = getRememberedAccountSecretKey();
   // The only platform that can store the key is the one that injects the secure
-  // storage bridge. `isRememberSecretKeySupported` existed for exactly this
-  // question and was exported without a single caller, which is how the
-  // checkbox came to be offered everywhere.
-  const canRememberSecretKey = isRememberSecretKeySupported();
+  // storage bridge (Android Keystore or Desktop OS Keychain via Tauri).
+  // Track this reactively because desktop secure storage initializes
+  // asynchronously after the initial cold-start render.
+  const [canRememberSecretKey, setCanRememberSecretKey] = useState(() => isRememberSecretKeySupported());
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   /**
@@ -131,18 +131,23 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
-  // Subscribe to desktop secure storage completion (hydrates rememberedSecretKey if delayed)
+  // Subscribe to desktop secure storage completion (hydrates availability & rememberedSecretKey if delayed)
   useEffect(() => {
-    return subscribeDesktopSecureStorage(() => {
+    const syncSecureStorage = () => {
+      const supported = isRememberSecretKeySupported();
+      setCanRememberSecretKey(supported);
       if (isSetup) {
         const remembered = getRememberedAccountSecretKey();
         if (remembered) {
           setSecretKey(remembered);
+          setRememberSecretKey(true);
         }
-      } else if (isRememberSecretKeySupported()) {
+      } else if (supported) {
         setSecretKey((prev) => (prev && isAccountSecretKeyFormatValid(prev) ? prev : generateAccountSecretKey()));
+        setRememberSecretKey(true);
       }
-    });
+    };
+    return subscribeDesktopSecureStorage(syncSecureStorage);
   }, [isSetup]);
 
   // Defensive fallback: if first-time setup offers a secret key, ensure it is generated and never empty
@@ -482,15 +487,15 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
               <div className="space-y-4">
                 {/* Brand Logo and Title */}
                 <div className="flex items-center gap-4 mb-2">
-                  <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(220,225,255,0.1)] overflow-hidden group">
+                  <div className="w-16 h-16 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(52,211,153,0.12)] overflow-hidden group">
                     <img src={KalderaShieldLogo} alt="KalderaShield Logo" className="w-14 h-14 object-contain group-hover:scale-105 transition-transform duration-300" />
                   </div>
                   <div>
                     <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
                       {APP_NAME}
                     </h2>
-                    <span className="text-xs sm:text-sm font-mono font-bold text-brand-primary/90 tracking-widest uppercase">
-                      {isSetup ? t('lock.panel.unlockTitle') : t('lock.panel.setupTitle')}
+                    <span className="text-xs font-mono font-bold text-brand-primary/90 tracking-widest uppercase">
+                      {t('nav.localFirst')}
                     </span>
                   </div>
                 </div>
@@ -499,14 +504,14 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                 <h3 className="font-display text-2xl xl:text-3xl font-extrabold text-on-surface leading-tight tracking-tight">
                   {isSetup ? t('lock.panel.unlockTitle') : t('lock.panel.setupTitle')}
                 </h3>
-                <p className="text-base sm:text-lg text-on-surface-variant/80 leading-relaxed max-w-xl">
+                <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
                   {isSetup
                     ? t('lock.panel.unlockDescription')
                     : `${APP_NAME} ${t('lock.panel.setupDescriptionSuffix')}`}
                 </p>
 
                 {/* Security Badges */}
-                <div className="flex flex-wrap gap-3 pt-1">
+                <div className="flex flex-wrap gap-2.5 pt-1">
                   {[
                     { icon: '🛡️', label: 'AES-256-GCM' },
                     { icon: '🧠', label: 'Argon2id KDF' },
@@ -514,7 +519,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                   ].map((badge) => (
                     <span
                       key={badge.label}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-primary/10 border border-brand-primary/20 text-xs sm:text-sm font-bold text-brand-primary font-mono tracking-wider uppercase shadow-sm"
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-brand-primary/10 border border-brand-primary/20 text-xs font-bold text-brand-primary font-mono tracking-wider uppercase shadow-sm"
                     >
                       <span>{badge.icon}</span>
                       {badge.label}
@@ -524,19 +529,19 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
               </div>
 
               {/* Feature Cards Grid - Large, spacious, and readable */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 max-w-2xl pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl pt-2">
                 {features.map((feat) => (
                   <div
                     key={feat.titleKey}
-                    className="p-5 sm:p-6 rounded-2xl glass-panel space-y-3 transition-all duration-300 hover:border-brand-primary/40 hover:scale-[1.03] hover:shadow-xl hover:shadow-brand-primary/5 group"
+                    className="p-5 rounded-2xl glass-panel space-y-2.5 transition-all duration-300 hover:border-brand-primary/40 hover:shadow-xl hover:shadow-brand-primary/5 group"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
                         {feat.icon}
                       </div>
-                      <span className="text-base font-bold text-on-surface leading-snug tracking-tight">{t(feat.titleKey)}</span>
+                      <span className="text-sm font-bold text-on-surface leading-snug tracking-tight">{t(feat.titleKey)}</span>
                     </div>
-                    <p className="text-xs sm:text-sm text-on-surface-variant/80 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-on-surface-variant leading-relaxed">
                       {t(feat.descKey)}
                     </p>
                   </div>
@@ -552,7 +557,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
             {/* Right Panel — Login Form Container (5 columns on desktop) */}
             <div className="relative w-full max-w-md mx-auto lg:col-span-5">
               {/* Ambient Glow Aura */}
-              <div className="absolute -inset-1.5 bg-gradient-to-r from-brand-primary/25 via-emerald-500/15 to-brand-secondary/25 rounded-2xl blur-xl opacity-60 animate-ambient-glow -z-10 pointer-events-none" />
+              <div className="absolute -inset-1.5 bg-gradient-to-r from-brand-primary/15 via-brand-tertiary/10 to-brand-secondary/15 rounded-2xl blur-xl opacity-35 animate-ambient-glow -z-10 pointer-events-none" />
 
               <div className={`w-full surface-panel rounded-2xl p-5 sm:p-6 relative z-10 transition-all duration-300 hover:border-brand-primary/30 hover:shadow-brand-primary/5 ${isShaking ? 'animate-shake border-red-500/50 ring-2 ring-red-500/20' : ''}`}>
                 <div className="flex flex-col items-center text-center mb-4 sm:mb-6">
@@ -652,8 +657,9 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                         data-lpignore="true"
                         data-1p-ignore="true"
                         data-bwignore="true"
+                        data-kalderashield-ignore="true"
                         data-form-type="other"
-                        className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/20 focus:border-brand-primary/30 rounded-xl pl-4 pr-11 py-3 sm:py-3.5 text-on-surface placeholder-on-surface-variant/20 focus:ring-2 focus:ring-brand-primary/10 focus:shadow-[0_0_15px_rgba(220,225,255,0.06)] focus:outline-none transition-all duration-300 text-center tracking-widest text-lg font-mono"
+                        className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/25 focus:border-brand-primary/40 rounded-xl pl-4 pr-11 py-3 sm:py-3.5 text-on-surface placeholder-on-surface-variant/45 focus:ring-2 focus:ring-brand-primary/15 focus:shadow-[0_0_15px_rgba(52,211,153,0.08)] focus:outline-none transition-all duration-300 text-center tracking-widest text-lg font-mono"
                         placeholder="••••••••"
                         required
                         autoFocus
@@ -710,8 +716,9 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                           data-lpignore="true"
                           data-1p-ignore="true"
                           data-bwignore="true"
+                          data-kalderashield-ignore="true"
                           data-form-type="other"
-                          className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/20 focus:border-brand-primary/30 rounded-xl pl-4 pr-11 py-3 sm:py-3.5 text-on-surface placeholder-on-surface-variant/20 focus:ring-2 focus:ring-brand-primary/10 focus:shadow-[0_0_15px_rgba(220,225,255,0.06)] focus:outline-none transition-all duration-300 text-center tracking-widest text-lg font-mono"
+                          className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/25 focus:border-brand-primary/40 rounded-xl pl-4 pr-11 py-3 sm:py-3.5 text-on-surface placeholder-on-surface-variant/45 focus:ring-2 focus:ring-brand-primary/15 focus:shadow-[0_0_15px_rgba(52,211,153,0.08)] focus:outline-none transition-all duration-300 text-center tracking-widest text-lg font-mono"
                           placeholder="••••••••"
                           required
                         />
@@ -750,7 +757,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                           onChange={(e) => setTermsAccepted(e.target.checked)}
                           className="mt-0.5 w-4 h-4 rounded border-outline-variant/30 text-brand-primary focus:ring-brand-primary/20 accent-brand-primary cursor-pointer shrink-0"
                         />
-                        <span className="leading-relaxed text-[11px] sm:text-xs">
+                        <span className="leading-relaxed text-xs">
                           {t('lock.terms.agreePrefix') ? `${t('lock.terms.agreePrefix')} ` : ''}
                           <button
                             data-testid="lock-terms-link"
@@ -779,7 +786,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
                           >
                             {t('lock.terms.privacyLink')}
                           </button>
-                          {t('lock.terms.agreeSuffix') ? `${t('lock.terms.agreeSuffix')}` : ''}
+                          {t('lock.terms.agreeSuffix').trim() ? t('lock.terms.agreeSuffix') : ''}
                         </span>
                       </label>
                     </div>
