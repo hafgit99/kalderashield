@@ -6,6 +6,8 @@
       "entry": [
         "index.html",
         "src-extension/background.ts",
+        "src-extension/webauthn-inject.ts",
+        "src-extension/webauthn-relay.ts",
         "tests/e2e/**/*.spec.ts",
         "tests/e2e/**/*.ts",
         "scripts/**/*.cjs",

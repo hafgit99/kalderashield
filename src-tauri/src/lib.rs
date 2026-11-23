@@ -22,6 +22,8 @@ struct ExtensionState {
     /// #43: shared with the loopback IPC accept loop. A token rotation has to retire the
     /// sessions that are *already* connected, not just the handshakes that come after it.
     session_generation: native_messaging::RevokeGeneration,
+    pending_passkeys: native_messaging::PendingPasskeyRequests,
+    passkey_index: std::sync::Arc<std::sync::Mutex<Vec<native_messaging::ExtensionPasskeySummary>>>,
 }
 
 #[derive(serde::Serialize)]
@@ -524,7 +526,34 @@ fn clear_extension_credentials(
 
     let mut creds = state.credentials.lock().map_err(|e| e.to_string())?;
     *creds = None;
+    if let Ok(mut idx) = state.passkey_index.lock() {
+        idx.clear();
+    }
+    state.pending_passkeys.cancel_all();
     Ok(())
+}
+
+#[tauri::command]
+fn sync_extension_passkeys(
+    state: tauri::State<'_, ExtensionState>,
+    session: tauri::State<'_, CredentialSession>,
+    passkeys: Vec<native_messaging::ExtensionPasskeySummary>,
+) -> Result<(), String> {
+    session.require_active_session()?;
+    let mut idx = state.passkey_index.lock().map_err(|e| e.to_string())?;
+    *idx = passkeys;
+    Ok(())
+}
+
+#[tauri::command]
+fn resolve_extension_passkey_request(
+    state: tauri::State<'_, ExtensionState>,
+    session: tauri::State<'_, CredentialSession>,
+    request_id: String,
+    response: serde_json::Value,
+) -> Result<bool, String> {
+    session.require_active_session()?;
+    Ok(state.pending_passkeys.resolve(&request_id, response))
 }
 
 #[tauri::command]
@@ -898,10 +927,14 @@ pub fn run() {
     let initial_token = native_messaging::generate_token();
     let pairing_token = std::sync::Arc::new(std::sync::Mutex::new(initial_token.clone()));
     let session_generation = native_messaging::RevokeGeneration::new();
+    let pending_passkeys = native_messaging::PendingPasskeyRequests::new();
+    let passkey_index = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let state = ExtensionState {
         credentials: credentials.clone(),
         pairing_token: pairing_token.clone(),
         session_generation: session_generation.clone(),
+        pending_passkeys: pending_passkeys.clone(),
+        passkey_index: passkey_index.clone(),
     };
 
     let credential_session = credential_handler::CredentialSession::default();
@@ -951,6 +984,8 @@ pub fn run() {
                 pairing_token,
                 credentials.clone(),
                 session_generation,
+                pending_passkeys,
+                passkey_index,
             );
 
             // Populate in-process desktop secure storage cache
@@ -971,6 +1006,8 @@ pub fn run() {
             save_binary_file,
             open_import_file,
             sync_extension_credentials,
+            sync_extension_passkeys,
+            resolve_extension_passkey_request,
             clear_extension_credentials,
             rotate_pairing_token,
             derive_argon2id_key,

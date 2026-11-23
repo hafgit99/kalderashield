@@ -224,4 +224,41 @@ describe('PasskeyManager', () => {
       }));
     });
   });
+
+  it('preserves form inputs when passkey creation fails (returns false)', async () => {
+    const onCreatePasskey = vi.fn(async () => false);
+    render(
+      <LanguageProvider>
+        <PasskeyManager records={[]} onCreatePasskey={onCreatePasskey} />
+      </LanguageProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('passkey.status.platform')).toBeTruthy();
+    });
+
+    const rpInput = screen.getByTestId('passkey-rp-id-input') as HTMLInputElement;
+    const nameInput = screen.getByTestId('passkey-rp-name-input') as HTMLInputElement;
+    const userInput = screen.getByTestId('passkey-user-name-input') as HTMLInputElement;
+
+    fireEvent.change(rpInput, { target: { value: 'github.com' } });
+    fireEvent.change(nameInput, { target: { value: 'GitHub' } });
+    fireEvent.change(userInput, { target: { value: 'alice@github.com' } });
+    fireEvent.click(screen.getByTestId('passkey-create-button'));
+
+    await waitFor(() => {
+      expect(onCreatePasskey).toHaveBeenCalledTimes(1);
+    });
+
+    expect(rpInput.value).toBe('github.com');
+    expect(nameInput.value).toBe('GitHub');
+    expect(userInput.value).toBe('alice@github.com');
+  });
+
+  it('displays the origin limitation notice and localized attachment label', () => {
+    renderComponent([SAMPLE_RECORD]);
+    expect(screen.getByTestId('passkey-origin-notice')).toBeTruthy();
+    const record = screen.getByTestId('passkey-record');
+    expect(within(record).getByText('passkey.list.attachment: passkey.list.attachmentPlatform')).toBeTruthy();
+  });
 });

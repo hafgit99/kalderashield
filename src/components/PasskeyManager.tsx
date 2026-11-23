@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
-import { Fingerprint, KeyRound, LogIn, Plus, Trash2 } from 'lucide-react';
+import { Fingerprint, Info, KeyRound, LogIn, Plus, Trash2 } from 'lucide-react';
 import type { TranslationKey } from '../i18n/translations';
 import {
   detectWebAuthnCapability,
@@ -26,7 +26,7 @@ export interface PasskeyManagerProps {
   records: PasskeyRecord[];
   statusKey?: TranslationKey | null;
   statusKind?: 'success' | 'error' | 'info' | null;
-  onCreatePasskey?: (input: RegisterPasskeyInput) => void | Promise<void>;
+  onCreatePasskey?: (input: RegisterPasskeyInput) => void | boolean | Promise<void | boolean>;
   onAuthenticatePasskey?: (record: PasskeyRecord) => void | Promise<void>;
   onDeletePasskey?: (record: PasskeyRecord) => void | Promise<void>;
   busy?: boolean;
@@ -50,6 +50,11 @@ export function PasskeyManager({
   const [userName, setUserName] = useState('');
   const [algorithm, setAlgorithm] = useState<PasskeyAlgorithm>('ES256');
 
+  const currentOriginHost = useMemo(() => {
+    if (typeof window === 'undefined' || !window.location?.hostname) return '';
+    return window.location.hostname.toLowerCase();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     detectWebAuthnCapability().then((cap) => {
@@ -70,17 +75,22 @@ export function PasskeyManager({
 
   const handleCreate = async () => {
     if (!onCreatePasskey) return;
-    await onCreatePasskey({
-      rpId,
-      rpName: rpName.trim() || rpId.trim(),
-      userName,
-      algorithms: [algorithm],
-      excludeCredentialIds: records.map((record) => record.credentialId),
-    });
-    setRpId('');
-    setRpName('');
-    setUserName('');
-    setAlgorithm('ES256');
+    try {
+      const outcome = await onCreatePasskey({
+        rpId,
+        rpName: rpName.trim() || rpId.trim(),
+        userName,
+        algorithms: [algorithm],
+        excludeCredentialIds: records.map((record) => record.credentialId),
+      });
+      if (outcome === false) return;
+      setRpId('');
+      setRpName('');
+      setUserName('');
+      setAlgorithm('ES256');
+    } catch {
+      // Keep typed values intact when creation throws so the user can retry.
+    }
   };
 
   return (
@@ -102,14 +112,31 @@ export function PasskeyManager({
         )}
       </div>
 
+      <div className="text-[11px] flex items-start gap-2 border border-amber-500/20 rounded-lg px-3 py-2 bg-amber-500/5 text-on-surface-variant leading-relaxed" data-testid="passkey-origin-notice">
+        <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <span>{t('passkey.create.rpIdOriginMismatch')}</span>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 border border-outline-variant/15 rounded-xl p-3 bg-[#0d0f0d]/80">
         <label className="space-y-1 text-[11px] text-on-surface-variant">
-          <span>{t('passkey.create.rpIdLabel')}</span>
+          <span className="flex items-center justify-between gap-2">
+            <span>{t('passkey.create.rpIdLabel')}</span>
+            {currentOriginHost && (
+              <button
+                type="button"
+                data-testid="passkey-use-origin-button"
+                onClick={() => setRpId(currentOriginHost)}
+                className="text-[10px] font-mono text-brand-primary hover:underline cursor-pointer"
+              >
+                {currentOriginHost}
+              </button>
+            )}
+          </span>
           <input
             data-testid="passkey-rp-id-input"
             value={rpId}
             onChange={(event) => setRpId(event.target.value)}
-            placeholder="example.com"
+            placeholder={currentOriginHost || 'localhost'}
             className="w-full bg-surface-low border border-outline-variant/20 rounded-lg px-3 py-2 text-xs text-on-surface outline-none focus:border-brand-primary/50"
           />
         </label>
@@ -181,7 +208,14 @@ export function PasskeyManager({
               <p className="text-[11px] text-on-surface-variant break-all">{record.rpId} - {record.userName}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] text-on-surface-variant">
                 <span>{t('passkey.list.signCount')}: {record.signCount}</span>
-                <span>{t('passkey.list.attachment')}: {record.attachment || '-'}</span>
+                <span>
+                  {t('passkey.list.attachment')}:{' '}
+                  {record.attachment === 'platform'
+                    ? t('passkey.list.attachmentPlatform')
+                    : record.attachment === 'cross-platform'
+                      ? t('passkey.list.attachmentCrossPlatform')
+                      : '-'}
+                </span>
                 <span>{t('passkey.list.createdAt')}: {new Date(record.createdAt).toLocaleDateString()}</span>
                 <span>{t('passkey.list.lastUsed')}: {record.lastUsedAt ? new Date(record.lastUsedAt).toLocaleDateString() : '-'}</span>
               </div>

@@ -233,6 +233,163 @@ pub struct ExtensionCredentialCache {
     pub expires_at_epoch_ms: u64,
 }
 
+/// Metadata-only index of vault-backed software passkeys used so `passkey_get`
+/// can return `{ fallback: true }` immediately without stealing window focus
+/// when no passkey matches the requesting site. Contains zero secret material.
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtensionPasskeySummary {
+    pub rp_id: String,
+    pub credential_id: String,
+}
+
+pub const PASSKEY_REQUEST_TIMEOUT_SECS: u64 = 90;
+pub const MAX_PENDING_PASSKEY_REQUESTS: usize = 8;
+
+/// Thread-safe registry mapping active extension passkey approval requests
+/// (`requestId`) to the IPC handler thread awaiting the desktop user's decision.
+#[derive(Clone, Default)]
+pub struct PendingPasskeyRequests {
+    inner: Arc<Mutex<std::collections::HashMap<String, std::sync::mpsc::Sender<serde_json::Value>>>>,
+}
+
+impl PendingPasskeyRequests {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn register(&self) -> Option<(String, std::sync::mpsc::Receiver<serde_json::Value>)> {
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        if map.len() >= MAX_PENDING_PASSKEY_REQUESTS {
+            return None;
+        }
+        let mut id_bytes = [0u8; 16];
+        getrandom::fill(&mut id_bytes).expect("OS CSPRNG failure");
+        let request_id: String = id_bytes.iter().map(|b| format!("{:02x}", b)).collect();
+        let (tx, rx) = std::sync::mpsc::channel();
+        map.insert(request_id.clone(), tx);
+        Some((request_id, rx))
+    }
+
+    pub fn resolve(&self, request_id: &str, response: serde_json::Value) -> bool {
+        let sender = {
+            let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+            map.remove(request_id)
+        };
+        if let Some(tx) = sender {
+            tx.send(response).is_ok()
+        } else {
+            false
+        }
+    }
+
+    pub fn remove(&self, request_id: &str) {
+        let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        map.remove(request_id);
+    }
+
+    pub fn cancel_all(&self) {
+        let drained: Vec<std::sync::mpsc::Sender<serde_json::Value>> = {
+            let mut map = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+            map.drain().map(|(_, tx)| tx).collect()
+        };
+        for tx in drained {
+            let _ = tx.send(serde_json::json!({ "status": "cancelled", "fallback": true }));
+        }
+    }
+}
+
+/// Validates that `origin` is a WebAuthn-eligible origin (`https://` or
+/// `http://localhost`) and that `rp_id` is a valid registrable domain suffix
+/// of `origin`'s host (never a bare public suffix or IP literal).
+pub fn validate_passkey_origin_and_rp_id(
+    origin: &str,
+    requested_rp_id: Option<&str>,
+) -> Option<(String, String)> {
+    let trimmed_origin = origin.trim();
+    let (scheme, rest) = trimmed_origin.split_once("://")?;
+    let scheme_lower = scheme.to_lowercase();
+    if scheme_lower != "https" && scheme_lower != "http" {
+        return None;
+    }
+    // Reject paths, queries, fragments, or userinfo in an origin string.
+    if rest.is_empty() || rest.contains('/') || rest.contains('?') || rest.contains('#') || rest.contains('@') {
+        return None;
+    }
+    let host_only = if rest.starts_with('[') {
+        // IPv6 literals are not valid WebAuthn RP IDs.
+        return None;
+    } else {
+        rest.split(':').next()?.to_lowercase()
+    };
+    if host_only.is_empty() || host_only.len() > 253 {
+        return None;
+    }
+    let is_localhost = host_only == "localhost" || host_only.ends_with(".localhost");
+    if scheme_lower == "http" && !is_localhost {
+        return None;
+    }
+    // Reject IPv4 literals.
+    if host_only.split('.').all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit())) {
+        return None;
+    }
+
+    let rp_id = match requested_rp_id.map(str::trim).filter(|s| !s.is_empty()) {
+        Some(v) => v.to_lowercase(),
+        None => host_only.clone(),
+    };
+    if rp_id.is_empty() || rp_id.len() > 253 {
+        return None;
+    }
+    if rp_id.starts_with('.') || rp_id.ends_with('.') || rp_id.contains("..") {
+        return None;
+    }
+    if !rp_id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-') {
+        return None;
+    }
+    if rp_id != host_only && !host_only.ends_with(&format!(".{rp_id}")) {
+        return None;
+    }
+
+    // Refuse bare public suffixes (e.g. "com", "co.uk") unless localhost.
+    if rp_id != "localhost" && !rp_id.ends_with(".localhost") {
+        let labels: Vec<&str> = rp_id.split('.').collect();
+        if labels.len() < 2 {
+            return None;
+        }
+        let suffix_len = public_suffix_label_count(&labels);
+        if labels.len() <= suffix_len {
+            return None;
+        }
+        if labels.iter().all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_digit())) {
+            return None;
+        }
+        if labels.iter().any(|l| l.is_empty() || l.len() > 63 || l.starts_with('-') || l.ends_with('-')) {
+            return None;
+        }
+    }
+
+    let canonical_origin = format!("{scheme_lower}://{rest}");
+    Some((canonical_origin, rp_id))
+}
+
+pub fn has_matching_software_passkey(
+    index: &[ExtensionPasskeySummary],
+    rp_id: &str,
+    allow_credential_ids: Option<&[String]>,
+) -> bool {
+    let target_rp = rp_id.trim().to_lowercase();
+    index.iter().any(|entry| {
+        if entry.rp_id.to_lowercase() != target_rp {
+            return false;
+        }
+        match allow_credential_ids {
+            Some(allowed) if !allowed.is_empty() => allowed.iter().any(|id| id == &entry.credential_id),
+            _ => true,
+        }
+    })
+}
+
 pub fn get_app_data_dir() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
     {
@@ -595,6 +752,8 @@ pub fn start_tcp_server(
     pairing_token: Arc<Mutex<String>>,
     credentials: Arc<Mutex<Option<ExtensionCredentialCache>>>,
     session_generation: RevokeGeneration,
+    pending_passkeys: PendingPasskeyRequests,
+    passkey_index: Arc<Mutex<Vec<ExtensionPasskeySummary>>>,
 ) {
     thread::spawn(move || {
         let (listener, bound_port) = match bind_dynamic_tcp_listener() {
@@ -658,6 +817,8 @@ pub fn start_tcp_server(
                     let token_arc = pairing_token.clone();
                     let generation = session_generation.clone();
                     let app_clone = app_handle.clone();
+                    let pending_clone = pending_passkeys.clone();
+                    let passkey_index_clone = passkey_index.clone();
                     thread::spawn(move || {
                         // `slot` lives for exactly the handler's lifetime.
                         let _slot = slot;
@@ -667,6 +828,8 @@ pub fn start_tcp_server(
                             token_arc,
                             credentials_clone,
                             generation,
+                            pending_clone,
+                            passkey_index_clone,
                         ) {
                             log::debug!("TCP connection error: {}", e);
                         }
@@ -912,6 +1075,8 @@ fn handle_client(
     pairing_token: Arc<Mutex<String>>,
     credentials: Arc<Mutex<Option<ExtensionCredentialCache>>>,
     session_generation: RevokeGeneration,
+    pending_passkeys: PendingPasskeyRequests,
+    passkey_index: Arc<Mutex<Vec<ExtensionPasskeySummary>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{Emitter, Manager};
 
@@ -1134,12 +1299,117 @@ fn handle_client(
                     serde_json::json!({ "locked": true, "credentials": [] })
                 }
             }
+            "passkey_create" | "passkey_get" => {
+                let is_create = action == "passkey_create";
+                // Require an active (unlocked) vault lease before prompting.
+                let is_locked = {
+                    let mut creds_guard = credentials.lock().unwrap();
+                    let now_ms = credential_lease_expires_at(0);
+                    if creds_guard
+                        .as_ref()
+                        .is_some_and(|cache| cache.expires_at_epoch_ms <= now_ms)
+                    {
+                        *creds_guard = None;
+                    }
+                    creds_guard.is_none()
+                };
+
+                if is_locked {
+                    serde_json::json!({ "status": "locked", "fallback": true })
+                } else {
+                    let origin = req["origin"].as_str().unwrap_or("");
+                    let requested_rp_id = req["rpId"].as_str();
+                    let challenge = req["challengeBase64Url"].as_str().unwrap_or("").trim();
+
+                    if challenge.is_empty() || challenge.len() > 2048 {
+                        serde_json::json!({ "error": "invalid_challenge", "fallback": true })
+                    } else if let Some((canonical_origin, validated_rp_id)) =
+                        validate_passkey_origin_and_rp_id(origin, requested_rp_id)
+                    {
+                        let allow_ids: Option<Vec<String>> = req["allowCredentialIds"]
+                            .as_array()
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str().map(str::to_string))
+                                    .take(64)
+                                    .collect()
+                            });
+
+                        // On `passkey_get`, avoid stealing window focus if no vault software
+                        // passkey matches this RP ID / allowCredentials list.
+                        let has_match = if is_create {
+                            true
+                        } else {
+                            let idx = passkey_index.lock().unwrap_or_else(|e| e.into_inner());
+                            has_matching_software_passkey(
+                                &idx,
+                                &validated_rp_id,
+                                allow_ids.as_deref(),
+                            )
+                        };
+
+                        if !has_match {
+                            serde_json::json!({ "status": "no_match", "fallback": true })
+                        } else if let Some((request_id, rx)) = pending_passkeys.register() {
+                            let mut event_payload = serde_json::json!({
+                                "requestId": request_id,
+                                "kind": if is_create { "create" } else { "get" },
+                                "origin": canonical_origin,
+                                "rpId": validated_rp_id,
+                                "challengeBase64Url": challenge,
+                                "crossOrigin": req["crossOrigin"].as_bool().unwrap_or(false),
+                            });
+                            if is_create {
+                                event_payload["rpName"] = serde_json::json!(req["rpName"].as_str().unwrap_or(""));
+                                event_payload["userName"] = serde_json::json!(req["userName"].as_str().unwrap_or(""));
+                                event_payload["userDisplayName"] = serde_json::json!(req["userDisplayName"].as_str().unwrap_or(""));
+                                if let Some(uid) = req["userIdBase64Url"].as_str() {
+                                    event_payload["userIdBase64Url"] = serde_json::json!(uid);
+                                }
+                                if let Some(algs) = req["pubKeyCredAlgs"].as_array() {
+                                    let clean_algs: Vec<i64> = algs.iter().filter_map(|v| v.as_i64()).take(16).collect();
+                                    event_payload["pubKeyCredAlgs"] = serde_json::json!(clean_algs);
+                                }
+                                if let Some(excl) = req["excludeCredentialIds"].as_array() {
+                                    let clean_excl: Vec<&str> = excl.iter().filter_map(|v| v.as_str()).take(64).collect();
+                                    event_payload["excludeCredentialIds"] = serde_json::json!(clean_excl);
+                                }
+                            } else if let Some(allowed) = allow_ids {
+                                event_payload["allowCredentialIds"] = serde_json::json!(allowed);
+                            }
+
+                            let _ = app_handle.emit("extension-passkey-request", event_payload);
+                            let windows = app_handle.webview_windows();
+                            for window in windows.values() {
+                                focus_webview_window(window);
+                            }
+
+                            match rx.recv_timeout(Duration::from_secs(PASSKEY_REQUEST_TIMEOUT_SECS)) {
+                                Ok(resp) => resp,
+                                Err(_) => {
+                                    pending_passkeys.remove(&request_id);
+                                    serde_json::json!({ "status": "timeout", "fallback": true })
+                                }
+                            }
+                        } else {
+                            serde_json::json!({ "error": "too_many_pending_requests", "fallback": true })
+                        }
+                    } else {
+                        serde_json::json!({ "error": "invalid_origin_or_rp_id", "fallback": true })
+                    }
+                }
+            }
             "revoke" => {
                 // RUST-Y1/#43: session revocation — retire every live session, wipe the
                 // credential lease, rotate the pairing token and terminate this connection
                 // immediately after responding. Set before the work so the connection is torn
                 // down even if the rotation reports a failure.
                 revoke_session = true;
+                {
+                    let mut idx = passkey_index.lock().unwrap_or_else(|e| e.into_inner());
+                    idx.clear();
+                }
+                pending_passkeys.cancel_all();
                 let token_path = get_app_data_dir().map(|dir| dir.join(TOKEN_FILENAME));
                 if let Err(error) = revoke_all_sessions(
                     &pairing_token,
@@ -2211,5 +2481,79 @@ mod tests {
             &mut cache, "cred-1", "",
         ));
         assert_eq!(cache.credentials[0].password, rotated_secret);
+    }
+
+    #[test]
+    fn passkey_origin_and_rp_id_validation_enforces_webauthn_and_psl_boundaries() {
+        assert_eq!(
+            super::validate_passkey_origin_and_rp_id("https://github.com", Some("github.com")),
+            Some(("https://github.com".to_string(), "github.com".to_string()))
+        );
+        assert_eq!(
+            super::validate_passkey_origin_and_rp_id("https://login.github.com", Some("github.com")),
+            Some(("https://login.github.com".to_string(), "github.com".to_string()))
+        );
+        assert_eq!(
+            super::validate_passkey_origin_and_rp_id("http://localhost:3000", Some("localhost")),
+            Some(("http://localhost:3000".to_string(), "localhost".to_string()))
+        );
+
+        // Reject insecure non-localhost HTTP, cross-origin spoofing, IP literals, and bare public suffixes
+        assert!(super::validate_passkey_origin_and_rp_id("http://github.com", Some("github.com")).is_none());
+        assert!(super::validate_passkey_origin_and_rp_id("https://evil.com", Some("github.com")).is_none());
+        assert!(super::validate_passkey_origin_and_rp_id("https://example.co.uk", Some("co.uk")).is_none());
+        assert!(super::validate_passkey_origin_and_rp_id("https://example.com", Some("com")).is_none());
+        assert!(super::validate_passkey_origin_and_rp_id("https://127.0.0.1", Some("127.0.0.1")).is_none());
+        assert!(super::validate_passkey_origin_and_rp_id("https://github.com/path", Some("github.com")).is_none());
+    }
+
+    #[test]
+    fn pending_passkey_requests_registers_resolves_caps_and_cancels() {
+        let registry = super::PendingPasskeyRequests::new();
+        let (req_id, rx) = registry.register().expect("should register");
+        assert!(registry.resolve(&req_id, serde_json::json!({ "status": "ok" })));
+        let received = rx.recv_timeout(std::time::Duration::from_secs(1)).expect("should receive");
+        assert_eq!(received["status"], "ok");
+        // Resolving twice returns false
+        assert!(!registry.resolve(&req_id, serde_json::json!({ "status": "ok" })));
+
+        // Capacity cap & cancel_all
+        let mut receivers = Vec::new();
+        for _ in 0..super::MAX_PENDING_PASSKEY_REQUESTS {
+            let (_id, r) = registry.register().expect("within capacity");
+            receivers.push(r);
+        }
+        assert!(registry.register().is_none(), "must reject above capacity");
+        registry.cancel_all();
+        for r in receivers {
+            let msg = r.recv_timeout(std::time::Duration::from_secs(1)).expect("cancel message");
+            assert_eq!(msg["status"], "cancelled");
+        }
+    }
+
+    #[test]
+    fn has_matching_software_passkey_filters_by_rp_id_and_allow_credentials() {
+        let index = vec![
+            super::ExtensionPasskeySummary {
+                rp_id: "github.com".to_string(),
+                credential_id: "cred-1".to_string(),
+            },
+            super::ExtensionPasskeySummary {
+                rp_id: "webauthn.io".to_string(),
+                credential_id: "cred-2".to_string(),
+            },
+        ];
+        assert!(super::has_matching_software_passkey(&index, "GITHUB.COM", None));
+        assert!(!super::has_matching_software_passkey(&index, "gitlab.com", None));
+        assert!(super::has_matching_software_passkey(
+            &index,
+            "github.com",
+            Some(&["cred-1".to_string()])
+        ));
+        assert!(!super::has_matching_software_passkey(
+            &index,
+            "github.com",
+            Some(&["cred-other".to_string()])
+        ));
     }
 }

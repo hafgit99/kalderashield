@@ -72,7 +72,7 @@ export function useSettingsPasskey({
   const [passkeyStatusKind, setPasskeyStatusKind] = useState<'success' | 'error' | 'info' | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
 
-  const handleCreatePasskey = async (input: RegisterPasskeyInput) => {
+  const handleCreatePasskey = async (input: RegisterPasskeyInput): Promise<boolean> => {
     setPasskeyBusy(true);
     setPasskeyStatusKey(null);
     try {
@@ -95,9 +95,11 @@ export function useSettingsPasskey({
       await onDatabaseChanged();
       setPasskeyStatusKey('passkey.create.success');
       setPasskeyStatusKind('success');
+      return true;
     } catch (error) {
       setPasskeyStatusKey(passkeyErrorToStatusKey(error));
       setPasskeyStatusKind('error');
+      return false;
     } finally {
       setPasskeyBusy(false);
     }

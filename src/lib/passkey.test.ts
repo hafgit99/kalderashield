@@ -200,6 +200,35 @@ describe('passkey module - registration lifecycle', () => {
   });
 
 
+  it('reads authenticatorAttachment from PublicKeyCredential per WebAuthn spec when omitted on response', async () => {
+    Object.defineProperty(globalThis, 'PublicKeyCredential', {
+      configurable: true,
+      value: function PublicKeyCredential() {},
+    });
+    const responseWithoutAttachment = {
+      clientDataJSON: new TextEncoder().encode('{"type":"webauthn.create"}').buffer as ArrayBuffer,
+      getPublicKey: () => makeFakePublicKey(),
+      getPublicKeyAlgorithm: () => -7,
+      getTransports: () => ['internal'],
+    };
+    Object.defineProperty(navigator, 'credentials', {
+      configurable: true,
+      value: {
+        create: vi.fn(async () => ({
+          rawId: makeFakeCredentialId(52),
+          authenticatorAttachment: 'cross-platform',
+          response: responseWithoutAttachment,
+          type: 'public-key',
+        })),
+        get: vi.fn(async () => makeFakeCredential()),
+      },
+    });
+
+    const result = await registerPasskey({ rpId: 'localhost', rpName: 'Local', userName: 'alice' });
+    expect(result.record.attachment).toBe('cross-platform');
+    expect(result.attestation.authenticatorAttachment).toBe('cross-platform');
+  });
+
   it('registers without optional transports or attachment when the platform omits them', async () => {
     Object.defineProperty(globalThis, 'PublicKeyCredential', {
       configurable: true,

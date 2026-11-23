@@ -45,8 +45,38 @@ export async function syncExtensionCredentials(items: VaultItem[], ttlMs = EXTEN
         favorite: Boolean(item.favorite),
       }));
     await invoke('sync_extension_credentials', { credentials: creds, ttlMs });
+    const softwarePasskeys = items
+      .filter(
+        (item) =>
+          !item.deleted
+          && item.category === 'passkey'
+          && item.passkeyProviderKind === 'software'
+          && Boolean(item.passkeyRpId)
+          && Boolean(item.passkeyCredentialId),
+      )
+      .map((item) => ({
+        rpId: item.passkeyRpId!,
+        credentialId: item.passkeyCredentialId!,
+      }));
+    await invoke('sync_extension_passkeys', { passkeys: softwarePasskeys });
   } catch (error) {
     console.error('Failed to sync credentials to extension:', error);
+  }
+}
+
+export async function resolveExtensionPasskeyRequest(
+  requestId: string,
+  response: Record<string, unknown>,
+): Promise<boolean> {
+  if (!isDesktopRuntime()) return false;
+  try {
+    return await invoke<boolean>('resolve_extension_passkey_request', {
+      requestId,
+      response,
+    });
+  } catch (error) {
+    console.error('Failed to resolve extension passkey request:', error);
+    return false;
   }
 }
 

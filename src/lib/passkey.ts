@@ -84,6 +84,7 @@ export interface PasskeyRecord {
   lastUsedAt?: string;
   transports?: string[];
   attachment?: 'platform' | 'cross-platform';
+  providerKind?: 'hardware' | 'software';
 }
 
 export interface VaultPasskeyFields {
@@ -99,6 +100,7 @@ export interface VaultPasskeyFields {
   passkeyTransports?: string[];
   passkeyCreatedAt?: string;
   passkeyLastUsedAt?: string;
+  passkeyProviderKind?: 'hardware' | 'software';
   passkeyPrivateKeyBundle?: WebCryptoAesGcmPayload;
 }
 
@@ -209,7 +211,7 @@ async function derivePasskeySubkey(vaultKey: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(bits);
 }
 
-async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise<WebCryptoAesGcmPayload> {
+export async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise<WebCryptoAesGcmPayload> {
   const subkey = await derivePasskeySubkey(vaultKey);
   const plaintext = new TextEncoder().encode(JSON.stringify(jwk));
   const iv = generateSafeIv();
@@ -225,7 +227,7 @@ async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise
   };
 }
 
-async function unwrapPrivateKeyJwk(bundle: WebCryptoAesGcmPayload, vaultKey: Uint8Array): Promise<JsonWebKey> {
+export async function unwrapPrivateKeyJwk(bundle: WebCryptoAesGcmPayload, vaultKey: Uint8Array): Promise<JsonWebKey> {
   const subkey = await derivePasskeySubkey(vaultKey);
   const buffer = base64ToArrayBuffer(bundle.ciphertext);
   let plaintext: ArrayBuffer;
@@ -360,9 +362,10 @@ export async function registerPasskey(input: RegisterPasskeyInput): Promise<Regi
   const alg = response.getPublicKeyAlgorithm?.();
   const algorithm = coseAlgToPasskeyAlgorithm(typeof alg === 'number' ? alg : COSE_ALG_ES256);
 
-  // The browser does not expose the raw private key. The platform
-  // authenticator remains the source of truth for signing; the wrapped JWK
-  // is a recovery handle keyed by the credential id.
+  // The browser never exposes the hardware authenticator's raw private key.
+  // The platform/roaming authenticator remains the sole holder of the signing
+  // key; this vault-key-wrapped JSON is a metadata handle bound to the
+  // credential id (not an exportable private key).
   const recoveryJwk = { kty: 'recovery', alg: 'A256GCM', kid: credentialId } as unknown as JsonWebKey;
   const wrapped = await withActiveVaultEncryptionKey(async (vaultKey) => {
     if (!vaultKey) throw new PasskeyError(passkeyErrorCodes.sessionMissing);
@@ -377,8 +380,12 @@ export async function registerPasskey(input: RegisterPasskeyInput): Promise<Regi
     } catch { return undefined; }
   })();
 
+  // Per WebAuthn Level 2/3, authenticatorAttachment lives on PublicKeyCredential
+  // itself, not on AuthenticatorAttestationResponse (keep response fallback for legacy stubs).
   const attachment = (() => {
-    const raw = (response as unknown as { authenticatorAttachment?: string }).authenticatorAttachment;
+    const raw =
+      (credential as unknown as { authenticatorAttachment?: string }).authenticatorAttachment
+      ?? (response as unknown as { authenticatorAttachment?: string }).authenticatorAttachment;
     if (raw === 'platform' || raw === 'cross-platform') return raw;
     return undefined;
   })();
@@ -609,6 +616,7 @@ export function recordToVaultFields(record: PasskeyRecord): VaultPasskeyFields {
     passkeyTransports: record.transports,
     passkeyCreatedAt: record.createdAt,
     passkeyLastUsedAt: record.lastUsedAt,
+    passkeyProviderKind: record.providerKind,
     passkeyPrivateKeyBundle: record.privateKeyBundle,
   };
 }
@@ -632,6 +640,7 @@ export function vaultFieldsToRecord(itemId: string, fields: VaultPasskeyFields):
     lastUsedAt: fields.passkeyLastUsedAt,
     transports: fields.passkeyTransports,
     attachment: fields.passkeyAttachment,
+    providerKind: fields.passkeyProviderKind,
   };
 }
 

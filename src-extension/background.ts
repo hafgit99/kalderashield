@@ -1,4 +1,5 @@
 import { extractRegistrableDomainFromUrl } from './psl-utils';
+import { validateExtensionPasskeyOriginAndRpId } from './webauthn-bridge';
 
 const HOST_NAME = 'com.kalderashield.desktop';
 
@@ -287,6 +288,72 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       }
     );
+    return true;
+  }
+
+  if (request.action === 'passkey_create' || request.action === 'passkey_get') {
+    const senderUrl = sender.url || sender.tab?.url;
+    const payload = request.payload && typeof request.payload === 'object' ? request.payload : {};
+    const validated = validateExtensionPasskeyOriginAndRpId(
+      senderUrl,
+      typeof payload.rpId === 'string' ? payload.rpId : undefined,
+    );
+    if (!validated) {
+      sendResponse({ status: 'invalid_origin', fallback: true });
+      return false;
+    }
+
+    const challenge = typeof payload.challengeBase64Url === 'string' ? payload.challengeBase64Url.trim() : '';
+    if (!challenge || challenge.length > 2048) {
+      sendResponse({ status: 'invalid_challenge', fallback: true });
+      return false;
+    }
+
+    chrome.storage.local.get(['passkeyProviderEnabled'], (res) => {
+      if (res.passkeyProviderEnabled === false) {
+        sendResponse({ status: 'disabled', fallback: true });
+        return;
+      }
+
+      const nativePayload: Record<string, unknown> = {
+        action: request.action,
+        origin: validated.origin,
+        rpId: validated.rpId,
+        challengeBase64Url: challenge,
+        crossOrigin: Boolean(payload.crossOrigin),
+      };
+
+      if (request.action === 'passkey_create') {
+        nativePayload.rpName = typeof payload.rpName === 'string' ? payload.rpName.slice(0, 200) : validated.rpId;
+        nativePayload.userName = typeof payload.userName === 'string' ? payload.userName.slice(0, 320) : '';
+        nativePayload.userDisplayName = typeof payload.userDisplayName === 'string' ? payload.userDisplayName.slice(0, 320) : '';
+        if (typeof payload.userIdBase64Url === 'string' && payload.userIdBase64Url.length <= 256) {
+          nativePayload.userIdBase64Url = payload.userIdBase64Url;
+        }
+        if (Array.isArray(payload.pubKeyCredAlgs)) {
+          nativePayload.pubKeyCredAlgs = payload.pubKeyCredAlgs
+            .filter((n: unknown): n is number => typeof n === 'number' && Number.isInteger(n))
+            .slice(0, 16);
+        }
+        if (Array.isArray(payload.excludeCredentialIds)) {
+          nativePayload.excludeCredentialIds = payload.excludeCredentialIds
+            .filter((s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 512)
+            .slice(0, 64);
+        }
+      } else if (Array.isArray(payload.allowCredentialIds)) {
+        nativePayload.allowCredentialIds = payload.allowCredentialIds
+          .filter((s: unknown): s is string => typeof s === 'string' && s.length > 0 && s.length <= 512)
+          .slice(0, 64);
+      }
+
+      chrome.runtime.sendNativeMessage(HOST_NAME, nativePayload, (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ status: 'host_unavailable', fallback: true, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse(response ?? { status: 'no_response', fallback: true });
+        }
+      });
+    });
     return true;
   }
 
