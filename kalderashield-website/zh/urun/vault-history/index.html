@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/urun/vault-history/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/urun/vault-history/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/urun/vault-history/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/urun/vault-history/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/urun/vault-history/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/urun/vault-history/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/urun/vault-history/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/urun/vault-history/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-backup.webp" width="1800" height="752" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-backup.webp?v=7.0.31" width="1800" height="752" loading="eager" decoding="async" alt="KalderaShield — 误操作可撤销，由你决定何时进行">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-vault-history-p3">快照是有版本的：应用可以按需创建，也可按你选择的计划自动创建；每个快照在写入前都会加密，并在达到保留上限后清理最旧的。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-vault-history-steps-title">快照如何创建</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-vault-history-steps-title">快照如何创建</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-vault-history-step1-title">捕获密码库</h3>
           <p data-i18n="p-vault-history-step1-desc">快照记录你密码库当前的状态，或在你按下按钮时触发，或按你配置的计划执行。</p>
@@ -213,7 +215,7 @@
   <section>
     <div class="wrap">
       <figure class="shot-pair">
-        <img class="shot" src="/assets/images/app-trash.webp" width="1800" height="889" loading="lazy" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-trash.webp?v=7.0.31" width="1800" height="889" loading="lazy" decoding="async" alt="KalderaShield — 十五天缓冲期">
         <figcaption>
           <h3 data-i18n="p-vault-history-shot-title">十五天缓冲期</h3>
           <p data-i18n="p-vault-history-shot-desc">产品内的回收站会说明其行为：已删除的记录留在你的设备上，并可在这段时间内随时恢复或永久删除。</p>
@@ -231,7 +233,7 @@
         <p data-i18n="p-vault-history-sec-body">本地快照和导出的备份使用 Argon2id 和 AES-256-GCM 加密，导出备份的密码可以直接使用你的主密码。可选云同步默认关闭；如果你针对自己的云存储或 S3 兼容存储启用它，密码库会在发送前先在设备上加密，因此服务提供方只会收到密文。这项便利取决于你的存储账户保持可访问——密码库文件本身仍然可移植，脱离它也能恢复。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">AES-256-GCM</span>
           <h3 data-i18n="p-vault-history-tech1-title">写入前先加密</h3>
@@ -255,7 +257,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">常见问题解答</span>
       <h2 data-i18n="p-vault-history-faq-title">关于备份与恢复</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-vault-history-faq1-q">已删除的记录真的消失了吗？</summary>
         <p data-i18n="p-vault-history-faq1-a">十五天之内没有。它留在本地加密回收站中，你可以从中恢复，也可以提前彻底清除。</p>
       </details>
@@ -268,12 +270,12 @@
         <p data-i18n="p-vault-history-faq3-a">没有什么阻止你这么做，但请注意导出格式由你选择：如果你希望文件保持受保护，请使用加密备份格式，而不是明文 JSON 转储。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-vault-history-rel-title">相关页面</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-vault-history-rel-title">相关页面</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/zh/urun/password-vault/" data-i18n="p-vault-history-rel1">密码库</a>
         <a class="btn btn-ghost" href="/zh/#verification" data-i18n="p-vault-history-rel2">验证</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/zh/download/" data-i18n="cta-dl">下载</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">查看源代码</a>
       </div>
@@ -285,20 +287,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/zh/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">产品</h2>
         <ul>
-          <li><a href="/zh/" data-i18n="nav-products">产品</a></li>
           <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
-          <li><a href="/zh/#security" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
           <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
         </ul>
       </div>
@@ -316,6 +320,7 @@
         <h2 data-i18n="footer-col4-title">法律法规</h2>
         <ul>
           <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
           <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -324,7 +329,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
-      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言：</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
@@ -333,8 +338,8 @@
   <a class="btn btn-primary" href="/zh/download/" data-i18n="hero-btn-dl">下载安装包</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

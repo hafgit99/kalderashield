@@ -488,7 +488,7 @@
   "p-windows-step3-desc": "Registra lo sblocco di piattaforma così l’accesso quotidiano è uno sguardo o un PIN, con il supporto di TPM 2.0. La password principale resta sempre la vera radice del gestore.",
   "p-windows-sec-title": "Particolarità di Windows che conviene conoscere",
   "p-windows-sec-label": "Firme e SmartScreen",
-  "p-windows-sec-body": "Gli installer Windows non portano ancora una firma Authenticode: il progetto non ha un certificato di firma del codice, e il suo controllo di rilascio blocca la pubblicazione degli artefatti non firmati come rilasci ufficiali. Finché non cambia, Windows SmartScreen può mostrare \"Windows ha protetto il tuo PC\" per i file che ottieni da una build — verifica l’hash SHA-256 contro i checksum pubblicati, e consulta la pagina di verifica per capire che cosa quell’avviso significa e che cosa no.",
+  "p-windows-sec-body": "Gli installer Windows sono pubblicati nello stesso rilascio delle altre piattaforme (<code>latest</code> punta a essi), ma sono attualmente <strong>non firmati</strong> con Authenticode. Windows SmartScreen mostrerà un avviso («Ulteriori informazioni» → «Esegui comunque»). Verifica il digest SHA-256 con SHA256SUMS.txt prima dell'installazione. La richiesta a SignPath Foundation <strong>non è ancora stata inviata</strong>; con un certificato l'avviso scomparirà.",
   "p-windows-tech1-title": "Architettura x64",
   "p-windows-tech1-desc": "Un solo download serve per entrambi. L’applicazione è distribuita come app desktop Tauri con un’interfaccia basata su WebView.",
   "p-windows-tech2-title": "Sblocco con Windows Hello",

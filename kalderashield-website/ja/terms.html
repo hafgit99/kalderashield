@@ -7,21 +7,21 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>利用規約 — KalderaShield</title>
-<meta name="description" content="本規約は、KalderaShield ソフトウェア（デスクトップアプリケーション、Android アプリケーション、ブラウザ拡張機能）および本ウェブサイトのご利用に適用されます。ソフトウェアをダウンロード、インストールまたは使用した方は、本規約に同意したものとみなされます。ソフトウェアは Apache">
+<meta name="description" content="本規約は、KalderaShield ソフトウェア（デスクトップアプリケーション、Android アプリケーション、ブラウザ拡張機能）および本ウェブサイトのご利用に適用されます。ソフトウェアをダウンロード、インストールまたは使用した方は、本規約に同意したものとみなされます。">
 <link rel="canonical" href="https://kalderashield.com/ja/terms.html">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="利用規約 — KalderaShield">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
-<meta property="og:description" content="本規約は、KalderaShield ソフトウェア（デスクトップアプリケーション、Android アプリケーション、ブラウザ拡張機能）および本ウェブサイトのご利用に適用されます。ソフトウェアをダウンロード、インストールまたは使用した方は、本規約に同意したものとみなされます。ソフトウェアは Apache">
+<meta property="og:description" content="本規約は、KalderaShield ソフトウェア（デスクトップアプリケーション、Android アプリケーション、ブラウザ拡張機能）および本ウェブサイトのご利用に適用されます。ソフトウェアをダウンロード、インストールまたは使用した方は、本規約に同意したものとみなされます。">
 <meta property="og:url" content="https://kalderashield.com/ja/terms.html">
 
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/terms.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/terms.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/terms.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/terms.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/terms.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/terms.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/terms.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/terms.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,16 +66,49 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/ja/#features" data-i18n="nav-features">機能一覧</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">製品</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/ja/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">パスワード保管庫</span><span class="menu-d" data-i18n="menu-d-password-vault">各レコードを個別の鍵で暗号化</span></a></li>
+        <li><a href="/ja/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">パスキー</span><span class="menu-d" data-i18n="menu-d-passkeys">自分の認証器に紐づく WebAuthn</span></a></li>
+        <li><a href="/ja/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">保管庫の履歴</span><span class="menu-d" data-i18n="menu-d-vault-history">スナップショット、ゴミ箱、パスワード履歴</span></a></li>
+        <li><a href="/ja/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">セキュリティ監査</span><span class="menu-d" data-i18n="menu-d-security-audit">弱いパスワード、重複、漏洩済みパスワード</span></a></li>
+        <li><a href="/ja/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">パスワード生成</span><span class="menu-d" data-i18n="menu-d-password-generator">ランダム文字列または Diceware のフレーズ</span></a></li>
+        <li><a href="/ja/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">解錠と復元</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">生体認証、セキュリティキー、24 語キット</span></a></li>
+        <li><a href="/ja/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">自動入力</span><span class="menu-d" data-i18n="menu-d-autofill">eTLD+1 で照合。サイト間で資格情報は漏れません</span></a></li>
+        <li><a href="/ja/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">添付ファイル</span><span class="menu-d" data-i18n="menu-d-attachments">保管庫の中で暗号化されたファイル</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a>
       <a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a>
+      <a href="/ja/#comparison" data-i18n="nav-comparison">機能比較</a>
+      <a href="/ja/guvenlik/denetim-durumu/" data-i18n="nav-audit">監査レポート</a>
       <a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">ソース</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Issue・バグ報告</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">ディスカッション</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/ja/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">ダウンロード</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="言語を選択">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">JA</span>
+          <span data-lang-current="">日本語</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -135,16 +169,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/ja/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">製品情報</h2>
+        <ul>
+          <li><a href="/ja/#features" data-i18n="nav-features">機能一覧</a></li>
+          <li><a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a></li>
+          <li><a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a></li>
+          <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
+          <li><a href="/ja/download/" data-i18n="nav-download">ダウンロード</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">コミュニティ</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">ソースコード</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Issue・バグ報告</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">ディスカッション</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">規約・方針</h2>
+        <ul>
+          <li><a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a></li>
+          <li><a href="/ja/code-signing-policy.html" data-i18n="footer-link-code-signing">コード署名ポリシー</a></li>
+          <li><a href="/ja/terms.html" data-i18n="footer-link-terms">利用規約</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/ja/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">ソースコード</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield. 全著作権所有。</span>
+      <span data-i18n="footer-langs-label">🌍 12言語に対応</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

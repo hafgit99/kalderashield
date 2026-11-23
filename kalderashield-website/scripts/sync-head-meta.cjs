@@ -26,6 +26,16 @@ const check = process.argv.includes('--check');
 const THEME_DARK = /<meta name="theme-color" content="[^"]*" media="\(prefers-color-scheme: dark\)">/;
 const THEME_LIGHT = /<meta name="theme-color" content="[^"]*" media="\(prefers-color-scheme: light\)">/;
 const SITEMAP = /<link rel="sitemap" href="[^"]*" type="application\/xml">/;
+const CSS_LINK_RE = /<link rel="stylesheet" href="\/assets\/css\/site\.css(?:\?v=[^"]*)?">/g;
+const SHOT_SRC_RE = /src="\/assets\/images\/((?:app|ext)-[a-z0-9-]+\.webp)(?:\?v=[^"]*)?"/g;
+const POSTER_RE = /poster="\/assets\/images\/(video-poster\.webp)(?:\?v=[^"]*)?"/g;
+
+function siteVersion() {
+  const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const m = indexHtml.match(/data-site-version="([^"]+)"/);
+  if (!m) throw new Error('index.html icinden data-site-version okunamadi');
+  return m[1].trim();
+}
 
 function palette() {
   const css = fs.readFileSync(path.join(root, 'assets', 'css', 'site.css'), 'utf8');
@@ -81,7 +91,7 @@ function isManaged(line) {
  * stranded behind: every run added three blank lines to the head of all
  * twenty-five files. Filtering whole lines cannot do that, and it makes the
  * result independent of how the file happens to be line-broken. */
-function apply(html, tags) {
+function apply(html, tags, version) {
   const eol = html.includes('\r\n') ? '\r\n' : '\n';
   const lines = html.split(/\r?\n/);
 
@@ -105,11 +115,18 @@ function apply(html, tags) {
     out.splice(i, j - i, '');
   }
 
-  return out.join(eol);
+  const cssTag = `<link rel="stylesheet" href="/assets/css/site.css?v=${version}">`;
+  return out
+    .join(eol)
+    .replace(CSS_LINK_RE, cssTag)
+    .replace(SHOT_SRC_RE, `src="/assets/images/$1?v=${version}"`)
+    .replace(POSTER_RE, `poster="/assets/images/$1?v=${version}"`);
 }
 
 const p = palette();
+const version = siteVersion();
 const tags = wanted(p);
+const expectedCss = `<link rel="stylesheet" href="/assets/css/site.css?v=${version}">`;
 
 if (check) {
   const problems = [];
@@ -123,22 +140,31 @@ if (check) {
     const stray = [THEME_DARK, THEME_LIGHT, SITEMAP].filter((re) => re.test(html)).length;
     const want = missing.length ? 3 - missing.length : 3;
     if (stray !== want) problems.push(`${rel}: eski/ek theme-color etiketi sayisi ${stray}, olmasi gereken ${want}`);
+    if (html.includes('/assets/css/site.css') && !html.includes(expectedCss)) {
+      problems.push(`${rel}: site.css surum parametresi eksik veya eski (beklenen ?v=${version})`);
+    }
+    const shots = html.match(SHOT_SRC_RE) || [];
+    for (const s of shots) {
+      if (!s.endsWith(`?v=${version}"`)) {
+        problems.push(`${rel}: gorsel surum parametresi eksik veya eski -> ${s}`);
+      }
+    }
   }
   if (problems.length) {
     console.error('Head metadata gate failed:');
     for (const x of problems) console.error(' -', x);
     process.exit(1);
   }
-  console.log(`PASS - tema rengi (${p.dark} koyu / ${p.light} aydinlik) ve sitemap baglantisi tum sayfalarda.`);
+  console.log(`PASS - tema rengi (${p.dark} koyu / ${p.light} aydinlik), sitemap ve ?v=${version} varlik surumleri tum sayfalarda.`);
 } else {
   let changed = 0;
   for (const file of htmlFiles()) {
     const html = fs.readFileSync(file, 'utf8');
-    const next = apply(html, tags);
+    const next = apply(html, tags, version);
     if (next === html) continue;
     fs.writeFileSync(file, next, 'utf8');
     changed++;
   }
   console.log(`${changed} dosya guncellendi.`);
-  console.log(`  tema rengi: ${p.dark} (koyu) / ${p.light} (aydinlik)`);
+  console.log(`  tema rengi: ${p.dark} (koyu) / ${p.light} (aydinlik) · surum: v${version}`);
 }

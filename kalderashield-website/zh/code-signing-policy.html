@@ -21,7 +21,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/code-signing-policy.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/code-signing-policy.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/code-signing-policy.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/code-signing-policy.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/code-signing-policy.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/code-signing-policy.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/code-signing-policy.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/code-signing-policy.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,16 +66,49 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/zh/#features" data-i18n="nav-features">核心功能</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">产品</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/zh/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">密码库</span><span class="menu-d" data-i18n="menu-d-password-vault">每条记录用各自的密钥加密</span></a></li>
+        <li><a href="/zh/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">通行密钥</span><span class="menu-d" data-i18n="menu-d-passkeys">绑定你自己认证器的 WebAuthn</span></a></li>
+        <li><a href="/zh/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">密码库历史</span><span class="menu-d" data-i18n="menu-d-vault-history">快照、回收站与密码历史</span></a></li>
+        <li><a href="/zh/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">安全审计</span><span class="menu-d" data-i18n="menu-d-security-audit">弱密码、重复使用的密码和已泄露的密码</span></a></li>
+        <li><a href="/zh/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">密码生成器</span><span class="menu-d" data-i18n="menu-d-password-generator">随机字符或 Diceware 短语</span></a></li>
+        <li><a href="/zh/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">解锁与恢复</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">生物识别、安全密钥和 24 词恢复套件</span></a></li>
+        <li><a href="/zh/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">自动填充</span><span class="menu-d" data-i18n="menu-d-autofill">按可注册域名匹配，不跨站泄露</span></a></li>
+        <li><a href="/zh/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">附件</span><span class="menu-d" data-i18n="menu-d-attachments">在密码库内加密的文件</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a>
       <a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a>
+      <a href="/zh/#comparison" data-i18n="nav-comparison">特性对比</a>
+      <a href="/zh/guvenlik/denetim-durumu/" data-i18n="nav-audit">审计报告</a>
       <a href="/zh/sss/" data-i18n="nav-faq">常见问题</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">源代码</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">问题反馈</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">社区讨论</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/zh/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">立即下载</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -113,7 +147,7 @@
       <p data-i18n="csp-p1-5">将被签名的文件是 NSIS 安装程序（<code>KalderaShield_&lt;版本&gt;_x64-setup.exe</code>）、用于受管部署的 MSI 包（<code>KalderaShield_&lt;版本&gt;_x64.msi</code>）以及无需安装的便携可执行文件（<code>KalderaShield_&lt;版本&gt;_x64-portable.exe</code>）。三者均由本仓库构建，并在<a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">发行页面</a>发布。凡非由本仓库构建的产物，一律不以本项目证书签名；也不会用该证书对任何第三方二进制文件重新签名。</p>
       <p data-i18n="csp-p1-6"><strong>密钥保管：</strong>私钥在 SignPath 的 HSM 中生成并保存。本项目从不持有该密钥，从不导出，也绝不将其传递给构建运行器或开发人员机器。签名在 SignPath 一侧进行，响应的是本仓库 CI 提交并由人工批准的签名请求。</p>
       <p data-i18n="csp-p1-7"><strong>链条：</strong>推送版本标签 → GitHub Actions 构建这些文件（工作流是公开的，第三方 action 按 commit SHA 固定，令牌权限为只读）→ 构建将文件上传至 SignPath 并发起签名请求，但自身不签名 → 一位 Approver 批准或拒绝 → SignPath 使用 Foundation 证书签名 → 已签名文件与 <code>SHA256SUMS.txt</code> 一并发布。每个发行版都需要人工批准；不存在无人值守的签名路径，也不会新增。</p>
-      <p data-i18n="csp-p1-8">有效的 SignPath Foundation 签名意味着该二进制文件是可验证的自动化构建，源自本仓库在发行版所指明提交处的源代码。这<strong>并不</strong>意味着软件经过审计，也不构成对该应用的安全背书。本项目发布了威胁模型与质量门禁文档，但没有完成的独立第三方安全审计：</p>
+      <p data-i18n="csp-p1-8">有效的 SignPath Foundation 签名意味着该二进制文件是可验证的自动化构建，源自本仓库在发行版所指明提交处的源代码。这<strong>并不</strong>意味着软件经过审计，也不构成对该应用的安全背书。本项目发布了威胁模型与质量门禁文档，但没有完成的独立第三方安全审计。</p>
 
       <h2 data-i18n="csp-h2-3">3. 团队角色</h2>
       <p data-i18n="csp-p1-9">KalderaShield 由一人维护。此处如实说明，而非包装成团队，因为下面这些角色正是 SignPath 所要求的，而唯一的维护者只有独自一人才能诚实地承担。所有对本仓库拥有写入权限的账户均已启用多重身份验证。</p>
@@ -139,8 +173,8 @@
 
       <h2 data-i18n="csp-h2-5">5. 其他平台</h2>
       <p data-i18n="csp-p1-21"><strong>macOS</strong> — 产物使用 Apple Developer ID 签名并由 Apple 公证。证书尚未签发，因此没有任何 macOS 产物已签名，也没有发布任何 macOS 产物。<strong>Linux</strong> — <code>.deb</code>、<code>.rpm</code>、<code>.AppImage</code> 以分离式 GPG 签名（<code>.sig</code>）发布；SBOM 与浏览器扩展包以无密钥 Sigstore 签名（<code>.sigstore.json</code>）发布。<strong>Android</strong> — 发行版 APK 使用保存在 GitHub Actions 机密中的发行密钥库签名；Android 签名与 Authenticode 相互独立。任何平台在真正签名之前，都不会被描述为已签名。</p>
-      <p data-i18n="csp-p1-24"><strong>当前状态：</strong>Linux、Android 和浏览器扩展已发布并已签名。<strong>Windows 仅以未签名预览形式发布</strong>：这是一份<em>预发行版</em>，不是稳定发行版，<code>latest</code> 也不会指向它。未签名文件会触发 Windows SmartScreen 的"已保护你的电脑"提示，需要点击"更多信息"→"仍要运行"才能运行安装程序——这是预期行为。运行前请用 SHA256SUMS.txt 核对 SHA-256 摘要。向 SignPath Foundation 的签名申请<strong>尚未提交</strong>。macOS 未发布且未签名（证书尚未签发）。</p>
-      <p data-i18n="csp-p1-25">Windows 产物不作为发行版发布——发布流水线把未签名的桌面发行版视为失败，且 <code>.github/workflows/</code> 中没有任何工作流能够发布它。预览版由维护者在自己的机器上手工组装、通过 GitHub 自身的发行表单上传，并标记为<em>预发行版</em>，因此它明显是临时性的，<code>latest</code> 绝不会指向它，下一个已签名发行版会取代它。这条路线是有意为之，而非变通做法。仓库中有一道安全闸门（<code>npm run security:release-signing</code>），会拒绝任何能把未签名构建变成发布物的工作流，它的结论性主张是：没有签名机密时，公开的桌面发行版<em>按设计不可能存在</em>。为工作流添加例外，等于用一项便利换取这条主张变成谎言。把上传留在浏览器里，才保住了这个保证。该闸门记录在<a href="https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md" rel="noopener noreferrer">代码签名与产物签名指南</a>中，分步流程见<a href="https://github.com/hafgit99/kalderashield/blob/main/docs/WINDOWS_UNSIGNED_RELEASE_PLAN.md" rel="noopener noreferrer">计划：先上线站点，再发布 Windows 未签名预览</a>。</p>
+      <p data-i18n="csp-p1-24"><strong>当前状态：</strong>Linux、Android 与浏览器扩展均已发布并签名。<strong>Windows 安装包与其他平台在同一版本（<code>latest</code>）中以未签名形式发布</strong>，无 Authenticode 签名。Windows SmartScreen 会提示警告（“更多信息”→“仍要运行”）。运行前请用 SHA256SUMS.txt 核验 SHA-256。SignPath Foundation 申请<strong>尚未提交</strong>。macOS 尚未发布（证书尚未取得）。</p>
+      <p data-i18n="csp-p1-25">Windows 产物仅在 <code>.github/workflows/</code> 中通过显式仓库变量 <code>ALLOW_UNSIGNED_PLATFORMS</code> 以无 Authenticode 签名方式包含在 <code>latest</code> 发布中；所有文件仍附带 SHA256SUMS.txt 与 minisign/Sigstore 验证文件。配置代码签名证书后，该例外将被移除。文档：<a href="https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md" rel="noopener noreferrer">代码与产物签名指南</a>。</p>
 
       <h2 data-i18n="csp-h2-9">6. 报告问题</h2>
       <p data-i18n="csp-p1-26">如果你认为某个以 SignPath Foundation 证书签名的产物违反了本政策，请将该产物的哈希值和理由发送至 <a href="mailto:support@signpath.io">support@signpath.io</a>。关于这些产物的其他任何问题，请使用 <a href="mailto:security@kalderashield.com">security@kalderashield.com</a>；披露流程见 <a href="https://github.com/hafgit99/kalderashield/blob/main/SECURITY.md" rel="noopener noreferrer">SECURITY.md</a>。</p>
@@ -153,17 +187,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/zh/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">产品</h2>
+        <ul>
+          <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
+          <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">社区</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">源码浏览</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">问题反馈</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">社区讨论</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">法律法规</h2>
+        <ul>
+          <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
+          <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/zh/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a>
-      <a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">源码浏览</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -36,7 +36,7 @@
       "heroShot": {
         "src": "/assets/images/app-audit.webp",
         "w": 1800,
-        "h": 884
+        "h": 893
       },
       "secTitle": "The extension bridge is part of the model",
       "secLabel": "How the browser extension talks to the vault",
@@ -123,7 +123,7 @@
       "heroShot": {
         "src": "/assets/images/app-audit.webp",
         "w": 1800,
-        "h": 884
+        "h": 893
       },
       "secTitle": "Eklenti köprüsü de modelin parçasıdır",
       "secLabel": "Tarayıcı eklentisi kasayla nasıl konuşur",

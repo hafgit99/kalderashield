@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/windows/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/windows/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/windows/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/windows/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/windows/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/windows/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/windows/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/windows/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="اختر اللغة">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">AR</span>
+          <span data-lang-current="">العربية</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-windows-p3">والحمايات الخاصة بـWindows مفعّلة: تُطلب النوافذ بـWDA_EXCLUDEFROMCAPTURE، وهو ما يُبقي التطبيق خارج لقطات الشاشة العادية وتسجيلاتها ومعاينة بدّل المهام، ويلف Windows Hello حِمل فتح القفل للراحة بمصادِق منصّة مدعوم بـTPM 2.0.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-windows-steps-title">البداية على Windows</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-steps-title">البداية على Windows</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-windows-step1-title">التنزيل والتحقّق</h3>
           <p data-i18n="p-windows-step1-desc">احصل على المثبّت من صفحة التنزيل، ثم قارن تجزئة SHA-256 الخاصة به بالسطر المطابق في SHA256SUMS.txt قبل تشغيله.</p>
@@ -208,10 +210,10 @@
       <h2 data-i18n="p-windows-sec-title">تفاصيل خاصة بـWindows ينبغي أن تعرفها</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">التواقيع وSmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">مُثبِّتات Windows منشورة كـ<strong>إعاينة غير موقَّعة</strong> ولا تحمل توقيع Authenticode. لا توجد شهادة توقيع: فسلسلة الإصدار تعتبر إصدار سطح مكتب غير موقّع خطأً، لذا تُوسم المعاينة بأنها <em>إصدار مبكر</em> ولا يشير إليها <code>latest</code>. تُطلق الملفات غير الموقَّعة تحذير SmartScreen «حماية جهازك» وستحتاج إلى النقر على «مزيد من المعلومات» ← «تشغيل على أي حال» لتشغيل المُثبِّت؛ وهو متوقّع. تحقّق من بصمة SHA-256 في SHA256SUMS.txt قبل التثبيت. أُعدّ طلب إلى برنامج SignPath Foundation للتوقيع المجاني على البرمجيات مفتوحة المصدر، لكنه لم يُقدَّم بعد؛ وبمجود توفر التوقيع ستُوقَّع الإصدارات اللاحقة وسيختفي هذا التحذير.</p>
+        <p data-i18n="p-windows-sec-body">تُنشر مثبّتات Windows في الإصدار نفسه مع المنصات الأخرى (ويشير <code>latest</code> إليها)، لكنها حالياً <strong>غير موقّعة</strong> ولا تحمل توقيع Authenticode. سيعرض Windows SmartScreen تحذيراً («معلومات إضافية» ← «التشغيل على أي حال»). تحقّق من بصمة SHA-256 عبر SHA256SUMS.txt قبل التثبيت. طلب SignPath Foundation <strong>لم يُقدَّم بعد</strong>؛ وعند توفر الشهادة سيختفي هذا التحذير.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Windows 10 / 11</span>
           <h3 data-i18n="p-windows-tech1-title">بنية x64</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">الأسئلة الشائعة</span>
       <h2 data-i18n="p-windows-faq-title">أسئلة حول Windows</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-windows-faq1-q">Setup.exe أم MSI أم النسخة المحمولة — أيّها أختار؟</summary>
         <p data-i18n="p-windows-faq1-a">لجهاز شخصي، معالج التثبيت. وللنشر المُدار، حزمة MSI. ولمرحلة USB أو جهاز تفضّل ألا يُثبَّت عليه شيء، الملف التنفيذي المحمول.</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-windows-faq3-a">نعم. صدّر نسخة .ks احتياطية مشفّرة، وانقلها، واستعدها بكلمة المرور الرئيسة. فملف الخزنة قابل للنقل، ولا يرتبط بجهاز واحد ولا بصيغة تثبيت واحدة.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-windows-rel-title">صفحات ذات صلة</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-rel-title">صفحات ذات صلة</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ar/guvenlik/dogrulama/" data-i18n="p-windows-rel1">تحقّق من تنزيلك</a>
         <a class="btn btn-ghost" href="/ar/guvenlik/" data-i18n="p-windows-rel2">نظرة عامة على الأمان</a>
         <a class="btn btn-ghost" href="/ar/eklenti/" data-i18n="p-windows-rel3">إضافة المتصفح</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ar/download/" data-i18n="cta-dl">تنزيل</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">اطّلع على الشيفرة المصدرية</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ar/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">مدير كلمات مرور محلي ومفتوح المصدر مدعوم بتشفير المعرفة الصفرية AES-256-GCM و Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">مدير كلمات مرور محلي ومفتوح المصدر مدعوم بتشفير المعرفة الصفرية AES-256-GCM و Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">المنتج</h2>
         <ul>
-          <li><a href="/ar/" data-i18n="nav-products">المنتج</a></li>
           <li><a href="/ar/#features" data-i18n="nav-features">الميزات</a></li>
-          <li><a href="/ar/#security" data-i18n="nav-security">الأمان</a></li>
+          <li><a href="/ar/guvenlik/" data-i18n="nav-security">الأمان</a></li>
+          <li><a href="/ar/eklenti/" data-i18n="nav-extensions">الإضافات</a></li>
+          <li><a href="/ar/sss/" data-i18n="nav-faq">الأسئلة الشائعة</a></li>
+          <li><a href="/ar/kaynak-kodu/" data-i18n="footer-link-source">الشفرة المصدرية</a></li>
           <li><a href="/ar/download/" data-i18n="nav-download">تحميل</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">قانوني</h2>
         <ul>
           <li><a href="/ar/privacy.html" data-i18n="footer-link-privacy">سياسة الخصوصية</a></li>
+          <li><a href="/ar/code-signing-policy.html" data-i18n="footer-link-code-signing">سياسة توقيع الكود</a></li>
           <li><a href="/ar/terms.html" data-i18n="footer-link-terms">شروط الاستخدام</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. جميع الحقوق محفوظة.</span>
-      <span data-i18n="footer-langs-label">🌍 متوفر بـ 12 لغة:</span>
+      <span data-i18n="footer-langs-label">🌍 متوفر بـ 12 لغة</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/ar/download/" data-i18n="hero-btn-dl">تحميل برنامج التثبيت</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

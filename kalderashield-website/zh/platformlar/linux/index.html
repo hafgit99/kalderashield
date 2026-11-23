@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/linux/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/linux/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/linux/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/linux/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/linux/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/linux/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/linux/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/linux/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-linux-p3">Linux 构建使用 Tauri 所面向的 GTK3/WebKitGTK 窗口组件栈。该组件栈目前带有上游未维护绑定的安全公告（已在依赖公告登记表中连同接受理由一并记录）——它们属于生态维护风险，而不是 KalderaShield 代码中已知的可利用路径。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-linux-steps-title">在 Linux 上开始使用</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-linux-steps-title">在 Linux 上开始使用</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-linux-step1-title">下载并验证</h3>
           <p data-i18n="p-linux-step1-desc">从下载页获取 .deb 或 AppImage，在安装或运行之前，将其 SHA-256 哈希与 SHA256SUMS.txt 进行比较。</p>
@@ -211,7 +213,7 @@
         <p data-i18n="p-linux-sec-body">Linux 没有强制的 Authenticode 式签名，因此验证以哈希为准：请始终检查随发布公布的 SHA-256 校验和。无论如何，更新器捆绑包都带有 minisign 签名。依赖公告登记表列出了每一项已接受的安全公告及其理由，并且不接受任何一项可从密码库、密码学或 IPC 信任边界触达的公告。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">.deb</span>
           <h3 data-i18n="p-linux-tech1-title">基于 Debian 的系统</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">常见问题解答</span>
       <h2 data-i18n="p-linux-faq-title">Linux 常见问题</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-linux-faq1-q">AppImage 还是 .deb——该用哪个？</summary>
         <p data-i18n="p-linux-faq1-a">在 Debian、Ubuntu、Mint 及其衍生版上使用 .deb，以获得菜单集成和干净的卸载。其他情况，或想要零占用安装时，使用 AppImage。</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-linux-faq3-a">可以。加密备份在所有桌面平台之间都可移植。在一台机器上创建备份，在另一台机器上用主密码恢复即可。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-linux-rel-title">相关页面</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-linux-rel-title">相关页面</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/zh/guvenlik/dogrulama/" data-i18n="p-linux-rel1">验证你的下载</a>
         <a class="btn btn-ghost" href="/zh/guvenlik/tehdit-modeli/" data-i18n="p-linux-rel2">威胁模型</a>
         <a class="btn btn-ghost" href="/zh/eklenti/" data-i18n="p-linux-rel3">浏览器扩展</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/zh/download/" data-i18n="cta-dl">下载</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">查看源代码</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/zh/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">产品</h2>
         <ul>
-          <li><a href="/zh/" data-i18n="nav-products">产品</a></li>
           <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
-          <li><a href="/zh/#security" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
           <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">法律法规</h2>
         <ul>
           <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
           <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
-      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言：</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/zh/download/" data-i18n="hero-btn-dl">下载安装包</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -37,7 +37,7 @@
       "heroShot": {
         "src": "/assets/images/app-security.webp",
         "w": 1800,
-        "h": 666
+        "h": 893
       },
       "secTitle": "What this protection does not cover",
       "secLabel": "The honest part",
@@ -92,17 +92,17 @@
     },
     "tr": {
       "title": "Güvenlik Genel Bakışı — KalderaShield",
-      "description": "KalderaShield kasınızı nasıl korur: cihazda-önce tasarım, kayıt başına AES-256-GCM şifreleme, Argon2id anahtar türetme, donanımla sarılmış kolay kilit açma ve herkese açık tehdit modeli.",
+      "description": "KalderaShield kasanızı nasıl korur: yerel-öncelikli tasarım, kayıt başına AES-256-GCM şifreleme, Argon2id anahtar türetme ve açık tehdit modeli.",
       "eyebrow": "Güvenlik / Genel Bakış",
       "h1": "Güvenlik cihazınızda başlar",
-      "lead": "KalderaShield yerel-öncelikli bir parola yöneticisidir: kasınız cihazınızda yaşar, şifreleme orada yapılır ve hesap ya da bulut kopyası gerekmez. Bu bölüm o korumanın tam olarak nasıl çalıştığını — ve nerede bittiğini — açıklar.",
+      "lead": "KalderaShield yerel-öncelikli bir parola yöneticisidir: kasanız cihazınızda yaşar, şifreleme orada yapılır ve hesap ya da bulut kopyası gerekmez. Bu bölüm o korumanın tam olarak nasıl çalıştığını — ve nerede bittiğini — açıklar.",
       "primary": "Tehdit modelini okuyun",
       "secondary": "Kaynağı inceleyin",
       "primaryHref": "/guvenlik/tehdit-modeli/",
       "whatLabel": "Tasarım nedir",
       "whatTitle": "Sızmaya açılacak sunucusu olmayan bir kasa",
       "what": [
-        "KalderaShield hesabı yoktur, sunucu tarafında kasa kopyası yoktur. Şifreli kasanız cihazınızda ve siz isterseniz kendinizin taşıdığı şifreli yedek dosyalarında saklanır. Saldırgan, var olmayan bir sunucuyu sızamaz.",
+        "KalderaShield hesabı yoktur, sunucu tarafında kasa kopyası yoktur. Şifreli kasanız cihazınızda ve siz isterseniz kendinizin taşıdığı şifreli yedek dosyalarında saklanır. Saldırgan, var olmayan bir sunucuya sızamaz.",
         "Her kayıt ayrı şifrelenir. HKDF-SHA256 ile her kayda özgü 256 bitlik bir AES-256-GCM anahtarı türetilir; bir öğenin çözülmesi başka hiçbir öğeyi ele vermez. Başlıklar, kullanıcı adları, parolalar ve notlar düz metin olarak yalnızca kimliği doğrulanmış şifreli yükün içinde bulunur.",
         "Ana parola Argon2id ile uzatılır — masaüstünde ve Android'de 64 MiB bellek, 4 iterasyon, 2 hat — ve parametreler kasanın içinde saklanır; böylece mevcut bir kasa sessizce zayıflamaz.",
         "Üretim derlemeleri hava boşluğu politikası arkasında çalışır: beklenmeyen giden fetch, WebSocket, WebRTC ve benzeri çağrılar engellenir ve günlüğe yazılır. Tek ağ trafiği, SHA-1 karmasının yalnızca ilk beş karakterini gönderen Have I Been Pwned aralık sorgusudur; parolanız asla gönderilmez."
@@ -115,7 +115,7 @@
         },
         {
           "title": "Donanım yalnızca kolaylığı sarar",
-          "desc": "Windows Hello (TPM 2.0), macOS Touch ID (Secure Enclave), Android BiometricPrompt (AndroidKeyStore) ve PRF yetenekli FIDO2 anahtarları kilit açma yükünü sarmalar. Kasa dosyası asla donanıma mühürlenmez; cihaz kaybı sizi asla kilitler."
+          "desc": "Windows Hello (TPM 2.0), macOS Touch ID (Secure Enclave), Android BiometricPrompt (AndroidKeyStore) ve PRF yetenekli FIDO2 anahtarları kilit açma yükünü sarmalar. Kasa dosyası asla donanıma mühürlenmez; cihaz kaybı sizi asla dışarıda bırakmaz."
         },
         {
           "title": "Sınırlar yazılıdır",
@@ -125,9 +125,9 @@
       "heroShot": {
         "src": "/assets/images/app-security.webp",
         "w": 1800,
-        "h": 666
+        "h": 893
       },
-      "secTitle": "Bu koruma nelere kapsamaz",
+      "secTitle": "Bu koruma neleri kapsamaz",
       "secLabel": "Dürüst kısım",
       "secBody": "Hiçbir yerel uygulama, ele geçirilmiş bir cihazdaki kasayı koruyamaz: kasa açıkken OS hesabınızla çalışan kötü amaçlı yazılım, tuş kaydediciler, yetkili ekran yakalama ve bellek incelemesi bu modelin dışındadır. Donanım kilit açma bir kolaylık sarmalayıcısıdır, ana parolanın yerine geçmez. Bağımsız bir üçüncü taraf denetimi henüz tamamlanmadı — bu gizlenmiyor, açıkça yazılıyor.",
       "tech": [

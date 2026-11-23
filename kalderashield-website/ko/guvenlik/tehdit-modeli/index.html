@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/tehdit-modeli/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="언어 선택">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">KO</span>
+          <span data-lang-current="">한국어</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-audit.webp" width="1800" height="884" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-audit.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — 방어하는 것과 방어하지 않는 것">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-tehdit-modeli-p3">신뢰 경계는 명시적입니다. 브라우저류 저장소 API는 영속 저장이지 비밀 저장이 아닌 것으로 봅니다. OPFS와 localStorage 폴백은 앱이 암호화하지 않았다면 저장 시점에 공격자가 읽을 수 있는 것으로 취급합니다. 가져온 CSV/JSON 데이터와 사용자가 선택한 백업 파일은 파싱되고 검증되기 전까지는 신뢰할 수 없는 입력입니다.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-tehdit-modeli-steps-title">세 단계의 방어</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-steps-title">세 단계의 방어</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-tehdit-modeli-step1-title">방어됨</h3>
           <p data-i18n="p-tehdit-modeli-step1-desc">비밀번호 없이 복사된 암호화된 .ks 백업. 잠긴 상태에서 영속화된 데이터베이스 페이로드 읽기. AES-GCM 백업이나 첨부 파일 페이로드 변조. 형식이 잘못된 가져오기 파일. 앱이 잠긴 후의 짧은 물리적 접근.</p>
@@ -220,7 +222,7 @@
         <p data-i18n="p-tehdit-modeli-sec-body">네이티브 메시징 브리지는 로컬 루프백 TCP(127.0.0.1, 포트 49155–49165)에만 바인딩하고, OS가 보호하는 파일에 저장된 256비트 CSPRNG 페어링 토큰으로 인증한 뒤, HKDF-SHA256으로 파생한 세션 키 아래에서 모든 프레임을 XChaCha20-Poly1305로 암호화합니다. 캐시된 자격 증명에는 5분 임대가 붙고 만료 시 영(0)으로 지워지며, 넓은 조회는 정제된 메타데이터만 반환해 하나의 메시지로 보관함을 대량 유출할 수 없습니다. 사용자의 OS 권한을 가진 멀웨어는 여전히 토큰 파일을 읽을 수 있습니다. 이 잔여 위험은 부정하지 않고 문서화되어 있습니다.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Sıfırlanan oturum</span>
           <h3 data-i18n="p-tehdit-modeli-tech1-title">메모리 규율</h3>
@@ -244,7 +246,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">자주 묻는 질문</span>
       <h2 data-i18n="p-tehdit-modeli-faq-title">위협 모델에 관하여</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-tehdit-modeli-faq1-q">백신 소프트웨어가 보관함 내용을 탐지할 수 있나요?</summary>
         <p data-i18n="p-tehdit-modeli-faq1-a">아니요. 보관함 파일과 백업은 디스크 위의 암호문이고, 마스터 비밀번호는 sessionStorage를 거치지 않습니다. 보관함이 잠금 해제된 상태에서 사용자 세션에서 실행되는 멀웨어는 다른 문제로, 명시적으로 범위 밖입니다.</p>
       </details>
@@ -257,13 +259,13 @@
         <p data-i18n="p-tehdit-modeli-faq3-a">네. 모든 릴리스에서 검토되며, 잔여 위험 대장은 알려진 각 결함과 그 상태, 계획된 완화 방안을 기록합니다. 확장 프로그램 자동 입력 경로에서 수용되고 문서화된 트레이드오프도 포함됩니다.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-tehdit-modeli-rel-title">관련 페이지</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-rel-title">관련 페이지</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ko/guvenlik/dogrulama/" data-i18n="p-tehdit-modeli-rel1">다운로드 검증</a>
         <a class="btn btn-ghost" href="/ko/guvenlik/denetim-durumu/" data-i18n="p-tehdit-modeli-rel2">감사 현황</a>
         <a class="btn btn-ghost" href="/ko/urun/autofill/" data-i18n="p-tehdit-modeli-rel3">브라우저 확장 프로그램 자동 입력</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ko/download/" data-i18n="cta-dl">다운로드</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">소스 코드 보기</a>
       </div>
@@ -275,20 +277,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ko/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM 및 Argon2id 영지식 암호화 기술로 구동되는 로컬 우선, 오픈소스 차세대 비밀번호 관리자.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM 및 Argon2id 영지식 암호화 기술로 구동되는 로컬 우선, 오픈소스 차세대 비밀번호 관리자.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">제품</h2>
         <ul>
-          <li><a href="/ko/" data-i18n="nav-products">제품</a></li>
           <li><a href="/ko/#features" data-i18n="nav-features">기능</a></li>
-          <li><a href="/ko/#security" data-i18n="nav-security">보안</a></li>
+          <li><a href="/ko/guvenlik/" data-i18n="nav-security">보안</a></li>
+          <li><a href="/ko/eklenti/" data-i18n="nav-extensions">확장 프로그램</a></li>
+          <li><a href="/ko/sss/" data-i18n="nav-faq">자주 묻는 질문</a></li>
+          <li><a href="/ko/kaynak-kodu/" data-i18n="footer-link-source">소스 코드</a></li>
           <li><a href="/ko/download/" data-i18n="nav-download">다운로드</a></li>
         </ul>
       </div>
@@ -306,6 +310,7 @@
         <h2 data-i18n="footer-col4-title">법적 고지</h2>
         <ul>
           <li><a href="/ko/privacy.html" data-i18n="footer-link-privacy">개인정보 처리방침</a></li>
+          <li><a href="/ko/code-signing-policy.html" data-i18n="footer-link-code-signing">코드 서명 정책</a></li>
           <li><a href="/ko/terms.html" data-i18n="footer-link-terms">이용 약관</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -314,7 +319,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 모든 권리 보유.</span>
-      <span data-i18n="footer-langs-label">🌍 12개 언어 지원:</span>
+      <span data-i18n="footer-langs-label">🌍 12개 언어 지원</span>
     </p>
   </div>
 </footer>
@@ -323,8 +328,8 @@
   <a class="btn btn-primary" href="/ko/download/" data-i18n="hero-btn-dl">설치 프로그램 다운로드</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -21,7 +21,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/privacy.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/privacy.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/privacy.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/privacy.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/privacy.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/privacy.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/privacy.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/privacy.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,16 +66,49 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/fr/#features" data-i18n="nav-features">Fonctionnalités</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">Produit</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/fr/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">Coffre de mots de passe</span><span class="menu-d" data-i18n="menu-d-password-vault">Chaque enregistrement chiffré avec sa propre clé</span></a></li>
+        <li><a href="/fr/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Clés d’accès</span><span class="menu-d" data-i18n="menu-d-passkeys">WebAuthn lié à votre propre authentificateur</span></a></li>
+        <li><a href="/fr/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">Historique du coffre</span><span class="menu-d" data-i18n="menu-d-vault-history">Instantanés, corbeille et historique des mots de passe</span></a></li>
+        <li><a href="/fr/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">Audit de sécurité</span><span class="menu-d" data-i18n="menu-d-security-audit">Mots de passe faibles, réutilisés et compromis</span></a></li>
+        <li><a href="/fr/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">Générateur de mots de passe</span><span class="menu-d" data-i18n="menu-d-password-generator">Caractères aléatoires ou phrases Diceware</span></a></li>
+        <li><a href="/fr/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">Déverrouillage et récupération</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">Biométrie, clés de sécurité et kit de 24 mots</span></a></li>
+        <li><a href="/fr/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">Remplissage automatique</span><span class="menu-d" data-i18n="menu-d-autofill">Correspondance eTLD+1, aucune fuite entre sites</span></a></li>
+        <li><a href="/fr/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">Pièces jointes</span><span class="menu-d" data-i18n="menu-d-attachments">Fichiers chiffrés dans le coffre</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/fr/guvenlik/" data-i18n="nav-security">Sécurité</a>
       <a href="/fr/eklenti/" data-i18n="nav-extensions">Extensions</a>
+      <a href="/fr/#comparison" data-i18n="nav-comparison">Comparaison</a>
+      <a href="/fr/guvenlik/denetim-durumu/" data-i18n="nav-audit">Audit</a>
       <a href="/fr/sss/" data-i18n="nav-faq">FAQ</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">Source</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/fr/kaynak-kodu/" data-i18n="footer-link-source">Code Source</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Suivi des Anomalies</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">Discussions</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/fr/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">Télécharger</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Choisir la langue">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">FR</span>
+          <span data-lang-current="">Français</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -137,16 +171,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/fr/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestionnaire de mots de passe local et open-source propulsé par la cryptographie AES-256-GCM et Argon2id zero-knowledge.</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">Produit</h2>
+        <ul>
+          <li><a href="/fr/#features" data-i18n="nav-features">Fonctionnalités</a></li>
+          <li><a href="/fr/guvenlik/" data-i18n="nav-security">Sécurité</a></li>
+          <li><a href="/fr/eklenti/" data-i18n="nav-extensions">Extensions</a></li>
+          <li><a href="/fr/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/fr/kaynak-kodu/" data-i18n="footer-link-source">Code Source</a></li>
+          <li><a href="/fr/download/" data-i18n="nav-download">Télécharger</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">Communauté</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">Code Source</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Suivi des Anomalies</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">Discussions</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">Légal</h2>
+        <ul>
+          <li><a href="/fr/privacy.html" data-i18n="footer-link-privacy">Politique de Confidentialité</a></li>
+          <li><a href="/fr/code-signing-policy.html" data-i18n="footer-link-code-signing">Politique de signature de code</a></li>
+          <li><a href="/fr/terms.html" data-i18n="footer-link-terms">Conditions d'Utilisation</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/fr/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/fr/terms.html" data-i18n="footer-link-terms">Conditions d'Utilisation</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">Code Source</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield. Tous droits réservés.</span>
+      <span data-i18n="footer-langs-label">🌍 Disponible en 12 langues</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

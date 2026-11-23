@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>What we defend against — and what we do not — KalderaShield</title>
-<meta name="description" content="A password manager that claims to stop every attack is lying to you. This page is the public summary of the desktop threat model: the attacks the design">
+<meta name="description" content="A password manager that claims to stop every attack is lying to you. This page is the public summary of the desktop threat model: the attacks the design…">
 <link rel="canonical" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="What we defend against — and what we do not — KalderaShield">
-<meta property="og:description" content="A password manager that claims to stop every attack is lying to you. This page is the public summary of the desktop threat model: the attacks the design">
+<meta property="og:description" content="A password manager that claims to stop every attack is lying to you. This page is the public summary of the desktop threat model: the attacks the design…">
 <meta property="og:url" content="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/tehdit-modeli/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Choose language">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">EN</span>
+          <span data-lang-current="">English</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-audit.webp" width="1800" height="884" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-audit.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — What we defend against — and what we do not">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-tehdit-modeli-p3">Trust boundaries are explicit. Browser-like storage APIs count as persistence, not secret storage. OPFS and localStorage fallbacks are treated as attacker-readable at rest unless the app encrypted them. Imported CSV/JSON data and user-selected backup files are untrusted input until parsed and validated.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-tehdit-modeli-steps-title">Three tiers of defence</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-steps-title">Three tiers of defence</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-tehdit-modeli-step1-title">Defended</h3>
           <p data-i18n="p-tehdit-modeli-step1-desc">A copied encrypted .ks backup without its password. Reading the persisted database payload while locked. Tampering with AES-GCM backup or attachment payloads. Malformed import files. Brief physical access after the app has locked.</p>
@@ -220,7 +222,7 @@
         <p data-i18n="p-tehdit-modeli-sec-body">The native messaging bridge binds only to local loopback TCP (127.0.0.1, port range 49155–49165), authenticates with a 256-bit CSPRNG pairing token stored in an OS-protected file, and then encrypts every frame with XChaCha20-Poly1305 under a session key derived with HKDF-SHA256. Cached credentials carry a five-minute lease and are zeroized on expiry; broad queries return sanitized metadata so a single message cannot bulk-exfiltrate the vault. Malware with your OS privileges can still read the token file — that residual risk is documented, not denied.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Sıfırlanan oturum</span>
           <h3 data-i18n="p-tehdit-modeli-tech1-title">Memory discipline</h3>
@@ -244,7 +246,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Frequently Asked Questions</span>
       <h2 data-i18n="p-tehdit-modeli-faq-title">About the threat model</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-tehdit-modeli-faq1-q">Can antivirus software detect my vault contents?</summary>
         <p data-i18n="p-tehdit-modeli-faq1-a">No. The vault file and backups are ciphertext on disk, and the master password never touches sessionStorage. Malware running in your own session while the vault is unlocked is a different question — that is explicitly out of scope.</p>
       </details>
@@ -257,13 +259,13 @@
         <p data-i18n="p-tehdit-modeli-faq3-a">Yes. It is reviewed on every release, and a residual-risk register records each known gap, its status and the planned mitigation — including an accepted, documented trade-off in the extension autofill path.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-tehdit-modeli-rel-title">Related pages</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-rel-title">Related pages</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/en/guvenlik/dogrulama/" data-i18n="p-tehdit-modeli-rel1">Verify your download</a>
         <a class="btn btn-ghost" href="/en/guvenlik/denetim-durumu/" data-i18n="p-tehdit-modeli-rel2">Audit status</a>
         <a class="btn btn-ghost" href="/en/urun/autofill/" data-i18n="p-tehdit-modeli-rel3">Browser extension autofill</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/en/download/" data-i18n="cta-dl">Download</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Read the source</a>
       </div>
@@ -275,20 +277,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/en/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Local-first, open-source credentials manager powered by AES-256-GCM and Argon2id zero-knowledge cryptography.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Local-first, open-source credentials manager powered by AES-256-GCM and Argon2id zero-knowledge cryptography.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Product</h2>
         <ul>
-          <li><a href="/en/" data-i18n="nav-products">Product</a></li>
           <li><a href="/en/#features" data-i18n="nav-features">Features</a></li>
-          <li><a href="/en/#security" data-i18n="nav-security">Security</a></li>
+          <li><a href="/en/guvenlik/" data-i18n="nav-security">Security</a></li>
+          <li><a href="/en/eklenti/" data-i18n="nav-extensions">Extensions</a></li>
+          <li><a href="/en/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/en/kaynak-kodu/" data-i18n="footer-link-source">Source Code</a></li>
           <li><a href="/en/download/" data-i18n="nav-download">Download</a></li>
         </ul>
       </div>
@@ -306,6 +310,7 @@
         <h2 data-i18n="footer-col4-title">Legal</h2>
         <ul>
           <li><a href="/en/privacy.html" data-i18n="footer-link-privacy">Privacy Policy</a></li>
+          <li><a href="/en/code-signing-policy.html" data-i18n="footer-link-code-signing">Code signing policy</a></li>
           <li><a href="/en/terms.html" data-i18n="footer-link-terms">Terms of Use</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -314,7 +319,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. All Rights Reserved.</span>
-      <span data-i18n="footer-langs-label">🌍 Available in 12 languages:</span>
+      <span data-i18n="footer-langs-label">🌍 Available in 12 languages</span>
     </p>
   </div>
 </footer>
@@ -323,8 +328,8 @@
   <a class="btn btn-primary" href="/en/download/" data-i18n="hero-btn-dl">Download Installer</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

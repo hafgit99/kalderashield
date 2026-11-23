@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/">
@@ -35,9 +35,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "Organization",
   "name": "KalderaShield",
   "url": "https://kalderashield.com/",
@@ -47,17 +48,19 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "KalderaShield",
   "url": "https://kalderashield.com/",
   "inLanguage": "tr"
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "KalderaShield",
   "url": "https://kalderashield.com/",
   "applicationCategory": "SecurityApplication",
-  "operatingSystem": "Linux, Android",
+  "operatingSystem": "Windows, Linux, Android",
   "softwareVersion": "7.0.31",
   "description": "KalderaShield, internet bağlantısı veya hesap gerektirmeyen, yerel ve açık kaynaklı şifre yöneticisidir. Verileriniz yalnızca kendi cihazınızda kalır.",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -164,29 +167,8 @@
       </div>
 
       <figure class="hero-shot">
-        <img src="/assets/images/app-vault.webp" width="1800" height="893" alt="" fetchpriority="high" decoding="async">
+        <img src="/assets/images/app-vault.webp?v=7.0.31" width="1800" height="893" alt="KalderaShield — Verileriniz Sadece Sizin Cihazınızda Güvende." fetchpriority="high" decoding="async">
       </figure>
-    </div>
-
-    <div class="wrap">
-      <div class="promo-video">
-        <video class="promo-video-el" id="promo-video" controls preload="metadata" playsinline width="1920" height="1080" poster="/assets/video/thumbnail.png" data-i18n-attr="aria-label:promo-video-label" aria-label="KalderaShield tanıtım videosu">
-          <source src="/assets/video/kalderashield-promo.mp4" type="video/mp4">
-          <track kind="subtitles" srclang="en" label="English" src="/assets/video/subs/en.vtt" default>
-          <track kind="subtitles" srclang="tr" label="Türkçe" src="/assets/video/subs/tr.vtt">
-          <track kind="subtitles" srclang="de" label="Deutsch" src="/assets/video/subs/de.vtt">
-          <track kind="subtitles" srclang="fr" label="Français" src="/assets/video/subs/fr.vtt">
-          <track kind="subtitles" srclang="es" label="Español" src="/assets/video/subs/es.vtt">
-          <track kind="subtitles" srclang="pt" label="Português" src="/assets/video/subs/pt.vtt">
-          <track kind="subtitles" srclang="it" label="Italiano" src="/assets/video/subs/it.vtt">
-          <track kind="subtitles" srclang="ru" label="Русский" src="/assets/video/subs/ru.vtt">
-          <track kind="subtitles" srclang="ja" label="日本語" src="/assets/video/subs/ja.vtt">
-          <track kind="subtitles" srclang="ko" label="한국어" src="/assets/video/subs/ko.vtt">
-          <track kind="subtitles" srclang="zh" label="中文" src="/assets/video/subs/zh.vtt">
-          <track kind="subtitles" srclang="ar" label="العربية" src="/assets/video/subs/ar.vtt">
-          <p class="promo-video-fallback"><span data-i18n="promo-video-fallback">Tarayıcınız video etiketini desteklemiyor.</span> <a href="/assets/video/kalderashield-promo.mp4" data-i18n="promo-video-fallback-link">Videoyu indirin</a>.</p>
-        </video>
-      </div>
     </div>
 
     <div class="wrap">
@@ -229,15 +211,15 @@
     <div class="wrap">
       <div class="stats-row">
         <div class="stat">
-          <span class="stat-num" data-count="2474">0</span>
+          <span class="stat-num" data-count="2474">2.474</span>
           <span class="stat-label" data-i18n="stats-tests">birim testi</span>
         </div>
         <div class="stat">
-          <span class="stat-num" data-count="12">0</span>
+          <span class="stat-num" data-count="12">12</span>
           <span class="stat-label" data-i18n="stats-langs">arayüz dili</span>
         </div>
         <div class="stat">
-          <span class="stat-num" data-count="5">0</span>
+          <span class="stat-num" data-count="5">5</span>
           <span class="stat-label" data-i18n="stats-platforms">platform</span>
         </div>
         <div class="stat">
@@ -248,13 +230,36 @@
     </div>
   </section>
 
+  <section id="demo" class="band-demo" aria-label="KalderaShield tanıtım videosu" data-i18n-attr="aria-label:promo-video-label">
+    <div class="wrap">
+      <div class="promo-video">
+        <video class="promo-video-el" id="promo-video" controls preload="none" playsinline width="1920" height="1080" poster="/assets/images/video-poster.webp?v=7.0.31" data-i18n-attr="aria-label:promo-video-label" aria-label="KalderaShield tanıtım videosu">
+          <source src="/assets/video/kalderashield-promo.mp4" type="video/mp4">
+          <track kind="subtitles" srclang="en" label="English" src="/assets/video/subs/en.vtt" default>
+          <track kind="subtitles" srclang="tr" label="Türkçe" src="/assets/video/subs/tr.vtt">
+          <track kind="subtitles" srclang="de" label="Deutsch" src="/assets/video/subs/de.vtt">
+          <track kind="subtitles" srclang="fr" label="Français" src="/assets/video/subs/fr.vtt">
+          <track kind="subtitles" srclang="es" label="Español" src="/assets/video/subs/es.vtt">
+          <track kind="subtitles" srclang="pt" label="Português" src="/assets/video/subs/pt.vtt">
+          <track kind="subtitles" srclang="it" label="Italiano" src="/assets/video/subs/it.vtt">
+          <track kind="subtitles" srclang="ru" label="Русский" src="/assets/video/subs/ru.vtt">
+          <track kind="subtitles" srclang="ja" label="日本語" src="/assets/video/subs/ja.vtt">
+          <track kind="subtitles" srclang="ko" label="한국어" src="/assets/video/subs/ko.vtt">
+          <track kind="subtitles" srclang="zh" label="中文" src="/assets/video/subs/zh.vtt">
+          <track kind="subtitles" srclang="ar" label="العربية" src="/assets/video/subs/ar.vtt">
+          <p class="promo-video-fallback"><span data-i18n="promo-video-fallback">Tarayıcınız video etiketini desteklemiyor.</span> <a href="/assets/video/kalderashield-promo.mp4" data-i18n="promo-video-fallback-link">Videoyu indirin</a>.</p>
+        </video>
+      </div>
+    </div>
+  </section>
+
   <section id="platforms">
     <div class="wrap">
       <span class="eyebrow" data-i18n="platforms-eyebrow">Platform Desteği</span>
       <h2 data-i18n="dl-eyebrow">Hemen Başlayın</h2>
       <p class="prose muted" data-i18n="dl-release-note">İndirmeler GitHub Releases üzerinden sunulur; her sürüm SHA-256 özeti ve imzalarıyla birlikte yayımlanır.</p>
 
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <h3 data-i18n="pl-linux-title">Linux</h3>
           <p data-i18n="pl-linux-desc">DEB, AppImage veya incelenip doğrulanabilen CLI betiği. Tüm dağıtımlar.</p>
@@ -299,11 +304,11 @@
       <h2 data-i18n="feat-title">Güçlü, Esnek ve Tavizsiz</h2>
       <p class="prose muted" data-i18n="feat-desc">Günlük işlerinizi kolaylaştırırken en sıkı güvenlik sınırlarından asla vazgeçmeyen mimari.</p>
 
-      <div class="grid" style="margin-top:1.6rem">
+      <div class="grid mt-md">
         <article class="card">
           <span class="eyebrow" data-i18n="feat-c1-tag">OPFS Sandbox</span>
           <h3 data-i18n="feat-c1-title">Local-First: SQLite &amp; OPFS Sandbox</h3>
-          <p data-i18n="feat-c1-desc">Bilgileriniz uzak sunucularda değil, tarayıcınızın veya Tauri nativo escritorio/Android uygulamasının özel sandboxed dosya sisteminde (Origin Private File System) doğrudan SQLite veritabanında saklanır. Ağ kopukluklarından etkilenmez, verileriniz tamamen yereldir.</p>
+          <p data-i18n="feat-c1-desc">Bilgileriniz uzak sunucularda değil, tarayıcınızın veya Tauri yerel masaüstü/Android uygulamasının özel sandboxed dosya sisteminde (Origin Private File System) doğrudan SQLite veritabanında saklanır. Ağ kopukluklarından etkilenmez, verileriniz tamamen yereldir.</p>
         </article>
 
         <article class="card">
@@ -327,7 +332,7 @@
       <h2 data-i18n="sec-title">Güvenlik Mimarisi</h2>
       <p class="prose muted" data-i18n="sec-desc">Kasa verileri cihazda şifrelenir. Koruma; ana parola gücüne, kasada kayıtlı KDF parametrelerine, cihazın güvenliğine ve uygulamanın kullanımına bağlıdır. Hiçbir kriptografik tasarım tüm saldırı senaryolarında mutlak koruma vaat etmez.</p>
 
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow" data-i18n="sec-c1-tag">AEAD Korumalı</span>
           <h3 data-i18n="sec-c1-title">AES-256-GCM</h3>
@@ -345,7 +350,7 @@
         </article>
       </div>
 
-      <div class="cta-row" style="margin-top:1.8rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/guvenlik/tehdit-modeli/" data-i18n="p-guvenlik-primary">Tehdit modelini okuyun</a>
         <a class="btn btn-ghost" href="/guvenlik/dogrulama/" data-i18n="sec-verify-btn">Doğrulama Rehberini İnceleyin</a>
       </div>
@@ -358,20 +363,20 @@
       <h2 data-i18n="ext-title">Tarayıcınızda Sorunsuz Otomatik Doldurma</h2>
       <p class="prose muted" data-i18n="ext-desc">10.000+ kural Mozilla Public Suffix List (PSL) eTLD+1 eşleme ve kapalı Shadow DOM izolasyonu ile form otomatik doldurma.</p>
 
-      <div class="grid" style="margin-top:1.6rem">
+      <div class="grid mt-md">
         <article class="card">
           <h3>Chrome &amp; Edge</h3>
-          <p data-i18n="ext-c1-desc">Chrome Web Mağazası üzerinden tek tıkla kurulum. Manifest V3, F6 security hardening.</p>
+          <p data-i18n="ext-c1-desc">GitHub Releases üzerinden .zip paketi olarak dağıtılır. Manifest V3, kapalı Shadow DOM izolasyonu ve şifreli yerel köprü.</p>
           <p class="card-action"><a class="btn btn-ghost" href="/download/#browser" data-i18n="ext-c1-btn">Chromium Eklentisini İndir (.zip)</a></p>
         </article>
         <article class="card">
           <h3>Firefox</h3>
-          <p data-i18n="ext-c2-desc">Firefox Eklenti Mağazası (AMO) üzerinden imzalı kurulum. Mozilla'nın katı güvenlik incelemesinden geçti.</p>
+          <p data-i18n="ext-c2-desc">GitHub Releases üzerinden Mozilla imzalı (AMO) .xpi paketi. Firefox 142+ ve üzeri için kalıcı kurulum.</p>
           <p class="card-action"><a class="btn btn-ghost" href="/download/#browser" data-i18n="ext-c2-btn">İmzalı Firefox Eklentisini Yükle (.xpi)</a></p>
         </article>
         <article class="card">
           <h3>Safari</h3>
-          <p data-i18n="ext-c3-desc">Safari için native eklenti. macOS Sonoma ve üzeri için optimize edildi. Apple App Store imzalı.</p>
+          <p data-i18n="ext-c3-desc">GitHub Releases üzerinden Safari WebExtension (.zip) paketi. Apple Developer ID / App Store imzalama süreci devam ediyor.</p>
           <p class="card-action"><a class="btn btn-ghost" href="/download/#browser" data-i18n="ext-c3-btn">Safari Paketini İndir (.zip)</a></p>
         </article>
       </div>
@@ -410,7 +415,7 @@
         </li>
       </ol>
 
-      <div class="cta-row" style="margin-top:1.9rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-ghost" href="/guvenlik/tehdit-modeli/" data-i18n="how-cta">Tehdit modelini okuyun</a>
       </div>
     </div>
@@ -420,7 +425,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="comp-eyebrow">Karşılaştırma Matrisi</span>
       <h2 data-i18n="comp-title">Neden KalderaShield Farklı?</h2>
-      <div style="overflow-x:auto;margin-top:1.4rem">
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -461,10 +466,34 @@
               <td data-check="no" data-i18n="comp-val-no">Hayır</td>
               <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
             </tr>
+            <tr>
+              <th scope="row" data-i18n="comp-row-peritem">Kayıt başına HKDF anahtar izolasyonu</th>
+              <td data-check="yes" data-i18n="comp-val-yes">Evet</td>
+              <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
+              <td data-check="no" data-i18n="comp-val-no">Hayır</td>
+            </tr>
+            <tr>
+              <th scope="row" data-i18n="comp-row-passkeys">Passkey (WebAuthn) ve biyometri</th>
+              <td data-check="yes" data-i18n="comp-val-yes">Evet</td>
+              <td data-check="yes" data-i18n="comp-val-yes">Evet</td>
+              <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
+            </tr>
+            <tr>
+              <th scope="row" data-i18n="comp-row-ext">Kapalı Shadow DOM + eTLD+1 eklenti</th>
+              <td data-check="yes" data-i18n="comp-val-yes">Evet</td>
+              <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
+              <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
+            </tr>
+            <tr>
+              <th scope="row" data-i18n="comp-row-airgap">Air-gap ağ çıkış koruması</th>
+              <td data-check="yes" data-i18n="comp-val-yes">Evet</td>
+              <td data-check="no" data-i18n="comp-val-no">Hayır</td>
+              <td data-check="partial" data-i18n="comp-val-varies">Değişir</td>
+            </tr>
           </tbody>
         </table>
       </div>
-      <p class="faint" style="margin-top:1rem" data-i18n="comp-method-note">Bu tablo, 23 Eylül 2026 itibarıyla yayımlanmış proje belgeleri ve kaynak koduna dayalı mimari özettir; bağımsız karşılaştırmalı test değildir. Diğer ürünlerin özellikleri sürüm, plan ve yapılandırmaya göre değişebilir. Üçüncü taraf özellikleri bu tabloda bağımsız olarak doğrulanmamıştır.</p>
+      <p class="faint mt-sm" data-i18n="comp-method-note">Bu tablo, 23 Eylül 2026 itibarıyla yayımlanmış proje belgeleri ve kaynak koduna dayalı mimari özettir; bağımsız karşılaştırmalı test değildir. Diğer ürünlerin özellikleri sürüm, plan ve yapılandırmaya göre değişebilir. Üçüncü taraf özellikleri bu tabloda bağımsız olarak doğrulanmamıştır.</p>
     </div>
   </section>
 
@@ -474,7 +503,7 @@
       <h2 data-i18n="audit-title">Güvenlik İncelemesi ve Denetim Durumu</h2>
       <p class="prose muted" data-i18n="audit-desc">Güvenlik belgeleri ve dış denetim kapsamı yayımlanmıştır. Tamamlanmış bağımsız üçüncü taraf denetim raporu henüz yayımlanmamıştır.</p>
 
-      <div class="cta-row" style="margin-top:1.4rem">
+      <div class="cta-row mt-md">
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/security/advisories/new" rel="noopener noreferrer" data-i18n="audit-lk-disclose">Zafiyet Bildir</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="audit-lk-commits">İmzalı Commit'ler</a>
       </div>
@@ -484,7 +513,7 @@
   <section class="final-cta">
     <div class="wrap">
       <h2 data-i18n="final-cta-title">Şifrelerinizin Kontrolünü Elinize Alın</h2>
-      <p class="prose muted" data-i18n="final-cta-desc">Ücretsiz, açık kaynak, sunucusuz. İndirin, doğrulayın, kasınızı cihazınızda tutun.</p>
+      <p class="prose muted" data-i18n="final-cta-desc">Ücretsiz, açık kaynak, sunucusuz. İndirin, doğrulayın, kasanızı cihazınızda tutun.</p>
       <div class="cta-row">
         <a class="btn btn-primary btn-lg" href="/download/" data-i18n="hero-btn-dl">Yükleyiciyi İndir</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="hero-btn-git">GitHub'da İncele</a>
@@ -496,12 +525,12 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
       </div>
 
       <div>
@@ -538,7 +567,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tüm Hakları Saklıdır.</span>
-      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut:</span>
+      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut</span>
     </p>
   </div>
 </footer>
@@ -553,8 +582,8 @@
   <a class="btn btn-primary" href="/download/" data-i18n="hero-btn-dl">Yükleyiciyi İndir</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

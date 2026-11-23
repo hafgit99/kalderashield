@@ -10,14 +10,14 @@
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
-<title>Rellenar contraseñas es el momento más arriesgado. Para eso diseñamos.</title>
-<meta name="description" content="La extensión de KalderaShield es una compañera de Manifest V3 para Chromium y Firefox. Rellena credenciales solo en sitios que puede vincular a un">
+<title>Rellenar contraseñas es el momento más arriesgado. Para eso diseñamos</title>
+<meta name="description" content="La extensión de KalderaShield es una compañera de Manifest V3 para Chromium y Firefox.">
 <link rel="canonical" href="https://kalderashield.com/es/eklenti/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
-<meta property="og:title" content="Rellenar contraseñas es el momento más arriesgado. Para eso diseñamos.">
-<meta property="og:description" content="La extensión de KalderaShield es una compañera de Manifest V3 para Chromium y Firefox. Rellena credenciales solo en sitios que puede vincular a un">
+<meta property="og:title" content="Rellenar contraseñas es el momento más arriesgado. Para eso diseñamos">
+<meta property="og:description" content="La extensión de KalderaShield es una compañera de Manifest V3 para Chromium y Firefox.">
 <meta property="og:url" content="https://kalderashield.com/es/eklenti/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/eklenti/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/eklenti/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/eklenti/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/eklenti/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/eklenti/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/eklenti/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/eklenti/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/eklenti/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Elegir idioma">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ES</span>
+          <span data-lang-current="">Español</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/ext-autofill.webp" width="540" height="510" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/ext-autofill.webp?v=7.0.31" width="540" height="510" loading="eager" decoding="async" alt="KalderaShield — Rellenar contraseñas es el momento más arriesgado. Para eso diseñamos.">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-eklenti-p3">El diálogo de emparejamiento del lado del escritorio debe aceptarse antes de que el puente funcione en absoluto, las credenciales se arriendan al puente por períodos de cinco minutos y se ponen a cero al caducar, y una acción de revocación borra el arrendamiento y rota el token de emparejamiento de inmediato.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-eklenti-steps-title">Cómo ocurre un relleno</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-eklenti-steps-title">Cómo ocurre un relleno</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-eklenti-step1-title">El sitio pide, la extensión comprueba</h3>
           <p data-i18n="p-eklenti-step1-desc">El content script encuentra un formulario de inicio de sesión en la página en la que estás y se lo pide al worker en segundo plano. El worker valida la URL de la pestaña contra los registros que puede ofrecer: el mismo eTLD+1 o una coincidencia guardada explícitamente.</p>
@@ -220,7 +222,7 @@
         <p data-i18n="p-eklenti-sec-body">La extensión no guarda ninguna bóveda: es una ventana hacia la aplicación de escritorio, y sin el escritorio emparejado en marcha no tiene nada que dar. No sincroniza nada con ningún servidor, no lee las páginas en las que no la hayas activado, y un malware con tus privilegios del sistema operativo podría alcanzar el archivo del token de emparejamiento; es un riesgo residual documentado en el modelo de amenazas, no negado.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Manifest V3</span>
           <h3 data-i18n="p-eklenti-tech1-title">Permisos mínimos</h3>
@@ -244,7 +246,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Preguntas Frecuentes</span>
       <h2 data-i18n="p-eklenti-faq-title">Preguntas sobre la extensión</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-eklenti-faq1-q">¿Puede la extensión funcionar sin la aplicación de escritorio?</summary>
         <p data-i18n="p-eklenti-faq1-a">No, por diseño. No guarda ninguna copia de la bóveda, así que un portátil robado con la extensión instalada sigue sin tener nada. Todo lo que puede ofrecer llega en vivo de la sesión de escritorio emparejada, bloqueada o desbloqueada.</p>
       </details>
@@ -257,13 +259,13 @@
         <p data-i18n="p-eklenti-faq3-a">No. El content script está activo en páginas http/https, pero solo reacciona a los formularios de inicio de sesión y a tus peticiones explícitas desde la ventana emergente o el teclado. No hay ningún registro de pulsaciones de teclas.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-eklenti-rel-title">Páginas relacionadas</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-eklenti-rel-title">Páginas relacionadas</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/es/urun/autofill/" data-i18n="p-eklenti-rel1">El relleno automático en detalle</a>
         <a class="btn btn-ghost" href="/es/guvenlik/tehdit-modeli/" data-i18n="p-eklenti-rel2">Modelo de amenazas: puente con la extensión</a>
         <a class="btn btn-ghost" href="/es/download/" data-i18n="p-eklenti-rel3">Descargar la extensión</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/es/download/" data-i18n="cta-dl">Descargar</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Leer el código fuente</a>
       </div>
@@ -275,20 +277,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/es/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Gestor de contraseñas local y de código abierto respaldado por criptografía zero-knowledge AES-256-GCM y Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestor de contraseñas local y de código abierto respaldado por criptografía zero-knowledge AES-256-GCM y Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Producto</h2>
         <ul>
-          <li><a href="/es/" data-i18n="nav-products">Producto</a></li>
           <li><a href="/es/#features" data-i18n="nav-features">Funciones</a></li>
-          <li><a href="/es/#security" data-i18n="nav-security">Seguridad</a></li>
+          <li><a href="/es/guvenlik/" data-i18n="nav-security">Seguridad</a></li>
+          <li><a href="/es/eklenti/" data-i18n="nav-extensions">Extensiones</a></li>
+          <li><a href="/es/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/es/kaynak-kodu/" data-i18n="footer-link-source">Código Fuente</a></li>
           <li><a href="/es/download/" data-i18n="nav-download">Descargar</a></li>
         </ul>
       </div>
@@ -306,6 +310,7 @@
         <h2 data-i18n="footer-col4-title">Legal</h2>
         <ul>
           <li><a href="/es/privacy.html" data-i18n="footer-link-privacy">Política de Privacidad</a></li>
+          <li><a href="/es/code-signing-policy.html" data-i18n="footer-link-code-signing">Política de firma de código</a></li>
           <li><a href="/es/terms.html" data-i18n="footer-link-terms">Términos de Uso</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -314,7 +319,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Todos los derechos reservados.</span>
-      <span data-i18n="footer-langs-label">🌍 Disponible en 12 idiomas:</span>
+      <span data-i18n="footer-langs-label">🌍 Disponible en 12 idiomas</span>
     </p>
   </div>
 </footer>
@@ -323,8 +328,8 @@
   <a class="btn btn-primary" href="/es/download/" data-i18n="hero-btn-dl">Descargar Instalador</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

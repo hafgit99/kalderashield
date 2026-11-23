@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Заполнение паролей — самый рискованный момент. Мы спроектировали</title>
-<meta name="description" content="Расширение KalderaShield — спутник на Manifest V3 для Chromium и Firefox. Оно заполняет учётные данные только на сайтах, которые может привязать к">
+<meta name="description" content="Расширение KalderaShield — спутник на Manifest V3 для Chromium и Firefox. Оно заполняет учётные данные только на сайтах, которые может привязать к…">
 <link rel="canonical" href="https://kalderashield.com/ru/eklenti/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Заполнение паролей — самый рискованный момент. Мы спроектировали">
-<meta property="og:description" content="Расширение KalderaShield — спутник на Manifest V3 для Chromium и Firefox. Оно заполняет учётные данные только на сайтах, которые может привязать к">
+<meta property="og:description" content="Расширение KalderaShield — спутник на Manifest V3 для Chromium и Firefox. Оно заполняет учётные данные только на сайтах, которые может привязать к…">
 <meta property="og:url" content="https://kalderashield.com/ru/eklenti/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/eklenti/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/eklenti/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/eklenti/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/eklenti/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/eklenti/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/eklenti/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/eklenti/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/eklenti/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Выбрать язык">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">RU</span>
+          <span data-lang-current="">Русский</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/ext-autofill.webp" width="540" height="510" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/ext-autofill.webp?v=7.0.31" width="540" height="510" loading="eager" decoding="async" alt="KalderaShield — Заполнение паролей — самый рискованный момент. Мы спроектировали продукт именно под него.">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-eklenti-p3">Диалог сопряжения на стороне настольного приложения должен быть принят, прежде чем мост заработает вообще; учётные данные передаются мосту в аренду на пять минут за раз и обнуляются по истечении срока, а действие отзыва стирает аренду и немедленно заменяет токен сопряжения.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-eklenti-steps-title">Как происходит заполнение</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-eklenti-steps-title">Как происходит заполнение</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-eklenti-step1-title">Сайт спрашивает, расширение проверяет</h3>
           <p data-i18n="p-eklenti-step1-desc">Контентный скрипт находит форму входа на текущей странице и спрашивает фоновый воркер. Воркер сверяет URL вкладки с записями, которые вправе предложить, — тот же eTLD+1 или явно сохранённое соответствие.</p>
@@ -220,7 +222,7 @@
         <p data-i18n="p-eklenti-sec-body">Расширение не хранит хранилище: это окно в настольное приложение, и без работающего сопряжённого десктопа ему нечего выдать. Оно ничего не синхронизирует ни с каким сервером, не читает страницы, на которых вы его не активировали, а вредоносное ПО с вашими привилегиями ОС могло бы добраться до файла токена сопряжения — остаточный риск, задокументированный в модели угроз, а не отрицаемый.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Manifest V3</span>
           <h3 data-i18n="p-eklenti-tech1-title">Минимальные разрешения</h3>
@@ -244,7 +246,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Часто задаваемые вопросы</span>
       <h2 data-i18n="p-eklenti-faq-title">Вопросы о расширении</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-eklenti-faq1-q">Может ли расширение работать без настольного приложения?</summary>
         <p data-i18n="p-eklenti-faq1-a">Нет, по проекту. Оно не хранит копию хранилища, поэтому украденный ноутбук с установленным расширением всё равно не содержит ничего. Всё, что оно может предложить, приходит живьём от сопряжённого настольного сеанса, заблокированного или разблокированного.</p>
       </details>
@@ -257,13 +259,13 @@
         <p data-i18n="p-eklenti-faq3-a">Нет. Контентный скрипт активен на страницах HTTP/HTTPS, но реагирует только на формы входа и на ваши явные запросы через всплывающее окно или клавиатуру. Никакой регистрации нажатий клавиш нет.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-eklenti-rel-title">Связанные страницы</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-eklenti-rel-title">Связанные страницы</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ru/urun/autofill/" data-i18n="p-eklenti-rel1">Автозаполнение подробно</a>
         <a class="btn btn-ghost" href="/ru/guvenlik/tehdit-modeli/" data-i18n="p-eklenti-rel2">Модель угроз: мост расширения</a>
         <a class="btn btn-ghost" href="/ru/download/" data-i18n="p-eklenti-rel3">Скачать расширение</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ru/download/" data-i18n="cta-dl">Скачать</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Посмотреть исходный код</a>
       </div>
@@ -275,20 +277,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ru/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Локальный менеджер паролей с открытым исходным кодом на базе криптографии zero-knowledge AES-256-GCM и Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Локальный менеджер паролей с открытым исходным кодом на базе криптографии zero-knowledge AES-256-GCM и Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Продукт</h2>
         <ul>
-          <li><a href="/ru/" data-i18n="nav-products">Продукт</a></li>
           <li><a href="/ru/#features" data-i18n="nav-features">Возможности</a></li>
-          <li><a href="/ru/#security" data-i18n="nav-security">Безопасность</a></li>
+          <li><a href="/ru/guvenlik/" data-i18n="nav-security">Безопасность</a></li>
+          <li><a href="/ru/eklenti/" data-i18n="nav-extensions">Расширения</a></li>
+          <li><a href="/ru/sss/" data-i18n="nav-faq">Вопросы и ответы</a></li>
+          <li><a href="/ru/kaynak-kodu/" data-i18n="footer-link-source">Исходный код</a></li>
           <li><a href="/ru/download/" data-i18n="nav-download">Скачать</a></li>
         </ul>
       </div>
@@ -306,6 +310,7 @@
         <h2 data-i18n="footer-col4-title">Правовая информация</h2>
         <ul>
           <li><a href="/ru/privacy.html" data-i18n="footer-link-privacy">Политика конфиденциальности</a></li>
+          <li><a href="/ru/code-signing-policy.html" data-i18n="footer-link-code-signing">Политика подписания кода</a></li>
           <li><a href="/ru/terms.html" data-i18n="footer-link-terms">Условия использования</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -314,7 +319,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Все права защищены.</span>
-      <span data-i18n="footer-langs-label">🌍 Доступно на 12 языках:</span>
+      <span data-i18n="footer-langs-label">🌍 Доступно на 12 языках</span>
     </p>
   </div>
 </footer>
@@ -323,8 +328,8 @@
   <a class="btn btn-primary" href="/ru/download/" data-i18n="hero-btn-dl">Скачать установщик</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

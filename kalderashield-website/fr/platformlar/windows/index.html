@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>KalderaShield sous Windows</title>
-<meta name="description" content="Windows 10 et 11 sur x64 sont pris en charge avec trois formes d’installation : un assistant d’installation NSIS standard, un package MSI pour le">
+<meta name="description" content="Windows 10 et 11 sur x64 sont pris en charge avec trois formes d’installation : un assistant d’installation NSIS standard, un package MSI pour le…">
 <link rel="canonical" href="https://kalderashield.com/fr/platformlar/windows/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="KalderaShield sous Windows">
-<meta property="og:description" content="Windows 10 et 11 sur x64 sont pris en charge avec trois formes d’installation : un assistant d’installation NSIS standard, un package MSI pour le">
+<meta property="og:description" content="Windows 10 et 11 sur x64 sont pris en charge avec trois formes d’installation : un assistant d’installation NSIS standard, un package MSI pour le…">
 <meta property="og:url" content="https://kalderashield.com/fr/platformlar/windows/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/windows/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/windows/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/windows/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/windows/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/windows/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/windows/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/windows/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/windows/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Choisir la langue">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">FR</span>
+          <span data-lang-current="">Français</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-windows-p3">Les protections propres à Windows sont actives : les fenêtres sont demandées avec WDA_EXCLUDEFROMCAPTURE, ce qui tient l’application hors des captures d’écran ordinaires, des enregistrements d’écran et de l’aperçu du sélecteur de tâches, et Windows Hello enveloppe la charge utile de déverrouillage de confort avec un authentificateur de plateforme adossé à un TPM 2.0.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-windows-steps-title">Démarrer sous Windows</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-steps-title">Démarrer sous Windows</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-windows-step1-title">Télécharger et vérifier</h3>
           <p data-i18n="p-windows-step1-desc">Récupérez l’installateur depuis la page de téléchargement, puis comparez son hachage SHA-256 à la ligne correspondante dans SHA256SUMS.txt avant de l’exécuter.</p>
@@ -208,10 +210,10 @@
       <h2 data-i18n="p-windows-sec-title">Ce qu’il faut savoir côté Windows</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">Signatures et SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Les installeurs Windows sont publiés en <strong>aperçu non signé</strong> et ne portent pas de signature Authenticode. Il n'y a pas de certificat de signature : la chaîne de publication traite une version de bureau non signée comme un échec, donc l'aperçu est marqué comme <em>préversion</em> et <code>latest</code> ne pointe pas dessus. Les fichiers non signés déclenchent l'avertissement SmartScreen « Votre PC est protégé », et vous devrez cliquer sur « Informations » → « Exécuter quand même » pour lancer l'installeur ; c'est attendu. Vérifiez la somme SHA-256 dans SHA256SUMS.txt avant l'installation. Une candidature auprès de la SignPath Foundation pour la signature open source gratuite a été préparée mais pas encore déposée ; dès que la signature sera possible, les versions suivantes seront signées et cet avertissement disparaîtra.</p>
+        <p data-i18n="p-windows-sec-body">Les installateurs Windows sont publiés dans la même sortie que les autres plateformes (<code>latest</code> pointe vers eux), mais ils sont actuellement <strong>non signés</strong> et sans signature Authenticode. Windows SmartScreen affiche un avertissement (« Informations complémentaires » → « Exécuter quand même »). Vérifiez l'empreinte SHA-256 avec SHA256SUMS.txt avant l'installation. La demande auprès de la SignPath Foundation <strong>n'a pas encore été soumise</strong> ; dès qu'un certificat sera en place, cet avertissement disparaîtra.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Windows 10 / 11</span>
           <h3 data-i18n="p-windows-tech1-title">Architecture x64</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Foire Aux Questions</span>
       <h2 data-i18n="p-windows-faq-title">Questions Windows</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-windows-faq1-q">Setup.exe, MSI ou portable — que choisir ?</summary>
         <p data-i18n="p-windows-faq1-a">Pour une machine personnelle, l’assistant d’installation. Pour un déploiement géré, le MSI. Pour une clé USB ou une machine où vous préférez ne rien installer, l’exécutable portable.</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-windows-faq3-a">Oui. Exportez une sauvegarde chiffrée .ks, déplacez-la et restaurez-la avec le mot de passe principal. Le fichier du coffre est portable, lié ni à une machine ni à une forme d’installation.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-windows-rel-title">Pages liées</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-rel-title">Pages liées</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/fr/guvenlik/dogrulama/" data-i18n="p-windows-rel1">Vérifier votre téléchargement</a>
         <a class="btn btn-ghost" href="/fr/guvenlik/" data-i18n="p-windows-rel2">Vue d’ensemble de la sécurité</a>
         <a class="btn btn-ghost" href="/fr/eklenti/" data-i18n="p-windows-rel3">Extension de navigateur</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/fr/download/" data-i18n="cta-dl">Télécharger</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Lire le code source</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/fr/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Gestionnaire de mots de passe local et open-source propulsé par la cryptographie AES-256-GCM et Argon2id zero-knowledge.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestionnaire de mots de passe local et open-source propulsé par la cryptographie AES-256-GCM et Argon2id zero-knowledge.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Produit</h2>
         <ul>
-          <li><a href="/fr/" data-i18n="nav-products">Produit</a></li>
           <li><a href="/fr/#features" data-i18n="nav-features">Fonctionnalités</a></li>
-          <li><a href="/fr/#security" data-i18n="nav-security">Sécurité</a></li>
+          <li><a href="/fr/guvenlik/" data-i18n="nav-security">Sécurité</a></li>
+          <li><a href="/fr/eklenti/" data-i18n="nav-extensions">Extensions</a></li>
+          <li><a href="/fr/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/fr/kaynak-kodu/" data-i18n="footer-link-source">Code Source</a></li>
           <li><a href="/fr/download/" data-i18n="nav-download">Télécharger</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">Légal</h2>
         <ul>
           <li><a href="/fr/privacy.html" data-i18n="footer-link-privacy">Politique de Confidentialité</a></li>
+          <li><a href="/fr/code-signing-policy.html" data-i18n="footer-link-code-signing">Politique de signature de code</a></li>
           <li><a href="/fr/terms.html" data-i18n="footer-link-terms">Conditions d'Utilisation</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tous droits réservés.</span>
-      <span data-i18n="footer-langs-label">🌍 Disponible en 12 langues :</span>
+      <span data-i18n="footer-langs-label">🌍 Disponible en 12 langues</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/fr/download/" data-i18n="hero-btn-dl">Télécharger l'installateur</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

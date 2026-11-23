@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/tehdit-modeli/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/tehdit-modeli/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/tehdit-modeli/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-audit.webp" width="1800" height="884" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-audit.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — Neye karşı savunuyoruz — neye karşı savunmuyoruz">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-tehdit-modeli-p3">Güven sınırları açıkça yazılıdır. Tarayıcı türü depolama API'leri kalıcılık sayılır, gizli depolama değil. OPFS ve localStorage yedekleri, uygulama şifrelemediyse dinlenme halinde saldırgan-okunur kabul edilir. İçe aktarılan CSV/JSON verisi ve kullanıcı seçimli yedek dosyaları, ayrıştırılıp doğrulanana kadar güvenilmeyen girdidir.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-tehdit-modeli-steps-title">Üç katmanlı savunma</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-steps-title">Üç katmanlı savunma</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-tehdit-modeli-step1-title">Savunulan</h3>
           <p data-i18n="p-tehdit-modeli-step1-desc">Parolası bilinmeyen kopyalanmış şifreli .ks yedeği. Kilitliyken kalıcı veritabanı yükünün okunması. AES-GCM yedek veya ek yüklerinin kurcalanması. Bozuk içe aktarma dosyaları. Uygulama kilitlendikten sonra kısa süreli fiziksel erişim.</p>
@@ -220,7 +222,7 @@
         <p data-i18n="p-tehdit-modeli-sec-body">Native messaging köprüsü yalnızca yerel loopback TCP'ye (127.0.0.1, 49155–49165 port aralığı) bağlanır, OS-korumalı bir dosyada saklanan 256 bitlik CSPRNG eşleştirme jetonuyla kimlik doğrular ve ardından her çerçeveyi HKDF-SHA256 ile türetilen oturum anahtarı altında XChaCha20-Poly1305 ile şifreler. Önbellekteki kimlik bilgileri beş dakikalık kiraya tabidir ve süresi dolunca sıfırlanır; geniş sorgular temizlenmiş üst veri döndürür, böylece tek bir ileti kasayı topluca ele geçiremez. OS yetkiniz olan kötü amaçlı yazılım jeton dosyasını yine de okuyabilir — bu artık risk inkâr edilmez, belgelenir.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Sıfırlanan oturum</span>
           <h3 data-i18n="p-tehdit-modeli-tech1-title">Bellek disiplini</h3>
@@ -244,7 +246,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Sıkça Sorulan Sorular</span>
       <h2 data-i18n="p-tehdit-modeli-faq-title">Tehdit modeli hakkında</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-tehdit-modeli-faq1-q">Antivirüs yazılımı kasa içeriğimi görebilir mi?</summary>
         <p data-i18n="p-tehdit-modeli-faq1-a">Hayır. Kasa dosyası ve yedekler diskte şifreli metindir ve ana parola sessionStorage'a hiç dokunmaz. Kasa açıkken kendi oturumunuzda çalışan kötü amaçlı yazılım başka bir sorudur — o açıkça kapsam dışıdır.</p>
       </details>
@@ -257,13 +259,13 @@
         <p data-i18n="p-tehdit-modeli-faq3-a">Evet. Her sürümde gözden geçirilir ve bir artık-risk kaydı, bilinen her boşluğun durumunu ve planlanan önlemi tutar — eklenti otomatik doldurma yolundaki kabul edilmiş, belgelenmiş bir ödünleşim dahil.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-tehdit-modeli-rel-title">İlgili sayfalar</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-tehdit-modeli-rel-title">İlgili sayfalar</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/guvenlik/dogrulama/" data-i18n="p-tehdit-modeli-rel1">İndirdiğinizi doğrulayın</a>
         <a class="btn btn-ghost" href="/guvenlik/denetim-durumu/" data-i18n="p-tehdit-modeli-rel2">Denetim durumu</a>
         <a class="btn btn-ghost" href="/urun/autofill/" data-i18n="p-tehdit-modeli-rel3">Tarayıcı eklentisi otomatik doldurma</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/download/" data-i18n="cta-dl">İndir</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Kaynağı incele</a>
       </div>
@@ -275,20 +277,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Ürün</h2>
         <ul>
-          <li><a href="/" data-i18n="nav-products">Ürün</a></li>
           <li><a href="/#features" data-i18n="nav-features">Özellikler</a></li>
-          <li><a href="/#security" data-i18n="nav-security">Güvenlik</a></li>
+          <li><a href="/guvenlik/" data-i18n="nav-security">Güvenlik</a></li>
+          <li><a href="/eklenti/" data-i18n="nav-extensions">Eklentiler</a></li>
+          <li><a href="/sss/" data-i18n="nav-faq">SSS</a></li>
+          <li><a href="/kaynak-kodu/" data-i18n="footer-link-source">Kaynak Kodları</a></li>
           <li><a href="/download/" data-i18n="nav-download">İndir</a></li>
         </ul>
       </div>
@@ -306,6 +310,7 @@
         <h2 data-i18n="footer-col4-title">Yasal</h2>
         <ul>
           <li><a href="/privacy.html" data-i18n="footer-link-privacy">Gizlilik Politikası</a></li>
+          <li><a href="/code-signing-policy.html" data-i18n="footer-link-code-signing">Kod İmza Politikası</a></li>
           <li><a href="/terms.html" data-i18n="footer-link-terms">Kullanım Şartları</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -314,7 +319,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tüm Hakları Saklıdır.</span>
-      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut:</span>
+      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut</span>
     </p>
   </div>
 </footer>
@@ -323,8 +328,8 @@
   <a class="btn btn-primary" href="/download/" data-i18n="hero-btn-dl">Yükleyiciyi İndir</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

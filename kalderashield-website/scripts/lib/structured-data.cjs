@@ -87,6 +87,7 @@ function breadcrumbs(doc, dict, locale, source, pagePath, homePath) {
   if (items.length < 2) return null;
 
   return {
+    '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: items.map((item, i) => ({
       '@type': 'ListItem',
@@ -99,6 +100,7 @@ function breadcrumbs(doc, dict, locale, source, pagePath, homePath) {
 
 function organization(homeUrl) {
   return {
+    '@context': 'https://schema.org',
     '@type': 'Organization',
     name: BRAND,
     url: homeUrl,
@@ -109,6 +111,7 @@ function organization(homeUrl) {
 
 function webSite(homeUrl, locale) {
   return {
+    '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: BRAND,
     url: homeUrl,
@@ -119,14 +122,14 @@ function webSite(homeUrl, locale) {
 function softwareApplication(doc, homeUrl, description) {
   const version = (doc.documentElement.getAttribute('data-site-version') || '').trim();
   return {
+    '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: BRAND,
     url: homeUrl,
     applicationCategory: 'SecurityApplication',
-    /* Only what is actually published. The download page says Windows and macOS
-     * are not out yet, and an operatingSystem list naming them would contradict
-     * the page it sits on. */
-    operatingSystem: 'Linux, Android',
+    /* Only platforms actually published on GitHub Releases (macOS stays out
+     * until signed builds ship). */
+    operatingSystem: 'Windows, Linux, Android',
     ...(version ? { softwareVersion: version } : {}),
     ...(description ? { description } : {}),
     license: 'https://www.apache.org/licenses/LICENSE-2.0',
@@ -149,7 +152,7 @@ function faqPage(doc) {
     });
   }
   if (!pairs.length) return null;
-  return { '@type': 'FAQPage', mainEntity: pairs };
+  return { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: pairs };
 }
 
 /* Replaces any existing block, so re-running cannot stack two of them. */
@@ -159,10 +162,10 @@ function apply(doc, blocks) {
   const head = doc.querySelector('head');
   if (!head) return;
 
+  head.innerHTML = head.innerHTML.replace(LD_RE, '');
   const kept = blocks.filter(Boolean);
   if (!kept.length) return;
 
-  head.innerHTML = head.innerHTML.replace(LD_RE, '');
   const payload = kept
     .map((b) => '<script type="application/ld+json">' + JSON.stringify(b, null, 2) + '</script>')
     .join('\n');
@@ -172,6 +175,11 @@ function apply(doc, blocks) {
 /* Everything one page needs, in one place, so the generator and the audit call
  * exactly the same rules. */
 function forPage(doc, { locale, source, pagePath, homePath, dict, description }) {
+  if (pagePath === '/404.html') {
+    apply(doc, []);
+    return;
+  }
+
   const homeUrl = localeUrl(locale, source, homePath);
   const isHome = pagePath === homePath;
   const url = localeUrl(locale, source, pagePath);

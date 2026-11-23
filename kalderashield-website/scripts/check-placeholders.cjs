@@ -78,6 +78,7 @@ const ALLOWED_HOSTS = new Set([
   'www.apache.org',
   'www.w3.org',
   'www.sitemaps.org',
+  'schema.org',
   'signpath.io',
   'signpath.org',
 ]);

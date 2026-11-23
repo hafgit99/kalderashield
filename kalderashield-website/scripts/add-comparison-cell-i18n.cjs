@@ -51,6 +51,38 @@ const ROWS = {
     es: 'Código abierto', it: 'Open source', pt: 'Código aberto', ru: 'Открытый исходный код',
     ja: 'オープンソース', ko: '오픈 소스', zh: '开源', ar: 'مفتوح المصدر',
   },
+  'comp-row-peritem': {
+    tr: 'Kayıt başına HKDF anahtar izolasyonu', en: 'Per-record HKDF key isolation',
+    de: 'HKDF-Schlüsselisolation pro Eintrag', fr: 'Isolation de clé HKDF par entrée',
+    es: 'Aislamiento de clave HKDF por registro', it: 'Isolamento chiave HKDF per voce',
+    pt: 'Isolamento de chave HKDF por item', ru: 'Изоляция ключей HKDF на запись',
+    ja: '項目ごとの HKDF 鍵分離', ko: '항목별 HKDF 키 격리',
+    zh: '逐条记录 HKDF 密钥隔离', ar: 'عزل مفاتيح HKDF لكل سجل',
+  },
+  'comp-row-passkeys': {
+    tr: 'Passkey (WebAuthn) ve biyometri', en: 'Passkeys (WebAuthn) & biometrics',
+    de: 'Passkeys (WebAuthn) & Biometrie', fr: 'Passkeys (WebAuthn) et biométrie',
+    es: 'Passkeys (WebAuthn) y biometría', it: 'Passkey (WebAuthn) e biometria',
+    pt: 'Passkeys (WebAuthn) e biometria', ru: 'Passkeys (WebAuthn) и биометрия',
+    ja: 'Passkey（WebAuthn）と生体認証', ko: 'Passkey(WebAuthn) 및 생체 인증',
+    zh: 'Passkey (WebAuthn) 与生物识别', ar: 'مفاتيح المرور (WebAuthn) والقياسات الحيوية',
+  },
+  'comp-row-ext': {
+    tr: 'Kapalı Shadow DOM + eTLD+1 eklenti', en: 'Closed Shadow DOM + eTLD+1 extension',
+    de: 'Geschlossenes Shadow DOM + eTLD+1', fr: 'Shadow DOM fermé + extension eTLD+1',
+    es: 'Shadow DOM cerrado + extensión eTLD+1', it: 'Shadow DOM chiuso + estensione eTLD+1',
+    pt: 'Shadow DOM fechado + extensão eTLD+1', ru: 'Закрытый Shadow DOM + eTLD+1',
+    ja: 'クローズド Shadow DOM + eTLD+1 拡張', ko: '폐쇄형 Shadow DOM + eTLD+1 확장',
+    zh: '封闭 Shadow DOM + eTLD+1 扩展', ar: 'إضافة Shadow DOM مغلق + eTLD+1',
+  },
+  'comp-row-airgap': {
+    tr: 'Air-gap ağ çıkış koruması', en: 'Air-gap network egress policy',
+    de: 'Air-Gap-Netzwerkausgangsrichtlinie', fr: 'Politique réseau air-gap sortante',
+    es: 'Política de salida de red air-gap', it: 'Politica di uscita di rete air-gap',
+    pt: 'Política de saída de rede air-gap', ru: 'Политика исходящей сети Air-Gap',
+    ja: 'エアギャップ通信制御ポリシー', ko: '에어갭 네트워크 송신 차단 정책',
+    zh: '气隙网络出站阻断策略', ar: 'سياسة حظر الاتصال الصادر (Air-Gap)',
+  },
 };
 
 const VALUES = {

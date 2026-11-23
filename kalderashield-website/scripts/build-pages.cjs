@@ -47,8 +47,8 @@ const blocks = {
   what: (c, k) => c.what.map((p) => `<p data-i18n="${k}-p${c.what.indexOf(p) + 1}">${esc(p)}</p>`).join('\n        '),
 
   steps: (c, k) => `
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="${k}-steps-title">${esc(c.stepsTitle)}</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="${k}-steps-title">${esc(c.stepsTitle)}</h3>
+      <div class="grid mt-sm">
         ${c.steps
           .map(
             (s, i) => `<article class="card">
@@ -63,7 +63,7 @@ const blocks = {
     c.heroShot
       ? `
       <figure class="shot-hero">
-        <img class="shot" src="${c.heroShot.src}" width="${c.heroShot.w}" height="${c.heroShot.h}" loading="eager" decoding="async" alt="">
+        <img class="shot" src="${c.heroShot.src}" width="${c.heroShot.w}" height="${c.heroShot.h}" loading="eager" decoding="async" alt="${esc(c.h1)}">
       </figure>`
       : '',
 
@@ -75,7 +75,7 @@ const blocks = {
       ${c.shots
         .map(
           (s) => `<figure class="shot-pair">
-        <img class="shot" src="${s.src}" width="${s.w}" height="${s.h}" loading="lazy" decoding="async" alt="">
+        <img class="shot" src="${s.src}" width="${s.w}" height="${s.h}" loading="lazy" decoding="async" alt="${esc(s.title)}">
         <figcaption>
           <h3 data-i18n="${k}-shot-title">${esc(s.title)}</h3>
           <p data-i18n="${k}-shot-desc">${esc(s.desc)}</p>
@@ -90,7 +90,7 @@ const blocks = {
   tech: (c, k) => {
     if (!c.tech || !c.tech.length) return '';
     return `
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         ${c.tech
           .map(
             (t, i) => `<article class="card">
@@ -116,8 +116,8 @@ const blocks = {
   related: (c, k) => {
     if (!c.related || !c.related.length) return '';
     return `
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="${k}-rel-title">${esc(c.relatedTitle)}</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="${k}-rel-title">${esc(c.relatedTitle)}</h3>
+      <div class="cta-row mt-xs">
         ${c.related
           .map((r, i) => `<a class="btn btn-ghost" href="${r.href}" data-i18n="${k}-rel${i + 1}">${esc(r.label)}</a>`)
           .join('\n        ')}
@@ -255,10 +255,27 @@ function megaMenu(dict, pageList) {
  * and are cut outright rather than searched for a boundary that does not exist.
  */
 function clamp(text, limit) {
-  if (text.length <= limit) return text;
-  const cut = text.slice(0, limit);
+  const s = String(text || '').replace(/\s+/g, ' ').trim();
+  if (s.length <= limit) return s;
+  const slice = s.slice(0, limit);
+  const sentenceEnd = Math.max(
+    slice.lastIndexOf('. '),
+    slice.lastIndexOf('! '),
+    slice.lastIndexOf('? '),
+    slice.lastIndexOf('。'),
+    slice.lastIndexOf('！'),
+    slice.lastIndexOf('？')
+  );
+  if (sentenceEnd >= Math.floor(limit * 0.55)) {
+    const ch = slice[sentenceEnd];
+    return slice.slice(0, sentenceEnd + 1).trim();
+  }
+  const cut = s.slice(0, limit - 1);
   const space = cut.lastIndexOf(' ');
-  return (space > limit * 0.6 ? cut.slice(0, space) : cut).trim();
+  let out = (space > limit * 0.55 ? cut.slice(0, space) : cut).trim();
+  out = out.replace(/[,;:\-–—\s]+$/, '');
+  out = out.replace(/\s+(?:or|and|of|to|the|a|an|in|on|for|with|ve|veya|ile|de|da|und|oder|et|ou|y|o|e|di|per|para|com|или|и)$/i, '');
+  return out + '…';
 }
 
 function render(page, locale, dict, pageList) {
@@ -500,13 +517,15 @@ function patchMenu(file, base, pageList, dicts) {
   fs.writeFileSync(file, html.slice(0, a + START.length) + block + html.slice(b), 'utf8');
 }
 
-/* Four hand-written pages take the same block. 404.html is here because it used
- * to ship with no header at all, and a page whose menu is missing the download
- * cannot be counted as "every page". */
+/* All six hand-written pages take the same unified primary navigation block so
+ * legal pages, 404, download and homepage never drift apart. */
 patchMenu(path.join(root, 'index.html'), '', pageList, dicts);
 patchMenu(path.join(root, 'download', 'index.html'), '/', pageList, dicts);
 patchMenu(path.join(root, '404.html'), '/', pageList, dicts);
-console.log(`menuler guncellendi (${pageList.length} urun, 3 sayfa)`);
+patchMenu(path.join(root, 'privacy.html'), '/', pageList, dicts);
+patchMenu(path.join(root, 'terms.html'), '/', pageList, dicts);
+patchMenu(path.join(root, 'code-signing-policy.html'), '/', pageList, dicts);
+console.log(`menuler guncellendi (${pageList.length} urun, 6 sayfa)`);
 
 /* The sitemap is derived from the same page list, so a new page cannot be
  * shipped without its search entry. The domain comes from site.config.json, so

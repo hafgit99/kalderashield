@@ -56,6 +56,7 @@ const TYPES = {
   '.png': 'image/png',
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
   '.vtt': 'text/vtt; charset=utf-8',
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',

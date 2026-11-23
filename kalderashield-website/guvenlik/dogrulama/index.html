@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>İndirdiğinizi Doğrulayın — KalderaShield</title>
-<meta name="description" content="KalderaShield indirmesini doğrulama: SHA-256 sağlama toplamları, minisign güncelleme imzaları, cosign sürüm imzalama ve Windows SmartScreen imzasız kurucuyu uyardığında">
+<meta name="description" content="KalderaShield indirmesini doğrulama: SHA-256 sağlama toplamları, minisign güncelleme imzaları, cosign sürüm imzalama ve Windows SmartScreen imzasız kurucuyu uyardığında…">
 <link rel="canonical" href="https://kalderashield.com/guvenlik/dogrulama/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="İndirdiğinizi Doğrulayın — KalderaShield">
-<meta property="og:description" content="KalderaShield indirmesini doğrulama: SHA-256 sağlama toplamları, minisign güncelleme imzaları, cosign sürüm imzalama ve Windows SmartScreen imzasız kurucuyu uyardığında">
+<meta property="og:description" content="KalderaShield indirmesini doğrulama: SHA-256 sağlama toplamları, minisign güncelleme imzaları, cosign sürüm imzalama ve Windows SmartScreen imzasız kurucuyu uyardığında…">
 <meta property="og:url" content="https://kalderashield.com/guvenlik/dogrulama/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/dogrulama/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/dogrulama/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/dogrulama/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/dogrulama/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -189,8 +191,8 @@
         <p data-i18n="p-dogrulama-p4">Dürüst bir not: kod imzalama sertifikası var olmadığından, CI'dan derlediğiniz veya indirdiğiniz Windows kurucuları Authenticode açısından imzasızdır. İmza kapısı onları herkese açık sürümlerden uzak tutar; bir derlemeden elde ettiyseniz çalıştırmadan önce SHA-256 karmasını doğrulayın.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-dogrulama-steps-title">Üç adımda doğrulama</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-steps-title">Üç adımda doğrulama</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-dogrulama-step1-title">Dosyanızın karmasını hesaplayın</h3>
           <p data-i18n="p-dogrulama-step1-desc">Windows'ta PowerShell'de Get-FileHash çalıştırın. Linux ve macOS'ta sha256sum veya shasum -a 256 çalıştırın. Çıktıyı SHA256SUMS.txt'deki eşleşen satırla karşılaştırın.</p>
@@ -218,7 +220,7 @@
         <p data-i18n="p-dogrulama-sec-body">İndirme itibarı olmayan imzasız bir çalıştırılabilir, Windows SmartScreen'in ve antivirüs sezgisellerinin uyarması beklenen dosya görünümüdür — bu, sertifikanın olmayışının maliyetidir, kötü amaçlı yazılım kanıtı değil. SHA-256 karmasını doğrulayın; antivirüsünüz yayımlanan sağlama ile eşleşen bir karmayı hâlâ işaretliyorsa üreticisine yanlış pozitif olarak bildirin. Depodaki derleme iş akışı yorumları bu sınırlamayı açıkça belgeler.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">SHA-256</span>
           <h3 data-i18n="p-dogrulama-tech1-title">Bütünlük</h3>
@@ -242,7 +244,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Sıkça Sorulan Sorular</span>
       <h2 data-i18n="p-dogrulama-faq-title">Doğrulama hakkında</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-dogrulama-faq1-q">Windows "PC'niz korundu" diyor. Ne yapmalıyım?</summary>
         <p data-i18n="p-dogrulama-faq1-a">Bu, SmartScreen'in imzasız dosyaya verdiği tepedir, virüs raporu değildir. SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. Eşleşiyorsa dosya boru hattının çıktısıdır; uyarı, sürümler imza sertifikası taşıdığında kalıcı olarak kalkar.</p>
       </details>
@@ -255,13 +257,13 @@
         <p data-i18n="p-dogrulama-faq3-a">Kaynaktan derleyin: depo, belgelenmiş npm ve cargo komutlarıyla derlenir ve yerel sürüm betiği kendi sağlama toplamlarıyla aynı dosya adlandırmasını üretir.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-dogrulama-rel-title">İlgili sayfalar</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-rel-title">İlgili sayfalar</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/download/#verify" data-i18n="p-dogrulama-rel1">İndirin ve doğrulayın</a>
         <a class="btn btn-ghost" href="/guvenlik/denetim-durumu/" data-i18n="p-dogrulama-rel2">Denetim durumu</a>
         <a class="btn btn-ghost" href="/guvenlik/" data-i18n="p-dogrulama-rel3">Güvenlik genel bakışı</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/download/" data-i18n="cta-dl">İndir</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Kaynağı incele</a>
       </div>
@@ -273,20 +275,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Ürün</h2>
         <ul>
-          <li><a href="/" data-i18n="nav-products">Ürün</a></li>
           <li><a href="/#features" data-i18n="nav-features">Özellikler</a></li>
-          <li><a href="/#security" data-i18n="nav-security">Güvenlik</a></li>
+          <li><a href="/guvenlik/" data-i18n="nav-security">Güvenlik</a></li>
+          <li><a href="/eklenti/" data-i18n="nav-extensions">Eklentiler</a></li>
+          <li><a href="/sss/" data-i18n="nav-faq">SSS</a></li>
+          <li><a href="/kaynak-kodu/" data-i18n="footer-link-source">Kaynak Kodları</a></li>
           <li><a href="/download/" data-i18n="nav-download">İndir</a></li>
         </ul>
       </div>
@@ -304,6 +308,7 @@
         <h2 data-i18n="footer-col4-title">Yasal</h2>
         <ul>
           <li><a href="/privacy.html" data-i18n="footer-link-privacy">Gizlilik Politikası</a></li>
+          <li><a href="/code-signing-policy.html" data-i18n="footer-link-code-signing">Kod İmza Politikası</a></li>
           <li><a href="/terms.html" data-i18n="footer-link-terms">Kullanım Şartları</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -312,7 +317,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tüm Hakları Saklıdır.</span>
-      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut:</span>
+      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut</span>
     </p>
   </div>
 </footer>
@@ -321,8 +326,8 @@
   <a class="btn btn-primary" href="/download/" data-i18n="hero-btn-dl">Yükleyiciyi İndir</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

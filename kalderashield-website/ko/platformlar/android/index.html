@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/android/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/android/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/android/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/android/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/android/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/android/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/android/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/android/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="언어 선택">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">KO</span>
+          <span data-lang-current="">한국어</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-android-p3">Android는 기본 액티비티에 FLAG_SECURE를 설정하여 앱이 스크린샷, 화면 녹화, 최근 앱 미리보기에 노출되지 않도록 합니다. 가져오기와 내보내기는 시스템 문서 선택기를 통하므로, 읽고 쓰는 모든 위치는 사용자가 직접 선택한 곳입니다.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-android-steps-title">Android에서 시작하기</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-android-steps-title">Android에서 시작하기</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-android-step1-title">서명된 APK 설치</h3>
           <p data-i18n="p-android-step1-desc">선택한 파일 경로에서의 설치를 허용하고, APK를 설치한 뒤 게시된 체크섬과 SHA-256 해시를 비교하여 검증합니다.</p>
@@ -211,7 +213,7 @@
         <p data-i18n="p-android-sec-body">Android 생체 인증 동작은 OEM 빌드마다 다릅니다. 따라서 공개 릴리스 게이팅은 프로덕션 생체 인증 주장에 앞서 명시적인 기기 매트릭스 근거(Pixel, Samsung, Xiaomi, Android 12–15)를 요구하며, 이 페이지는 플랫폼 계약이 보장하는 범위를 넘어서는 주장을 하지 않습니다. Android Credential Provider를 통한 패스키 채우기는 현재 릴리스 경계 밖에 있습니다.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">AndroidKeyStore</span>
           <h3 data-i18n="p-android-tech1-title">하드웨어에 묶인 래핑</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">자주 묻는 질문</span>
       <h2 data-i18n="p-android-faq-title">Android 관련 질문</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-android-faq1-q">어떤 Android 버전이 지원되나요?</summary>
         <p data-i18n="p-android-faq1-a">Android 7.0(API 24) 이상이며, API 35를 대상으로 합니다. 생체 인증 센서가 없는 기기에서도 마스터 비밀번호만으로 사용할 수 있습니다.</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-android-faq3-a">네. 문서 선택기를 통해 암호화된 .ks 백업을 내보내고, 편한 방법으로 파일을 옮긴 뒤 데스크톱에서 마스터 비밀번호로 복원하면 됩니다.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-android-rel-title">더 깊이 들어가기</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-android-rel-title">더 깊이 들어가기</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ko/guvenlik/tehdit-modeli/" data-i18n="p-android-rel1">위협 모델</a>
         <a class="btn btn-ghost" href="/ko/guvenlik/dogrulama/" data-i18n="p-android-rel2">다운로드 검증</a>
         <a class="btn btn-ghost" href="/ko/platformlar/windows/" data-i18n="p-android-rel3">Windows 플랫폼 페이지</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ko/download/" data-i18n="cta-dl">다운로드</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">소스 코드 보기</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ko/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM 및 Argon2id 영지식 암호화 기술로 구동되는 로컬 우선, 오픈소스 차세대 비밀번호 관리자.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM 및 Argon2id 영지식 암호화 기술로 구동되는 로컬 우선, 오픈소스 차세대 비밀번호 관리자.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">제품</h2>
         <ul>
-          <li><a href="/ko/" data-i18n="nav-products">제품</a></li>
           <li><a href="/ko/#features" data-i18n="nav-features">기능</a></li>
-          <li><a href="/ko/#security" data-i18n="nav-security">보안</a></li>
+          <li><a href="/ko/guvenlik/" data-i18n="nav-security">보안</a></li>
+          <li><a href="/ko/eklenti/" data-i18n="nav-extensions">확장 프로그램</a></li>
+          <li><a href="/ko/sss/" data-i18n="nav-faq">자주 묻는 질문</a></li>
+          <li><a href="/ko/kaynak-kodu/" data-i18n="footer-link-source">소스 코드</a></li>
           <li><a href="/ko/download/" data-i18n="nav-download">다운로드</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">법적 고지</h2>
         <ul>
           <li><a href="/ko/privacy.html" data-i18n="footer-link-privacy">개인정보 처리방침</a></li>
+          <li><a href="/ko/code-signing-policy.html" data-i18n="footer-link-code-signing">코드 서명 정책</a></li>
           <li><a href="/ko/terms.html" data-i18n="footer-link-terms">이용 약관</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 모든 권리 보유.</span>
-      <span data-i18n="footer-langs-label">🌍 12개 언어 지원:</span>
+      <span data-i18n="footer-langs-label">🌍 12개 언어 지원</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/ko/download/" data-i18n="hero-btn-dl">설치 프로그램 다운로드</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>
