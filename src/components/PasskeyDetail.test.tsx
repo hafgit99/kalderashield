@@ -159,4 +159,52 @@ describe('PasskeyDetail', () => {
     expect(screen.getAllByTitle('Copy').length).toBeGreaterThan(0);
     expect(screen.getByTitle('Hide')).toBeTruthy();
   });
+
+  it('renders dedicated WebAuthn metadata instead of manual secret placeholders for WebAuthn passkeys', () => {
+    const onCopyText = vi.fn();
+    const onToggleReveal = vi.fn();
+    const webAuthnItem: VaultItem = {
+      id: 'webauthn-1',
+      title: 'Local Test',
+      username: 'alice@localhost',
+      url: 'https://localhost',
+      category: 'passkey',
+      createdAt: '2026-06-10T12:00:00.000Z',
+      updatedAt: '2026-06-11T12:00:00.000Z',
+      passkeyCredentialId: 'cred-abc-123',
+      passkeyRpId: 'localhost',
+      passkeyRpName: 'KalderaShield Local',
+      passkeyUserName: 'alice@localhost',
+      passkeyAlgorithm: 'ES256',
+      passkeySignCount: 4,
+      passkeyAttachment: 'platform',
+      passkeyTransports: ['internal'],
+      passkeyPublicKey: 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtestkey',
+      passkeyPrivateKeyBundle: { iv: '00', tag: '00', ciphertext: 'AA' },
+    };
+
+    render(
+      <PasskeyDetail
+        item={webAuthnItem}
+        copiedField={null}
+        isPrivateExponentRevealed={false}
+        onToggleReveal={onToggleReveal}
+        onCopyText={onCopyText}
+      />,
+    );
+
+    expect(screen.getByTestId('webauthn-passkey-detail')).toBeTruthy();
+    expect(screen.getByTestId('passkey-rp-name-value').textContent).toBe('KalderaShield Local');
+    expect(screen.getByTestId('passkey-rp-id-value').textContent).toBe('localhost');
+    expect(screen.getByTestId('passkey-algorithm-value').textContent).toBe('ES256');
+    expect(screen.getByTestId('passkey-credential-id-value').textContent).toBe('cred-abc-123');
+    expect(screen.getByTestId('passkey-sign-count-value').textContent).toBe('4');
+    expect(screen.getByTestId('passkey-attachment-value').textContent).toBe('Platform');
+    expect(screen.queryByText('(Değer Girilmedi)')).toBeNull();
+    expect(screen.queryByText('MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtestkey')).toBeNull();
+
+    const copyButtons = screen.getAllByTitle('Kopyala');
+    fireEvent.click(copyButtons[1]!);
+    expect(onCopyText).toHaveBeenCalledWith('cred-abc-123', 'passkeyCredentialId');
+  });
 });

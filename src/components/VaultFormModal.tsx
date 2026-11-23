@@ -355,7 +355,7 @@ export default function VaultFormModal({
         : category === 'card'
           ? normalizedCardNumber
           : category === 'passkey'
-            ? normalizedPasskeyPublicId
+            ? (normalizedPasskeyPublicId || (editingItem?.passkeyCredentialId ? (editingItem.passkeyUserName || editingItem.username || '') : ''))
             : normalizedIdNumber,
       password,
       url: url.trim(),
@@ -383,10 +383,27 @@ export default function VaultFormModal({
       idExpiryDate: idExpiryDate.trim(),
       idGender,
 
-      // Passkey Fields
+      // Passkey Fields (manual secure keys)
       passkeyService: passkeyService.trim(),
       passkeyPrivateExponent: passkeyPrivateExponent.trim(),
       passkeyPublicId: normalizedPasskeyPublicId,
+
+      // Preserve WebAuthn Passkey Fields when editing an existing WebAuthn item
+      ...(editingItem?.passkeyCredentialId ? {
+        passkeyCredentialId: editingItem.passkeyCredentialId,
+        passkeyPublicKey: editingItem.passkeyPublicKey,
+        passkeyRpId: editingItem.passkeyRpId,
+        passkeyRpName: editingItem.passkeyRpName,
+        passkeyUserName: editingItem.passkeyUserName,
+        passkeyUserHandle: editingItem.passkeyUserHandle,
+        passkeyAlgorithm: editingItem.passkeyAlgorithm,
+        passkeySignCount: editingItem.passkeySignCount,
+        passkeyAttachment: editingItem.passkeyAttachment,
+        passkeyTransports: editingItem.passkeyTransports,
+        passkeyCreatedAt: editingItem.passkeyCreatedAt,
+        passkeyLastUsedAt: editingItem.passkeyLastUsedAt,
+        passkeyPrivateKeyBundle: editingItem.passkeyPrivateKeyBundle,
+      } : {}),
 
       // Attachments linking
       attachmentId: attachmentIdToSave,

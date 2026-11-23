@@ -360,9 +360,10 @@ export async function registerPasskey(input: RegisterPasskeyInput): Promise<Regi
   const alg = response.getPublicKeyAlgorithm?.();
   const algorithm = coseAlgToPasskeyAlgorithm(typeof alg === 'number' ? alg : COSE_ALG_ES256);
 
-  // The browser does not expose the raw private key. The platform
-  // authenticator remains the source of truth for signing; the wrapped JWK
-  // is a recovery handle keyed by the credential id.
+  // The browser never exposes the hardware authenticator's raw private key.
+  // The platform/roaming authenticator remains the sole holder of the signing
+  // key; this vault-key-wrapped JSON is a metadata handle bound to the
+  // credential id (not an exportable private key).
   const recoveryJwk = { kty: 'recovery', alg: 'A256GCM', kid: credentialId } as unknown as JsonWebKey;
   const wrapped = await withActiveVaultEncryptionKey(async (vaultKey) => {
     if (!vaultKey) throw new PasskeyError(passkeyErrorCodes.sessionMissing);
@@ -377,8 +378,12 @@ export async function registerPasskey(input: RegisterPasskeyInput): Promise<Regi
     } catch { return undefined; }
   })();
 
+  // Per WebAuthn Level 2/3, authenticatorAttachment lives on PublicKeyCredential
+  // itself, not on AuthenticatorAttestationResponse (keep response fallback for legacy stubs).
   const attachment = (() => {
-    const raw = (response as unknown as { authenticatorAttachment?: string }).authenticatorAttachment;
+    const raw =
+      (credential as unknown as { authenticatorAttachment?: string }).authenticatorAttachment
+      ?? (response as unknown as { authenticatorAttachment?: string }).authenticatorAttachment;
     if (raw === 'platform' || raw === 'cross-platform') return raw;
     return undefined;
   })();

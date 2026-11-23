@@ -76,13 +76,15 @@ describe('useSettingsPasskey', () => {
       { wrapper },
     );
 
+    let created = false;
     await act(async () => {
-      await result.current.handleCreatePasskey({
+      created = await result.current.handleCreatePasskey({
         rpId: 'example.com',
         userName: 'alice@example.com',
       } as any);
     });
 
+    expect(created).toBe(true);
     expect(result.current.passkeyStatusKey).toBe('passkey.create.success');
     expect(result.current.passkeyStatusKind).toBe('success');
     expect(onDatabaseChanged).toHaveBeenCalled();
@@ -98,13 +100,15 @@ describe('useSettingsPasskey', () => {
       { wrapper },
     );
 
+    let created = true;
     await act(async () => {
-      await result.current.handleCreatePasskey({
+      created = await result.current.handleCreatePasskey({
         rpId: 'example.com',
         userName: 'alice@example.com',
       } as any);
     });
 
+    expect(created).toBe(false);
     expect(result.current.passkeyStatusKey).toBe('passkey.create.cancelled');
     expect(result.current.passkeyStatusKind).toBe('error');
 

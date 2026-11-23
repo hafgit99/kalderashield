@@ -844,5 +844,67 @@ describe('VaultFormModal', () => {
     fireEvent.change(passwordInput, { target: { value: 'P@ssw0rd!LongSecureToken2026' } });
     expect(passwordInput.value).toBe('P@ssw0rd!LongSecureToken2026');
   });
+
+  it('preserves WebAuthn passkey fields and username when editing an existing WebAuthn passkey item', async () => {
+    const onSave = vi.fn<(item: VaultItem) => Promise<void>>(async () => undefined);
+    const webAuthnItem: VaultItem = {
+      id: 'webauthn-item-1',
+      title: 'Local Passkey',
+      username: 'alice@localhost',
+      password: '',
+      url: 'https://localhost',
+      notes: '',
+      createdAt: '2026-06-10T00:00:00.000Z',
+      updatedAt: '2026-06-10T00:00:00.000Z',
+      category: 'passkey',
+      passkeyCredentialId: 'cred-xyz-999',
+      passkeyPublicKey: 'spki-base64url-pubkey',
+      passkeyRpId: 'localhost',
+      passkeyRpName: 'KalderaShield Local',
+      passkeyUserName: 'alice@localhost',
+      passkeyUserHandle: 'dXNlci0x',
+      passkeyAlgorithm: 'ES256',
+      passkeySignCount: 7,
+      passkeyAttachment: 'platform',
+      passkeyTransports: ['internal'],
+      passkeyCreatedAt: '2026-06-10T00:00:00.000Z',
+      passkeyLastUsedAt: '2026-06-11T00:00:00.000Z',
+      passkeyPrivateKeyBundle: { iv: 'aabb', tag: 'ccdd', ciphertext: 'ZWVmZg==' },
+    };
+
+    render(
+      <VaultFormModal
+        isOpen={true}
+        editingItem={webAuthnItem}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />,
+    );
+
+    const titleInput = screen.getByTestId('vault-item-title-input') as HTMLInputElement;
+    fireEvent.change(titleInput, { target: { value: 'Local Passkey (Updated)' } });
+    submitForm();
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+
+    const saved = onSave.mock.calls[0]![0] as VaultItem;
+    expect(saved.title).toBe('Local Passkey (Updated)');
+    expect(saved.username).toBe('alice@localhost');
+    expect(saved.passkeyCredentialId).toBe('cred-xyz-999');
+    expect(saved.passkeyPublicKey).toBe('spki-base64url-pubkey');
+    expect(saved.passkeyRpId).toBe('localhost');
+    expect(saved.passkeyRpName).toBe('KalderaShield Local');
+    expect(saved.passkeyUserName).toBe('alice@localhost');
+    expect(saved.passkeyUserHandle).toBe('dXNlci0x');
+    expect(saved.passkeyAlgorithm).toBe('ES256');
+    expect(saved.passkeySignCount).toBe(7);
+    expect(saved.passkeyAttachment).toBe('platform');
+    expect(saved.passkeyTransports).toEqual(['internal']);
+    expect(saved.passkeyCreatedAt).toBe('2026-06-10T00:00:00.000Z');
+    expect(saved.passkeyLastUsedAt).toBe('2026-06-11T00:00:00.000Z');
+    expect(saved.passkeyPrivateKeyBundle).toEqual({ iv: 'aabb', tag: 'ccdd', ciphertext: 'ZWVmZg==' });
+  });
 });
 

@@ -29,6 +29,154 @@ export default function PasskeyDetail({
 
   if (item.category !== 'passkey') return null;
 
+  const isWebAuthnPasskey = Boolean(item.passkeyCredentialId && item.passkeyRpId);
+
+  if (isWebAuthnPasskey) {
+    const attachmentLabel = item.passkeyAttachment === 'platform'
+      ? t('passkey.list.attachmentPlatform')
+      : item.passkeyAttachment === 'cross-platform'
+        ? t('passkey.list.attachmentCrossPlatform')
+        : '-';
+    const userDisplay = item.passkeyUserName || item.username || t('passkeyDetail.emptyPublicId');
+
+    return (
+      <div className="space-y-4" data-testid="webauthn-passkey-detail">
+        <div className="glass-panel p-5 rounded-xl">
+          <label className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
+            {t('passkey.list.rpId')}
+          </label>
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div data-testid="passkey-rp-name-value" className="font-bold text-base text-on-surface break-all">
+                {item.passkeyRpName || item.title || item.passkeyRpId}
+              </div>
+              <div data-testid="passkey-rp-id-value" className="font-mono text-xs text-on-surface-variant break-all mt-0.5">
+                {item.passkeyRpId}
+              </div>
+            </div>
+            <span data-testid="passkey-algorithm-value" className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
+              {item.passkeyAlgorithm || 'ES256'}
+            </span>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 rounded-xl">
+          <label className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
+            {t('passkey.list.userName')}
+          </label>
+          <div className="flex items-center justify-between">
+            <span data-testid="passkey-username-value" className="font-mono text-sm text-on-surface break-all">{userDisplay}</span>
+            <button
+              type="button"
+              onClick={() => onCopyText(item.passkeyUserName || item.username || '', 'passkeyPublicId')}
+              className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-[#1a1c1a]/50 rounded-lg cursor-pointer ml-2 shrink-0"
+              title={t('passkeyDetail.copy')}
+            >
+              {copiedField === 'passkeyPublicId' ? (
+                <Check className="w-4 h-4 text-brand-tertiary" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 rounded-xl">
+          <label className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
+            Credential ID
+          </label>
+          <div className="flex items-center justify-between">
+            <span data-testid="passkey-credential-id-value" className="font-mono text-xs text-on-surface break-all">
+              {item.passkeyCredentialId}
+            </span>
+            <button
+              type="button"
+              onClick={() => onCopyText(item.passkeyCredentialId || '', 'passkeyCredentialId')}
+              className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-[#1a1c1a]/50 rounded-lg cursor-pointer ml-2 shrink-0"
+              title={t('passkeyDetail.copy')}
+            >
+              {copiedField === 'passkeyCredentialId' ? (
+                <Check className="w-4 h-4 text-brand-tertiary" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-1">
+              {t('passkey.list.signCount')}
+            </span>
+            <span data-testid="passkey-sign-count-value" className="font-mono text-on-surface">
+              {item.passkeySignCount ?? 0}
+            </span>
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-1">
+              {t('passkey.list.attachment')}
+            </span>
+            <span data-testid="passkey-attachment-value" className="text-on-surface">
+              {attachmentLabel}
+            </span>
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-1">
+              {t('passkey.list.transports')}
+            </span>
+            <span className="font-mono text-on-surface">
+              {item.passkeyTransports && item.passkeyTransports.length > 0 ? item.passkeyTransports.join(', ') : '-'}
+            </span>
+          </div>
+          <div>
+            <span className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-1">
+              {t('passkey.list.lastUsed')}
+            </span>
+            <span className="text-on-surface">
+              {item.passkeyLastUsedAt ? new Date(item.passkeyLastUsedAt).toLocaleDateString() : '-'}
+            </span>
+          </div>
+        </div>
+
+        {item.passkeyPublicKey && (
+          <div className="glass-panel p-5 rounded-xl">
+            <label className="block text-[10px] font-bold tracking-wider text-on-surface-variant uppercase mb-2">
+              Public Key (SPKI)
+            </label>
+            <div className="flex items-start justify-between">
+              <span data-testid="passkey-public-key-value" className="font-mono text-xs text-on-surface-variant select-all break-all leading-relaxed bg-[#151715] p-3 rounded-lg border border-outline-variant/10 flex-1 mr-3 max-h-24 overflow-y-auto">
+                {isPrivateExponentRevealed ? item.passkeyPublicKey : HIDDEN_SECRET}
+              </span>
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={onToggleReveal}
+                  className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-[#1a1c1a]/50 rounded-lg cursor-pointer"
+                  title={isPrivateExponentRevealed ? t('passkeyDetail.hide') : t('passkeyDetail.show')}
+                >
+                  {isPrivateExponentRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCopyText(item.passkeyPublicKey || '', 'passkeyPublicKey')}
+                  className="text-on-surface-variant hover:text-brand-primary transition-colors focus:outline-none p-1.5 hover:bg-[#1a1c1a]/50 rounded-lg cursor-pointer"
+                  title={t('passkeyDetail.copy')}
+                >
+                  {copiedField === 'passkeyPublicKey' ? (
+                    <Check className="w-4 h-4 text-brand-tertiary" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="glass-panel p-5 rounded-xl">
