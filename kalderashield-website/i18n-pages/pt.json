@@ -488,7 +488,7 @@
   "p-windows-step3-desc": "Regista o desbloqueio por plataforma para que o acesso diário seja um olhar ou um PIN, com o suporte do TPM 2.0. A palavra-passe mestra continua sempre a ser a verdadeira raiz do cofre.",
   "p-windows-sec-title": "Especificidades do Windows que deves conhecer",
   "p-windows-sec-label": "Assinaturas e SmartScreen",
-  "p-windows-sec-body": "Os instaladores de Windows ainda não trazem assinatura Authenticode: o projeto não tem certificado de assinatura de código, e a sua verificação de lançamento impede que artefactos não assinados sejam publicados como lançamentos oficiais. Até isso mudar, o Windows SmartScreen pode mostrar \"O Windows protegeu o seu PC\" para ficheiros que obtenhas de uma compilação — verifica o hash SHA-256 contra os checksums publicados e vê a página de verificação para saber o que esse aviso significa e o que não significa.",
+  "p-windows-sec-body": "Os instaladores do Windows são publicados na mesma versão que as outras plataformas (<code>latest</code> aponta para eles), mas atualmente <strong>não possuem assinatura</strong> Authenticode. O Windows SmartScreen exibirá um aviso («Mais informações» → «Executar assim mesmo»). Verifique o resumo SHA-256 com SHA256SUMS.txt antes de instalar. A solicitação à SignPath Foundation <strong>ainda não foi enviada</strong>; com um certificado, esse aviso desaparecerá.",
   "p-windows-tech1-title": "Arquitetura x64",
   "p-windows-tech1-desc": "Uma única transferência serve ambos. A aplicação é distribuída como uma aplicação Tauri de computador com uma interface baseada em WebView.",
   "p-windows-tech2-title": "Desbloqueio com Windows Hello",

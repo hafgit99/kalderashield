@@ -21,7 +21,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/terms.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/terms.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/terms.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/terms.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/terms.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/terms.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/terms.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/terms.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,16 +66,49 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/zh/#features" data-i18n="nav-features">核心功能</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">产品</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/zh/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">密码库</span><span class="menu-d" data-i18n="menu-d-password-vault">每条记录用各自的密钥加密</span></a></li>
+        <li><a href="/zh/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">通行密钥</span><span class="menu-d" data-i18n="menu-d-passkeys">绑定你自己认证器的 WebAuthn</span></a></li>
+        <li><a href="/zh/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">密码库历史</span><span class="menu-d" data-i18n="menu-d-vault-history">快照、回收站与密码历史</span></a></li>
+        <li><a href="/zh/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">安全审计</span><span class="menu-d" data-i18n="menu-d-security-audit">弱密码、重复使用的密码和已泄露的密码</span></a></li>
+        <li><a href="/zh/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">密码生成器</span><span class="menu-d" data-i18n="menu-d-password-generator">随机字符或 Diceware 短语</span></a></li>
+        <li><a href="/zh/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">解锁与恢复</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">生物识别、安全密钥和 24 词恢复套件</span></a></li>
+        <li><a href="/zh/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">自动填充</span><span class="menu-d" data-i18n="menu-d-autofill">按可注册域名匹配，不跨站泄露</span></a></li>
+        <li><a href="/zh/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">附件</span><span class="menu-d" data-i18n="menu-d-attachments">在密码库内加密的文件</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a>
       <a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a>
+      <a href="/zh/#comparison" data-i18n="nav-comparison">特性对比</a>
+      <a href="/zh/guvenlik/denetim-durumu/" data-i18n="nav-audit">审计报告</a>
       <a href="/zh/sss/" data-i18n="nav-faq">常见问题</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">源代码</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">问题反馈</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">社区讨论</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/zh/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">立即下载</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -135,16 +169,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/zh/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">产品</h2>
+        <ul>
+          <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
+          <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">社区</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">源码浏览</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">问题反馈</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">社区讨论</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">法律法规</h2>
+        <ul>
+          <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
+          <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/zh/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">源码浏览</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

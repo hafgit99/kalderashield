@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/android/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/android/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/android/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/android/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/android/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/android/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/android/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/android/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-android-p3">Android 在主活动上设置 FLAG_SECURE，使应用不会出现在截图、屏幕录制和最近任务预览中。导入和导出都通过系统文档选择器进行，因此每一处读写位置都是你明确选择的。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-android-steps-title">在 Android 上开始使用</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-android-steps-title">在 Android 上开始使用</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-android-step1-title">安装已签名的 APK</h3>
           <p data-i18n="p-android-step1-desc">允许从你选定的文件来源安装，安装 APK，然后对照公布的校验和验证其 SHA-256 哈希。</p>
@@ -211,7 +213,7 @@
         <p data-i18n="p-android-sec-body">Android 生物识别行为在不同 OEM 定制系统之间存在差异。因此，公开发布准入要求在做出生产环境生物识别声明之前，必须提供明确的设备矩阵证据（Pixel、Samsung、Xiaomi，Android 12–15）；本页不做出超出平台契约所保证范围的任何声明。Android Credential Provider 的 Passkey 填充目前仍不在发布边界之内。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">AndroidKeyStore</span>
           <h3 data-i18n="p-android-tech1-title">硬件绑定的封装</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">常见问题解答</span>
       <h2 data-i18n="p-android-faq-title">Android 常见问题</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-android-faq1-q">支持哪些 Android 版本？</summary>
         <p data-i18n="p-android-faq1-a">Android 7.0（API 24）及更高版本，目标 API 为 35。没有生物识别传感器的设备仍可仅用主密码正常使用。</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-android-faq3-a">可以。通过文档选择器导出加密的 .ks 备份，用任意方式转移文件，然后在桌面端用主密码恢复。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-android-rel-title">相关页面</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-android-rel-title">相关页面</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/zh/guvenlik/tehdit-modeli/" data-i18n="p-android-rel1">威胁模型</a>
         <a class="btn btn-ghost" href="/zh/guvenlik/dogrulama/" data-i18n="p-android-rel2">验证你的下载</a>
         <a class="btn btn-ghost" href="/zh/platformlar/windows/" data-i18n="p-android-rel3">Windows 平台页</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/zh/download/" data-i18n="cta-dl">下载</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">查看源代码</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/zh/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">产品</h2>
         <ul>
-          <li><a href="/zh/" data-i18n="nav-products">产品</a></li>
           <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
-          <li><a href="/zh/#security" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
           <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">法律法规</h2>
         <ul>
           <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
           <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
-      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言：</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/zh/download/" data-i18n="hero-btn-dl">下载安装包</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

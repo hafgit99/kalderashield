@@ -43,7 +43,7 @@ const FACTS = [
   { id: 'smartscreen-warns', tests: ['smartScreen'] },
   { id: 'click-through', tests: ['Run anyway'] },
   { id: 'sha256-offered', tests: ['SHA-256'] },
-  { id: 'is-pre-release', tests: ['pre-release'] },
+  { id: 'published-with-latest', tests: ['latest'] },
   { id: 'application-not-submitted', tests: ['not yet been submitted'] },
 ];
 

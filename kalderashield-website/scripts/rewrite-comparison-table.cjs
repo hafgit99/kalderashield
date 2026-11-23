@@ -39,6 +39,10 @@ const ROWS = [
   ['comp-row-location', [['comp-val-device', 'yes'], ['comp-val-vendor-server', 'no'], ['comp-val-device', 'yes']]],
   ['comp-row-offline', [['comp-val-full', 'yes'], ['comp-val-no', 'no'], ['comp-val-full', 'yes']]],
   ['comp-row-opensource', [['comp-val-yes', 'yes'], ['comp-val-no', 'no'], ['comp-val-varies', 'partial']]],
+  ['comp-row-peritem', [['comp-val-yes', 'yes'], ['comp-val-varies', 'partial'], ['comp-val-no', 'no']]],
+  ['comp-row-passkeys', [['comp-val-yes', 'yes'], ['comp-val-yes', 'yes'], ['comp-val-varies', 'partial']]],
+  ['comp-row-ext', [['comp-val-yes', 'yes'], ['comp-val-varies', 'partial'], ['comp-val-varies', 'partial']]],
+  ['comp-row-airgap', [['comp-val-yes', 'yes'], ['comp-val-no', 'no'], ['comp-val-varies', 'partial']]],
 ];
 
 const HEAD = ['comp-th-criteria', 'comp-th-kalderashield', 'comp-th-cloud', 'comp-th-offline'];
@@ -69,7 +73,7 @@ const body = ROWS.map(([label, cells]) => {
 }).join('\n');
 
 const table = [
-  '      <div style="overflow-x:auto;margin-top:1.4rem">',
+  '      <div class="table-wrap">',
   '        <table>',
   '          <thead>',
   '            <tr>',
@@ -91,7 +95,7 @@ if (headingAt === -1 || headingEnd === -1) {
   console.error('comp-title basligi bulunamadi (index.html elle degismis olabilir)');
   process.exit(1);
 }
-const noteAt = html.indexOf('<p class="faint"', headingEnd);
+const noteAt = html.indexOf('<p class="faint', headingEnd);
 if (noteAt === -1) {
   console.error('comp-method-note paragrafi bulunamadi');
   process.exit(1);

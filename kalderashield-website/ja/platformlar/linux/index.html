@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/linux/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/linux/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/linux/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/linux/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/linux/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/linux/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/linux/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/linux/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="言語を選択">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">JA</span>
+          <span data-lang-current="">日本語</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-linux-p3">Linux ビルドは Tauri が対象とする GTK3/WebKitGTK のウィンドウスタックを使います。このスタックには現在、上流のメンテナンス停止バインディングのアドバイザリが付いており（受け入れ理由とともに依存関係アドバイザリ台帳に記録済み）、エコシステムの保守リスクであって、KalderaShield のコードに既知の攻撃可能な経路はありません。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-linux-steps-title">Linux での始め方</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-linux-steps-title">Linux での始め方</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-linux-step1-title">ダウンロードと検証</h3>
           <p data-i18n="p-linux-step1-desc">ダウンロードページから .deb または AppImage を入手し、インストールや実行の前に SHA-256 ハッシュを SHA256SUMS.txt と比べてください。</p>
@@ -211,7 +213,7 @@
         <p data-i18n="p-linux-sec-body">Linux には Windows 型の義務的なコード署名がないため、検証はハッシュベースです。リリースとともに公開される SHA-256 チェックサムを必ず確認してください。アップデータのバンドルはいずれにせよ minisign で署名されています。依存関係アドバイザリ台帳は受け入れたアドバイザリを理由付きで列挙し、保管庫、暗号、IPC の信頼境界から到達できるものは 1 つも受け入れません。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">.deb</span>
           <h3 data-i18n="p-linux-tech1-title">Debian 系システム</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">よくある質問</span>
       <h2 data-i18n="p-linux-faq-title">Linux に関する質問</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-linux-faq1-q">AppImage と .deb のどちらを使うべきですか。</summary>
         <p data-i18n="p-linux-faq1-a">メニューへの統合ときれいな削除のためには、Debian、Ubuntu、Mint とその派生で .deb を使ってください。それ以外や、足跡を残さないインストールを望むときは AppImage を使ってください。</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-linux-faq3-a">はい。暗号化バックアップはすべてのデスクトッププラットフォームで移植可能です。1 台の端末でバックアップを作り、もう 1 台でマスターパスワードを使って復元します。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-linux-rel-title">関連ページ</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-linux-rel-title">関連ページ</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ja/guvenlik/dogrulama/" data-i18n="p-linux-rel1">ダウンロードの検証</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/tehdit-modeli/" data-i18n="p-linux-rel2">脅威モデル</a>
         <a class="btn btn-ghost" href="/ja/eklenti/" data-i18n="p-linux-rel3">ブラウザ拡張機能</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ja/download/" data-i18n="cta-dl">ダウンロード</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">ソースコードを見る</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ja/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">製品情報</h2>
         <ul>
-          <li><a href="/ja/" data-i18n="nav-products">製品</a></li>
           <li><a href="/ja/#features" data-i18n="nav-features">機能一覧</a></li>
-          <li><a href="/ja/#security" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a></li>
+          <li><a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a></li>
+          <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
           <li><a href="/ja/download/" data-i18n="nav-download">ダウンロード</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">規約・方針</h2>
         <ul>
           <li><a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a></li>
+          <li><a href="/ja/code-signing-policy.html" data-i18n="footer-link-code-signing">コード署名ポリシー</a></li>
           <li><a href="/ja/terms.html" data-i18n="footer-link-terms">利用規約</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 全著作権所有。</span>
-      <span data-i18n="footer-langs-label">🌍 12言語に対応：</span>
+      <span data-i18n="footer-langs-label">🌍 12言語に対応</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/ja/download/" data-i18n="hero-btn-dl">インストーラーをダウンロード</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -488,7 +488,7 @@
   "p-windows-step3-desc": "Richten Sie die Plattform-Entsperrung ein, damit der tägliche Zugriff ein Blick oder eine PIN ist, abgesichert durch TPM 2.0. Das Masterpasswort bleibt stets die eigentliche Wurzel des Tresors.",
   "p-windows-sec-title": "Windows-Besonderheiten, die Sie kennen sollten",
   "p-windows-sec-label": "Signaturen und SmartScreen",
-  "p-windows-sec-body": "Windows-Installationsprogramme tragen noch keine Authenticode-Signatur: Das Projekt besitzt kein Code-Signing-Zertifikat, und sein Release-Gate blockiert unsignierte Artefakte von der Veröffentlichung als offizielle Releases. Solange sich das nicht ändert, kann Windows SmartScreen für Dateien, die Sie aus einem Build beziehen, „Windows hat Ihren PC geschützt“ anzeigen — verifizieren Sie den SHA-256-Hash gegen die veröffentlichten Prüfsummen, und lesen Sie auf der Verifikationsseite nach, was diese Warnung bedeutet und was nicht.",
+  "p-windows-sec-body": "Windows-Installer erscheinen im selben Release wie die anderen Plattformen (<code>latest</code> verweist darauf), sind derzeit jedoch <strong>unsigniert</strong> und tragen keine Authenticode-Signatur. Unsignierte Dateien lösen die Windows-SmartScreen-Warnung aus („Weitere Informationen“ → „Trotzdem ausführen“). Prüfen Sie vor der Installation die SHA-256-Prüfsumme mit SHA256SUMS.txt. Der Antrag bei der SignPath Foundation wurde <strong>noch nicht eingereicht</strong>; sobald ein Zertifikat vorliegt, entfällt diese Warnung.",
   "p-windows-tech1-title": "x64-Architektur",
   "p-windows-tech1-desc": "Ein Download genügt für beide. Die Anwendung erscheint als Tauri-Desktop-App mit einem WebView-basierten Frontend.",
   "p-windows-tech2-title": "Entsperren mit Windows Hello",

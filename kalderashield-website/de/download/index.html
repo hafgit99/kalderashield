@@ -22,7 +22,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/download/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/download/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/download/">
@@ -35,14 +35,15 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/download/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/download/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/download/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/download/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/download/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "KalderaShield",
   "url": "https://kalderashield.com/de/download/",
   "applicationCategory": "SecurityApplication",
-  "operatingSystem": "Linux, Android",
+  "operatingSystem": "Windows, Linux, Android",
   "softwareVersion": "7.0.31",
   "description": "Wählen Sie Ihre Plattform und installieren Sie Ihren Tresor in Sekundenschnelle.",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -55,6 +56,7 @@
   }
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -129,8 +131,8 @@
       <!-- mega:end -->
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Sprache wählen">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">DE</span>
+          <span data-lang-current="">Deutsch</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -227,7 +229,7 @@
       <span class="eyebrow" data-i18n="dl-eyebrow">Jetzt starten</span>
       <h2 data-i18n="dl-platforms-title">Für Ihre Plattform herunterladen</h2>
 
-      <div class="grid pick-grid" style="margin-top:1.6rem">
+      <div class="grid pick-grid mt-md">
 
         <article class="card pick-card" id="linux">
           <span class="pick-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="16" rx="2"></rect><path d="M6.5 9.5l3 2.5-3 2.5M12.5 15h5"></path></svg></span>
@@ -309,7 +311,7 @@
               <p class="pick-alt" data-i18n="dl-cli-note">Das Skript holt sich die Versionsnummer und die SHA-256-Prüfsummen während der Ausführung von GitHub Releases, vergleicht sie mit SHA256SUMS.txt und bricht die Installation ab, wenn etwas nicht übereinstimmt.</p>
             </div>
             <pre><code>curl -fsSL https://kalderashield.com/install.sh -o install.sh
-less install.sh          # once okuyun
+less install.sh          # önce okuyun
 sh install.sh</code></pre>
           </div>
         </article>
@@ -326,14 +328,14 @@ sh install.sh</code></pre>
       <span class="eyebrow" data-i18n="dl-not-yet">Noch nicht veröffentlicht</span>
       <p class="prose muted" data-i18n="dl-notice-platforms">Windows-Pakete werden unsigniert veröffentlicht. macOS wird aus den unten genannten Gründen noch nicht veröffentlicht.</p>
 
-      <div class="grid grid-2 soon-grid" style="margin-top:1.5rem">
+      <div class="grid grid-2 soon-grid mt-md">
         <article class="card soon" id="windows">
           <h3 data-i18n="dl-c1-title">Windows</h3>
           <p class="pick-req" data-i18n="win-req">Windows 10 64-Bit und höher</p>
           <p data-i18n="dl-c1-desc">Tauri-basierter MSI-Installer oder eigenständige portable EXE-Datei.</p>
           <div class="notice">
             <p><strong data-i18n="win-store-title">Windows — veröffentlicht, unsigniert</strong></p>
-            <p data-i18n="win-store-desc"><strong>Diese Dateien sind nicht signiert.</strong> Windows SmartScreen zeigt „Windows hat Ihren PC geschützt“ und Sie müssen auf „Weitere Informationen“ → „Trotzdem ausführen“ klicken, um das Installationsprogramm auszuführen. Das ist zu erwarten und bedeutet nicht, dass die Datei schädlich ist. Prüfen Sie vor dem Ausführen den SHA-256-Wert gegen SHA256SUMS.txt. Der Windows-Build erscheint in derselben Version wie die anderen Plattformen; deshalb bietet ihn der integrierte Updater an und <code>latest</code> verweist darauf. Es fehlt allein ein Code-Signaturzertifikat. Sobald eines verfügbar ist, werden nachfolgende Windows-Versionen signiert und dieser Hinweis entfernt.</p>
+            <p data-i18n="win-store-desc"><strong>Diese Dateien sind unsigniert.</strong> Windows SmartScreen zeigt „Der Computer wurde durch Windows geschützt“ an; klicken Sie auf „Weitere Informationen“ → „Trotzdem ausführen“. Das ist erwartet und bedeutet nicht, dass die Datei schädlich ist. Prüfen Sie vor dem Ausführen die SHA-256-Prüfsumme anhand von SHA256SUMS.txt. Der Windows-Build erscheint im selben Release wie die übrigen Plattformen und <code>latest</code> verweist darauf. Der Antrag bei der SignPath Foundation für kostenlose Open-Source-Codesignierung wurde <strong>noch nicht eingereicht</strong>; sobald ein Zertifikat vorliegt, werden künftige Windows-Releases signiert.</p>
           </div>
           <p class="pick-req" data-i18n="win-preview-assets">NSIS-Installer (.exe), MSI-Paket und portable EXE — alle unsigniert.</p>
           <p class="card-action"><a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/KalderaShield-latest-windows-x64-setup.exe" rel="noopener noreferrer" data-i18n="win-preview-link">Unsignierten Windows-Build von GitHub Releases herunterladen</a></p>
@@ -388,7 +390,7 @@ sh install.sh</code></pre>
       <h2 data-i18n="dl-verify-title">Downloads überprüfen</h2>
       <p class="prose muted" data-i18n="dl-verify-desc">Jede Version erscheint mit SHA256SUMS.txt und minisign-Signaturen. Sie können Prüfsumme und Signatur vor der Installation prüfen.</p>
 
-      <div class="verify-grid" style="margin-top:1.5rem">
+      <div class="verify-grid mt-md">
         <div>
           <h3 data-i18n="dl-verify-hash-title">1. SHA-256-Prüfsumme</h3>
           <p class="prose muted" data-i18n="dl-verify-hash-desc">Berechnen Sie die Prüfsumme der heruntergeladenen Datei und vergleichen Sie sie mit der Zeile in SHA256SUMS.txt. Stimmen sie überein, ist die Datei die von uns veröffentlichte.</p>
@@ -397,7 +399,7 @@ certutil -hashfile KalderaShield-latest-windows-x64-setup.exe SHA256
 
 # Linux
 sha256sum -c SHA256SUMS.txt</code></pre>
-          <p class="cta-row" style="margin-top:1.2rem">
+          <p class="cta-row mt-sm">
             <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield/releases/latest/download/SHA256SUMS.txt" rel="noopener noreferrer" data-i18n="dl-sha-note">SHA-256-Prüfsummen aller Installationsdateien:</a>
             <a class="btn btn-ghost" href="/de/guvenlik/dogrulama/" data-i18n="sec-verify-btn">Verifizierungsanleitung ansehen</a>
           </p>
@@ -409,13 +411,13 @@ sha256sum -c SHA256SUMS.txt</code></pre>
   -P RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
           <p class="pick-req" data-i18n="dl-verify-pubkey-label">minisign-Public-Key</p>
           <pre><code>RWR9+UoiipnfWrnQGHCwhio0FBecAKJe6EEAPgdgMNpOWBTVAprmShEN</code></pre>
-          <div class="notice" style="margin-top:1.1rem">
+          <div class="notice mt-sm">
             <p><span data-i18n="dl-verify-note">Der Schlüssel ändert sich nie. Prüfsummen ändern sich mit jeder Version und stehen deshalb in SHA256SUMS.txt.</span></p>
           </div>
         </div>
       </div>
 
-      <div class="notice" style="margin-top:1.5rem">
+      <div class="notice mt-md">
         <p><strong data-i18n="dl-notice-label">Hinweis:</strong> <span data-i18n="dl-notice-releases">Downloads werden über GitHub Releases bereitgestellt.</span></p>
       </div>
     </div>
@@ -426,12 +428,12 @@ sha256sum -c SHA256SUMS.txt</code></pre>
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/de/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Lokaler Open-Source-Passwort-Manager mit AES-256-GCM und Argon2id Zero-Knowledge-Verschlüsselung.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Lokaler Open-Source-Passwort-Manager mit AES-256-GCM und Argon2id Zero-Knowledge-Verschlüsselung.</p>
       </div>
 
       <div>
@@ -459,6 +461,7 @@ sha256sum -c SHA256SUMS.txt</code></pre>
         <h2 data-i18n="footer-col4-title">Rechtliches</h2>
         <ul>
           <li><a href="/de/privacy.html" data-i18n="footer-link-privacy">Datenschutzerklärung</a></li>
+          <li><a href="/de/code-signing-policy.html" data-i18n="footer-link-code-signing">Richtlinie zur Code-Signierung</a></li>
           <li><a href="/de/terms.html" data-i18n="footer-link-terms">Nutzungsbedingungen</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -467,12 +470,12 @@ sha256sum -c SHA256SUMS.txt</code></pre>
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Alle Rechte vorbehalten.</span>
-      <span data-i18n="footer-langs-label">🌍 In 12 Sprachen verfügbar:</span>
+      <span data-i18n="footer-langs-label">🌍 In 12 Sprachen verfügbar</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 </body></html>

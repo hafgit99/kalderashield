@@ -21,7 +21,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/code-signing-policy.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/code-signing-policy.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/code-signing-policy.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/code-signing-policy.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/code-signing-policy.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/code-signing-policy.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/code-signing-policy.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/code-signing-policy.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,11 +66,44 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/#features" data-i18n="nav-features">Özellikler</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">Ürün</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">Şifre kasası</span><span class="menu-d" data-i18n="menu-d-password-vault">Her kayıt kendi anahtarıyla şifrelenir</span></a></li>
+        <li><a href="/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Passkey</span><span class="menu-d" data-i18n="menu-d-passkeys">Kendi doğrulayıcınıza bağlı WebAuthn</span></a></li>
+        <li><a href="/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">Kasa geçmişi</span><span class="menu-d" data-i18n="menu-d-vault-history">Anlık görüntüler, çöp kutusu ve şifre geçmişi</span></a></li>
+        <li><a href="/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">Güvenlik denetimi</span><span class="menu-d" data-i18n="menu-d-security-audit">Zayıf, tekrarlanan ve sızmış şifreler</span></a></li>
+        <li><a href="/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">Şifre üretici</span><span class="menu-d" data-i18n="menu-d-password-generator">Rastgele karakterler veya Diceware cümleleri</span></a></li>
+        <li><a href="/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">Kilit açma ve kurtarma</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">Biyometri, güvenlik anahtarı ve 24 kelimelik kit</span></a></li>
+        <li><a href="/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">Otomatik doldurma</span><span class="menu-d" data-i18n="menu-d-autofill">eTLD+1 eşleşmesi, siteler arası sızıntı yok</span></a></li>
+        <li><a href="/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">Ekler</span><span class="menu-d" data-i18n="menu-d-attachments">Kasa içinde şifreli dosyalar</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/guvenlik/" data-i18n="nav-security">Güvenlik</a>
       <a href="/eklenti/" data-i18n="nav-extensions">Eklentiler</a>
+      <a href="/#comparison" data-i18n="nav-comparison">Karşılaştırma</a>
+      <a href="/guvenlik/denetim-durumu/" data-i18n="nav-audit">Denetim</a>
       <a href="/sss/" data-i18n="nav-faq">SSS</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">Kaynak</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/kaynak-kodu/" data-i18n="footer-link-source">Kaynak Kodları</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Hata Bildirimi</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">Tartışmalar</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">İndir</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Dil seç">
@@ -109,11 +143,11 @@
 
       <h2 data-i18n="csp-h2-2">2. Windows</h2>
       <p data-i18n="csp-p1-3">Free code signing provided by SignPath.io, certificate by SignPath Foundation.</p>
-      <p data-i18n="csp-p1-4"><strong>Durum: başvuru hazırlandı, ön koşullar tamamlandı.</strong> KalderaShield, SignPath Foundation programına başvurmak üzeredir ve ön koşulların tamamını yerine getirmiştir: imzalanacak biçimde yayımlanmış Windows kurulum dosyaları vardır, proje sayfası canlıdır ve bu politika ana sayfa ile indirme sayfasından bağlanmaktadır. Başvurunun gönderilmesi, hesaplarda çok faktörlü kimlik doğrulamanın doğrulanması ve güvenlik iletişim adresinin yanıt süresinin teyit edilmesiyle önünde sonundadır. <strong>Bu bölüm, herhangi bir Windows dosyasının şu anda imzalı olduğu anlamına gelmez</strong> — hiçbir dosya imzalı değildir ve ilk imzalı sürümden önce bu metin güncellenecektir.</p>
+      <p data-i18n="csp-p1-4"><strong>Durum: başvuru hazırlandı, ön koşullar tamamlandı.</strong> KalderaShield, SignPath Foundation programına başvurmak üzeredir ve ön koşulların tamamını yerine getirmiştir: imzalanacak biçimde yayımlanmış Windows kurulum dosyaları vardır, proje sayfası canlıdır ve bu politika ana sayfa ile indirme sayfasından bağlanmaktadır. Başvurunun gönderilmesi, hesaplarda çok faktörlü kimlik doğrulamanın doğrulanması ve güvenlik iletişim adresinin yanıt süresinin teyit edilmesiyle tamamlanmak üzeredir. <strong>Bu bölüm, herhangi bir Windows dosyasının şu anda imzalı olduğu anlamına gelmez</strong> — hiçbir dosya imzalı değildir ve ilk imzalı sürümden önce bu metin güncellenecektir.</p>
       <p data-i18n="csp-p1-5">İmzalanacak dosyalar NSIS kurucusu (<code>KalderaShield_&lt;surum&gt;_x64-setup.exe</code>), yönetilen dağıtım için MSI paketi (<code>KalderaShield_&lt;surum&gt;_x64.msi</code>) ve kurulum gerektirmeyen taşınabilir çalıştırılabilirdir (<code>KalderaShield_&lt;surum&gt;_x64-portable.exe</code>). Üçü de bu depodan derlenir ve <a href="https://github.com/hafgit99/kalderashield/releases" rel="noopener noreferrer">sürümler sayfasında</a> yayımlanır. Bu depodan derlenmeyen hiçbir dosya bu projenin sertifikasıyla imzalanmaz ve üçüncü taraftan hiçbir ikili, bu sertifika altında yeniden imzalanmaz.</p>
       <p data-i18n="csp-p1-6"><strong>Anahtar saklama:</strong> özel anahtar SignPath'ın HSM'sinde üretilir ve saklanır. Bu proje anahtarı hiçbir zaman elinde tutmaz, dışa aktarmaz ve ne bir derleme çalıştırıcısına ne de bir geliştirici makinesine iletmez. İmza, deponun CI'ının gönderdiği ve bir insanın onayladığı bir imza talebi karşılığında SignPath tarafında gerçekleşir.</p>
       <p data-i18n="csp-p1-7"><strong>Zincir:</strong> sürüm etiketi gönderilir → GitHub Actions dosyaları derler (iş akışları herkese açık, üçüncü taraf eylemleri commit SHA'sıyla sabitli, jeton izinleri salt okunur) → derleme dosyaları SignPath'a yükler ve bir imza talebi açar, imzalamaz → bir Onaylayıcı onaylar veya reddeder → SignPath Foundation sertifikasıyla imzalar → imzalı dosya <code>SHA256SUMS.txt</code> ile birlikte yayımlanır. Her sürüm için elle onay gerekir; gözetimsiz bir imza yolu yoktur ve eklenmeyecektir.</p>
-      <p data-i18n="csp-p1-8">Geçerli bir SignPath Foundation imzası, ikili dosyanın sürümün belirttiği depodaki kaynak koddan doğrulanabilir ve otomatik bir derleme olduğu anlamına gelir. Yazılımın denetlendiği anlamına <strong>gelmez</strong> ve uygulamaya ilişkin bir güvenlik onayı değildir. Bu proje tehdit modeli ve kalite kapısı belgeleri yayımlar, ancak tamamlanmış bağımsız bir üçüncü taraf güvenlik denetimi yoktur:</p>
+      <p data-i18n="csp-p1-8">Geçerli bir SignPath Foundation imzası, ikili dosyanın sürümün belirttiği depodaki kaynak koddan doğrulanabilir ve otomatik bir derleme olduğu anlamına gelir. Yazılımın denetlendiği anlamına <strong>gelmez</strong> ve uygulamaya ilişkin bir güvenlik onayı değildir. Bu proje tehdit modeli ve kalite kapısı belgeleri yayımlar, ancak tamamlanmış bağımsız bir üçüncü taraf güvenlik denetimi yoktur.</p>
 
       <h2 data-i18n="csp-h2-3">3. Ekip rolleri</h2>
       <p data-i18n="csp-p1-9">KalderaShield tek kişi tarafından sürdürülmektedir. Bunu bir ekip gibi sunmak yerine burada açıkça belirtiyoruz, çünkü aşağıdaki roller SignPath'ın istediği rollerdir ve tek bir bakımcı yalnız ve dürüstçe doldurabilir. Bu depoya yazma erişimi olan tüm hesaplar çok faktörlü kimlik doğrulama kullanır.</p>
@@ -139,8 +173,8 @@
 
       <h2 data-i18n="csp-h2-5">5. Diğer platformlar</h2>
       <p data-i18n="csp-p1-21"><strong>macOS</strong> — dosyalar Apple Developer ID ile imzalanır ve Apple tarafından notarize edilir. Sertifika henüz alınmadığı için hiçbir macOS dosyası imzalanmamıştır ve hiçbiri yayımlanmamıştır. <strong>Linux</strong> — <code>.deb</code>, <code>.rpm</code> ve <code>.AppImage</code> ayrık GPG imzalarıyla (<code>.sig</code>), SBOM'lar ve tarayıcı eklentisi paketleri anahtarsız Sigstore imzalarıyla (<code>.sigstore.json</code>) yayımlanır. <strong>Android</strong> — sürüm APK'ları GitHub Actions sırlarında tutulan bir sürüm anahtar kasasıyla imzalanır; Android imzası, Authenticode'dan ayrıdır. Hiçbir platform, gerçekten imzalı olana kadar imzalı olarak tanımlanmaz.</p>
-      <p data-i18n="csp-p1-24"><strong>Güncel durum:</strong> Linux, Android ve tarayıcı eklentisi yayımlandı ve imzalı. <strong>Windows yalnızca "unsigned preview" (İmzasız Önizleme) olarak yayımlanır ve imzasızdır</strong> — bu bir <em>ön sürümdür</em>, kararlı bir sürüm değildir ve <code>latest</code> ona işaret etmez. İmzalanmamış dosyalarda Windows SmartScreen "PC'niz korundu" uyarısı gösterir ve kurulumu çalıştırmak için "Daha fazla bilgi" → "Yine de çalıştır" demeniz gerekir; bu beklenen bir durumdur. Çalıştırmadan önce SHA-256 karmasını SHA256SUMS.txt ile doğrulayın. SignPath Foundation başvurusu <strong>henüz gönderilmemiştir</strong>. macOS yayımlanmadı ve imzasızdır (sertifika alınmadı).</p>
-      <p data-i18n="csp-p1-25">Windows dosyaları resmî bir sürüm olarak yayımlanmaz: sürüm hattı imzasız bir masaüstü sürümünü hata sayar ve `.github/workflows/` içinde bunu yayımlayabilecek hiçbir iş akışı yoktur. Önizleme, bakımcının makinelerinden GitHub'ın kendi sürüm formu aracılığıyla elle hazırlanıp yüklenir ve <em>ön sürüm</em> olarak işaretlenir; böylece görünür şekilde geçicidir, <code>latest</code> ona işaret etmez ve bir sonraki imzalı sürümün yerini alır. Bu yol bilinçlidir, bir dolambaç değil. Depoda, imzasız bir derlemeyi yayımlanmış bir hâle getirebilecek her iş akışını reddeden bir güvenlik kapısı vardır (<code>npm run security:release-signing</code>) ve bu kapının son iddiası, imzalama sırları olmadan genel bir masaüstü sürümünün *tasarım gereği imkânsız* olduğudur. Bunun için bir istisna eklemek o iddiayı bir kolaylık karşılığında yalanlaştırırdı. Yüklemeyi tarayıcıda tutmak güvenceyi bozmadan korur. Kapının belgelenmesi: <a href="https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md" rel="noopener noreferrer">Kod İmza ve Artefakt İmza Kılavuzu</a>; adım adım yöntem: <a href="https://github.com/hafgit99/kalderashield/blob/main/docs/WINDOWS_UNSIGNED_RELEASE_PLAN.md" rel="noopener noreferrer">Plan: site, ardından imzasız Windows önizlemesi</a>.</p>
+      <p data-i18n="csp-p1-24"><strong>Güncel durum:</strong> Linux, Android ve tarayıcı eklentisi yayımlandı ve imzalı. <strong>Windows kurucuları diğer platformlarla aynı sürümde (<code>latest</code>) imzasız olarak yayımlanır</strong> ve Authenticode imzası taşımaz. İmzalanmamış dosyalarda Windows SmartScreen "PC'niz korundu" uyarısı gösterir ve kurulumu çalıştırmak için "Daha fazla bilgi" → "Yine de çalıştır" demeniz gerekir; bu beklenen bir durumdur. Çalıştırmadan önce SHA-256 özetini SHA256SUMS.txt ile doğrulayın. SignPath Foundation başvurusu <strong>henüz gönderilmemiştir</strong>. macOS henüz yayımlanmadı ve imzasızdır (sertifika alınmadı).</p>
+      <p data-i18n="csp-p1-25">Windows derlemeleri <code>.github/workflows/</code> içindeki sürüm iş akışında yalnızca açıkça izin verilen <code>ALLOW_UNSIGNED_PLATFORMS</code> depo değişkeniyle ve Authenticode imzası olmadan <code>latest</code> sürümüne dahil edilir; her dosya yine de SHA256SUMS.txt ve minisign/Sigstore özetleriyle yayımlanır. Kod imzalama sertifikası eklendiğinde imzasız istisna kaldırılacak ve tüm Windows dosyaları otomatik olarak Authenticode ile imzalanacaktır. Belgeler: <a href="https://github.com/hafgit99/kalderashield/blob/main/docs/CODE_SIGNING_GUIDE_2026.md" rel="noopener noreferrer">Kod İmza ve Artefakt İmza Kılavuzu</a>.</p>
 
       <h2 data-i18n="csp-h2-9">6. Sorun bildirme</h2>
       <p data-i18n="csp-p1-26">SignPath Foundation sertifikasıyla imzalanmış bir dosyanın bu politikayı ihlal ettiğini düşünüyorsanız, dosyanın karmasını ve gerekçeyi <a href="mailto:support@signpath.io">support@signpath.io</a> adresine bildirin. Bu dosyalarla ilgili diğer her konu için <a href="mailto:security@kalderashield.com">security@kalderashield.com</a> adresini kullanın; açıklama süreci <a href="https://github.com/hafgit99/kalderashield/blob/main/SECURITY.md" rel="noopener noreferrer">SECURITY.md</a>'dedir.</p>
@@ -153,17 +187,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM ve Argon2id ile güçlendirilmiş, yerel ve açık kaynaklı yeni nesil sıfır-bilgi şifre yöneticisi.</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">Ürün</h2>
+        <ul>
+          <li><a href="/#features" data-i18n="nav-features">Özellikler</a></li>
+          <li><a href="/guvenlik/" data-i18n="nav-security">Güvenlik</a></li>
+          <li><a href="/eklenti/" data-i18n="nav-extensions">Eklentiler</a></li>
+          <li><a href="/sss/" data-i18n="nav-faq">SSS</a></li>
+          <li><a href="/kaynak-kodu/" data-i18n="footer-link-source">Kaynak Kodları</a></li>
+          <li><a href="/download/" data-i18n="nav-download">İndir</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">Topluluk</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">Kaynak Kodları</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">Hata Bildirimi</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">Tartışmalar</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">Yasal</h2>
+        <ul>
+          <li><a href="/privacy.html" data-i18n="footer-link-privacy">Gizlilik Politikası</a></li>
+          <li><a href="/code-signing-policy.html" data-i18n="footer-link-code-signing">Kod İmza Politikası</a></li>
+          <li><a href="/terms.html" data-i18n="footer-link-terms">Kullanım Şartları</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/privacy.html" data-i18n="footer-link-privacy">Gizlilik Politikası</a>
-      <a href="/terms.html" data-i18n="footer-link-terms">Kullanım Şartları</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">Kaynak Kodları</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield. Tüm Hakları Saklıdır.</span>
+      <span data-i18n="footer-langs-label">🌍 12 dilde mevcut</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

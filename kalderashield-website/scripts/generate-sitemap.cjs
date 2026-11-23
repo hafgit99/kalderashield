@@ -133,9 +133,10 @@ const ordered = [...onDisk].sort((a, b) => {
 const out = [];
 for (const pagePath of ordered) {
   const { changefreq, priority } = byPath.get(pagePath);
+  const xDefaultLocale = ELIGIBLE.includes('en') ? 'en' : SOURCE;
   const alternates = ELIGIBLE
     .map((locale) => `    <xhtml:link rel="alternate" hreflang="${locale}" href="${esc(locFor(locale, pagePath))}"/>`)
-    .concat([`    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(locFor(SOURCE, pagePath))}"/>`])
+    .concat([`    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(locFor(xDefaultLocale, pagePath))}"/>`])
     .join('\n');
 
   for (const locale of LOCALES) {

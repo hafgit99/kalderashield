@@ -1,18 +1,56 @@
 /* KalderaShield website
  *
- * No web fonts. The previous site loaded them from Google's CDN, which
- * discloses visitor IPs to a third party and has been ruled a GDPR
- * violation in Germany. The system font stack renders instantly and
- * needs no consent.
- *
- * Palette (approved direction "Buzul Teal + Kaldera Kor vurgusu"):
- * the near-black blue ground and the teal-cyan from the icon's deflector
- * lines carry every interactive state (links, buttons, focus, dots) — this
- * is the app icon's dominant hue range (180-210°). The caldera ember orange
- * is demoted to a single-point identity accent: the wordmark's "Shield".
- * Nothing else uses it, so the brand moment never competes with the
- * interactive language.
+ * Self-hosted variable web fonts (Inter + JetBrains Mono) served strictly from
+ * our own origin (/assets/fonts/*.woff2) — zero third-party requests, zero
+ * Google Fonts CDN, 100% GDPR/KVKK compliant and CSP font-src 'self' locked.
+ * Non-Latin scripts (Arabic, Japanese, Korean, Chinese) seamlessly fall back
+ * to native system typography without downloading unnecessary Latin subsets.
  */
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/inter-cyrillic-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("../fonts/jetbrains-mono-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("../fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 
 /* Palette selection.
  *
@@ -48,9 +86,9 @@
      on the page" was the only text failing WCAG AA. */
   --text-faint: #737e8f;
 
---accent: #2dd4bf;
-  --accent-strong: #5eead4;
-  --accent-text: #2dd4bf;
+  --accent: #3dc9a8;
+  --accent-strong: #62d9bc;
+  --accent-text: #3dc9a8;
 
   /* Gradient stops for text painted with background-clip: text.
    *
@@ -65,9 +103,9 @@
    * reader could see. "Only" disappeared.
    *
    * A hardcoded hex in a themeable rule is a rule with an undeclared theme. */
-  --grad-from: #2dd4bf;
-  --grad-mid: #60e0d0;
-  --grad-to: #a78bfa;
+  --grad-from: #3dc9a8;
+  --grad-mid: #5dd8bd;
+  --grad-to: #8fb4e8;
   /* Identity-only accent: the wordmark's "Shield". No other rule may use it. */
   --ember: #ff7b2e;
 
@@ -96,10 +134,10 @@
   --measure: 68ch;
   --page: 1240px;
 
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+  --font: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, "Noto Sans", "Noto Sans Arabic", "Noto Sans Hebrew", "Noto Sans JP",
     "Noto Sans KR", "Noto Sans SC", sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+  --mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 }
 
@@ -725,11 +763,17 @@ a:hover {
   animation: hero-in 0.6s ease-out 0.18s both;
 }
 
-/* The promo video. Same window treatment as .hero-shot so the video reads as
- * the product running, not as an embedded marketing asset. */
+/* The promo video lives in its own calm band below the stats bar so the hero
+ * stays focused on the product screenshot, CTA, and trust bar. */
+.band-demo {
+  background: var(--bg-sunken);
+  padding-block: 3.2rem;
+}
+
 .promo-video {
-  margin-top: 40px;
-  animation: hero-in 0.6s ease-out 0.26s both;
+  margin-top: 0;
+  max-width: 980px;
+  margin-inline: auto;
 }
 
 .promo-video-el {
@@ -1529,6 +1573,71 @@ pre {
   padding: 1rem 1.15rem;
   overflow-x: auto;
   line-height: 1.5;
+}
+
+pre.has-copy {
+  position: relative;
+  padding-inline-end: 3.2rem;
+}
+
+.code-copy {
+  position: absolute;
+  top: 0.6rem;
+  inset-inline-end: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.code-copy:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.code-copy.is-copied {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.shot:focus-visible,
+.hero-shot img:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- layout utilities & OS highlight (Phase 3) ---------- */
+.mt-xs { margin-top: 0.75rem; }
+.mt-sm { margin-top: 1rem; }
+.mt-md { margin-top: 1.55rem; }
+.mt-lg { margin-top: 1.9rem; }
+.mt-xl { margin-top: 2.3rem; }
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 1.4rem;
+}
+
+.footer-brand {
+  max-width: 24rem;
+}
+
+.card.is-recommended-os {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 12px 32px rgb(0 0 0 / 0.22);
+}
+
+.dl-page .pick-grid .card.is-recommended-os {
+  order: -1;
 }
 
 pre code {

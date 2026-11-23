@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Una seguridad que empieza en tu dispositivo — KalderaShield</title>
-<meta name="description" content="KalderaShield es un gestor de contraseñas que ante todo es local: tu bóveda vive en tu dispositivo, el cifrado ocurre allí y no hace falta ninguna cuenta">
+<meta name="description" content="KalderaShield es un gestor de contraseñas que ante todo es local: tu bóveda vive en tu dispositivo, el cifrado ocurre allí y no hace falta ninguna cuenta…">
 <link rel="canonical" href="https://kalderashield.com/es/guvenlik/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Una seguridad que empieza en tu dispositivo — KalderaShield">
-<meta property="og:description" content="KalderaShield es un gestor de contraseñas que ante todo es local: tu bóveda vive en tu dispositivo, el cifrado ocurre allí y no hace falta ninguna cuenta">
+<meta property="og:description" content="KalderaShield es un gestor de contraseñas que ante todo es local: tu bóveda vive en tu dispositivo, el cifrado ocurre allí y no hace falta ninguna cuenta…">
 <meta property="og:url" content="https://kalderashield.com/es/guvenlik/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Elegir idioma">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ES</span>
+          <span data-lang-current="">Español</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-security.webp" width="1800" height="666" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — Una seguridad que empieza en tu dispositivo">
       </figure>
     </div>
   </section>
@@ -192,8 +194,8 @@
         <p data-i18n="p-guvenlik-p4">Las compilaciones de producción se ejecutan tras una política de aislamiento de red: las llamadas salientes inesperadas por fetch, WebSocket, WebRTC y similares se bloquean y quedan registradas. El único tráfico de red es la comprobación por rangos de Have I Been Pwned, que envía los primeros cinco caracteres de un hash SHA-1 y nunca tu contraseña.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-guvenlik-steps-title">Cómo se apilan las capas</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-steps-title">Cómo se apilan las capas</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-guvenlik-step1-title">Tu contraseña maestra es la raíz</h3>
           <p data-i18n="p-guvenlik-step1-desc">Argon2id la convierte en la clave de la bóveda. La contraseña maestra nunca se guarda en el sessionStorage del navegador; tras el desbloqueo, el estado de la sesión es un búfer de bytes en memoria puesto a cero, no una cadena que la página pueda leer.</p>
@@ -221,7 +223,7 @@
         <p data-i18n="p-guvenlik-sec-body">Ninguna aplicación local puede proteger una bóveda en un dispositivo comprometido: el malware que se ejecuta con tu cuenta del sistema operativo mientras la bóveda está desbloqueada, los registradores de teclas, la captura de pantalla privilegiada y la inspección de memoria están fuera de este modelo. El desbloqueo por hardware es un envoltorio de comodidad, no un sustituto de la contraseña maestra. Todavía no se ha completado una auditoría independiente de terceros, y así se declara abiertamente, sin esconderlo.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Argon2id</span>
           <h3 data-i18n="p-guvenlik-tech1-title">KDF resistente a la memoria</h3>
@@ -245,7 +247,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Preguntas Frecuentes</span>
       <h2 data-i18n="p-guvenlik-faq-title">Sobre el diseño de seguridad</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-guvenlik-faq1-q">¿Mi bóveda se envía alguna vez a un servidor?</summary>
         <p data-i18n="p-guvenlik-faq1-a">No. No hay cuenta ni bóveda en el servidor. Los proveedores de sincronización opcionales como WebDAV y S3 suben solo la carga cifrada a un almacenamiento que tú configuras y te pertenece.</p>
       </details>
@@ -258,13 +260,13 @@
         <p data-i18n="p-guvenlik-faq3-a">Todavía no. La página de estado de la auditoría lo declara abiertamente y describe la verificación automatizada que existe hoy. Esconder una auditoría sin terminar contradiría todo lo demás de este sitio.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-guvenlik-rel-title">Para profundizar</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-rel-title">Para profundizar</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/es/guvenlik/tehdit-modeli/" data-i18n="p-guvenlik-rel1">Modelo de amenazas</a>
         <a class="btn btn-ghost" href="/es/guvenlik/dogrulama/" data-i18n="p-guvenlik-rel2">Verifica tu descarga</a>
         <a class="btn btn-ghost" href="/es/guvenlik/denetim-durumu/" data-i18n="p-guvenlik-rel3">Estado de la auditoría</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/es/download/" data-i18n="cta-dl">Descargar</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Leer el código fuente</a>
       </div>
@@ -276,20 +278,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/es/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Gestor de contraseñas local y de código abierto respaldado por criptografía zero-knowledge AES-256-GCM y Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestor de contraseñas local y de código abierto respaldado por criptografía zero-knowledge AES-256-GCM y Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Producto</h2>
         <ul>
-          <li><a href="/es/" data-i18n="nav-products">Producto</a></li>
           <li><a href="/es/#features" data-i18n="nav-features">Funciones</a></li>
-          <li><a href="/es/#security" data-i18n="nav-security">Seguridad</a></li>
+          <li><a href="/es/guvenlik/" data-i18n="nav-security">Seguridad</a></li>
+          <li><a href="/es/eklenti/" data-i18n="nav-extensions">Extensiones</a></li>
+          <li><a href="/es/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/es/kaynak-kodu/" data-i18n="footer-link-source">Código Fuente</a></li>
           <li><a href="/es/download/" data-i18n="nav-download">Descargar</a></li>
         </ul>
       </div>
@@ -307,6 +311,7 @@
         <h2 data-i18n="footer-col4-title">Legal</h2>
         <ul>
           <li><a href="/es/privacy.html" data-i18n="footer-link-privacy">Política de Privacidad</a></li>
+          <li><a href="/es/code-signing-policy.html" data-i18n="footer-link-code-signing">Política de firma de código</a></li>
           <li><a href="/es/terms.html" data-i18n="footer-link-terms">Términos de Uso</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -315,7 +320,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Todos los derechos reservados.</span>
-      <span data-i18n="footer-langs-label">🌍 Disponible en 12 idiomas:</span>
+      <span data-i18n="footer-langs-label">🌍 Disponible en 12 idiomas</span>
     </p>
   </div>
 </footer>
@@ -324,8 +329,8 @@
   <a class="btn btn-primary" href="/es/download/" data-i18n="hero-btn-dl">Descargar Instalador</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

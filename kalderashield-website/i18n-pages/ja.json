@@ -488,7 +488,7 @@
   "p-windows-step3-desc": "プラットフォーム解錠を登録すると、日常のアクセスは顔認証や PIN で済み、TPM 2.0 が裏付けになります。マスターパスワードは常に保管庫の本当の根幹であり続けます。",
   "p-windows-sec-title": "Windows で知っておくべきこと",
   "p-windows-sec-label": "署名と Windows の警告",
-  "p-windows-sec-body": "Windows インストーラーにはまだ Windows の正式なコード署名がありません。プロジェクトはコード署名証明書を持たず、リリースゲートは未署名の成果物が公式リリースとして公開されるのを遮断しています。状況が変わるまで、ビルドから入手したファイルには Windows の警告機能が「Windows によって PC が保護されました」と表示することがあります。公開済みチェックサムと SHA-256 ハッシュを比べ、この警告の意味と意味でないものについては検証ページを参照してください。",
+  "p-windows-sec-body": "Windows インストーラーは他プラットフォームと同じリリースに含まれ（<code>latest</code> が参照します）、現在は <strong>未署名</strong> で Authenticode 署名がありません。Windows SmartScreen が警告を表示するため、「詳細情報」→「実行」で進めてください。インストール前に SHA256SUMS.txt と SHA-256 を照合してください。SignPath Foundation への申請は<strong>まだ提出されていません</strong>。証明書が整い次第、警告は解消されます。",
   "p-windows-tech1-title": "x64 アーキテクチャ",
   "p-windows-tech1-desc": "1 つのダウンロードで両方の世代に対応します。アプリケーションは WebView ベースのフロントエンドを持つ Tauri デスクトップアプリとして提供されます。",
   "p-windows-tech2-title": "Windows Hello 解錠",

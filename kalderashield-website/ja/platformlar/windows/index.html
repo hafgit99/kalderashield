@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/windows/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/windows/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/windows/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/windows/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/windows/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/windows/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/windows/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/windows/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="言語を選択">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">JA</span>
+          <span data-lang-current="">日本語</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-windows-p3">Windows 固有の保護が有効です。ウィンドウは WDA_EXCLUDEFROMCAPTURE を付けて要求され、通常のスクリーンショット、画面録画、タスク切替のプレビューからアプリが外れます。また Windows Hello が TPM 2.0 裏付けのプラットフォーム認証器で利便的な解錠ペイロードを包みます。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-windows-steps-title">Windows での始め方</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-steps-title">Windows での始め方</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-windows-step1-title">ダウンロードと検証</h3>
           <p data-i18n="p-windows-step1-desc">ダウンロードページからインストーラーを入手し、実行する前に SHA-256 ハッシュを SHA256SUMS.txt の該当行と比べてください。</p>
@@ -208,10 +210,10 @@
       <h2 data-i18n="p-windows-sec-title">Windows で知っておくべきこと</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">署名と Windows の警告</strong>
-        <p data-i18n="p-windows-sec-body">Windows インストーラーは<strong>未署名プレビュー</strong>として公開されており、Authenticode 署名も付いていません。署名証明書がないためです。リリースパイプラインは未署名のデスクトップリリースを失敗として扱うので、プレビューは<em>プレリリース</em>として示され、<code>latest</code> もこれを指しません。未署名ファイルでは Windows SmartScreen の「PC を保護しています」が表示され、インストーラーを実行するには「詳細」→「実行する」をクリックする必要があります。これは想定された動作です。インストール前に SHA256SUMS.txt と SHA-256 ダイジェストを照合してください。オープンソース向けの無料署名について SignPath Foundation への申請は準備済みですが、まだ提出していません。署名が可能になったら以降のリリースは署名され、この警告はなくなります。</p>
+        <p data-i18n="p-windows-sec-body">Windows インストーラーは他プラットフォームと同じリリースに含まれ（<code>latest</code> が参照します）、現在は <strong>未署名</strong> で Authenticode 署名がありません。Windows SmartScreen が警告を表示するため、「詳細情報」→「実行」で進めてください。インストール前に SHA256SUMS.txt と SHA-256 を照合してください。SignPath Foundation への申請は<strong>まだ提出されていません</strong>。証明書が整い次第、警告は解消されます。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Windows 10 / 11</span>
           <h3 data-i18n="p-windows-tech1-title">x64 アーキテクチャ</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">よくある質問</span>
       <h2 data-i18n="p-windows-faq-title">Windows に関する質問</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-windows-faq1-q">セットアップウィザード、MSI、ポータブルのどれを選ぶべきですか。</summary>
         <p data-i18n="p-windows-faq1-a">個人の端末ならセットアップウィザードです。管理された展開なら MSI です。USB メモリやインストールを避けたい端末ならポータブル実行ファイルです。</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-windows-faq3-a">はい。暗号化 .ks バックアップを書き出し、移動して、マスターパスワードで復元します。保管庫ファイルは移植可能で、1 台の端末や 1 つのインストール形態に縛られません。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-windows-rel-title">関連ページ</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-rel-title">関連ページ</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ja/guvenlik/dogrulama/" data-i18n="p-windows-rel1">ダウンロードの検証</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/" data-i18n="p-windows-rel2">セキュリティ概要</a>
         <a class="btn btn-ghost" href="/ja/eklenti/" data-i18n="p-windows-rel3">ブラウザ拡張機能</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ja/download/" data-i18n="cta-dl">ダウンロード</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">ソースコードを見る</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ja/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">製品情報</h2>
         <ul>
-          <li><a href="/ja/" data-i18n="nav-products">製品</a></li>
           <li><a href="/ja/#features" data-i18n="nav-features">機能一覧</a></li>
-          <li><a href="/ja/#security" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a></li>
+          <li><a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a></li>
+          <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
           <li><a href="/ja/download/" data-i18n="nav-download">ダウンロード</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">規約・方針</h2>
         <ul>
           <li><a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a></li>
+          <li><a href="/ja/code-signing-policy.html" data-i18n="footer-link-code-signing">コード署名ポリシー</a></li>
           <li><a href="/ja/terms.html" data-i18n="footer-link-terms">利用規約</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 全著作権所有。</span>
-      <span data-i18n="footer-langs-label">🌍 12言語に対応：</span>
+      <span data-i18n="footer-langs-label">🌍 12言語に対応</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/ja/download/" data-i18n="hero-btn-dl">インストーラーをダウンロード</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

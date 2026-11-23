@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/urun/passkeys/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/urun/passkeys/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/urun/passkeys/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/urun/passkeys/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/urun/passkeys/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/urun/passkeys/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/urun/passkeys/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/urun/passkeys/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Scegli lingua">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">IT</span>
+          <span data-lang-current="">Italiano</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-passkey.webp" width="1800" height="793" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-passkey.webp?v=7.0.31" width="1800" height="793" loading="eager" decoding="async" alt="KalderaShield — Passkey che non lasciano mai il tuo gestore">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-passkeys-p3">Le passkey stanno accanto al resto del gestore anziché in un sistema separato, così sono cifrate, ricercabili e ripristinabili esattamente come una password.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-passkeys-steps-title">Come viene creata una passkey</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-steps-title">Come viene creata una passkey</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-passkeys-step1-title">Il dispositivo crea la coppia di chiavi</h3>
           <p data-i18n="p-passkeys-step1-desc">La chiave privata viene generata dentro l’autenticatore della piattaforma — TPM 2.0, Secure Enclave o AndroidKeyStore — e non è esportabile.</p>
@@ -213,7 +215,7 @@
   <section>
     <div class="wrap">
       <figure class="shot-pair">
-        <img class="shot" src="/assets/images/app-security.webp" width="1800" height="666" loading="lazy" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="lazy" decoding="async" alt="KalderaShield — Lo sblocco hardware sta accanto">
         <figcaption>
           <h3 data-i18n="p-passkeys-shot-title">Lo sblocco hardware sta accanto</h3>
           <p data-i18n="p-passkeys-shot-desc">Lo stesso pannello delle impostazioni contiene le opzioni di sblocco FIDO2 e biometrico, così passkey e sblocco vincolato all’hardware convivono invece di vivere in prodotti separati.</p>
@@ -231,7 +233,7 @@
         <p data-i18n="p-passkeys-sec-body">Una passkey sostituisce la password su un sito; non sostituisce il tuo gestore. Se perdi il dispositivo che ospita il tuo autenticatore e non hai una passkey salvata altrove, quella credenziale è persa con esso. Le passkey aiutano inoltre solo sui siti che supportano WebAuthn, cioè la maggior parte dei servizi grandi e una quota crescente di quelli più piccoli.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">WebAuthn</span>
           <h3 data-i18n="p-passkeys-tech1-title">Uno standard, non un formato privato</h3>
@@ -255,7 +257,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Domande Frequenti</span>
       <h2 data-i18n="p-passkeys-faq-title">Informazioni sulle passkey</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-passkeys-faq1-q">Ho ancora bisogno della password principale?</summary>
         <p data-i18n="p-passkeys-faq1-a">Sì. Il gestore stesso viene sbloccato dalla password principale e dalla chiave segreta. Una passkey sostituisce la password solo sui siti specifici in cui la registri.</p>
       </details>
@@ -268,12 +270,12 @@
         <p data-i18n="p-passkeys-faq3-a">Quella specifica passkey si perde con il suo autenticatore. Il gestore, le sue password e i suoi backup non ne risentono, perché non dipendevano da quel dispositivo.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-passkeys-rel-title">Pagine correlate</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-rel-title">Pagine correlate</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/it/urun/password-vault/" data-i18n="p-passkeys-rel1">Gestore di password</a>
         <a class="btn btn-ghost" href="/it/#security" data-i18n="p-passkeys-rel2">Architettura di sicurezza</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/it/download/" data-i18n="cta-dl">Scarica</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Leggi il codice sorgente</a>
       </div>
@@ -285,20 +287,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/it/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Gestore di credenziali locale e open-source con crittografia zero-knowledge AES-256-GCM e Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestore di credenziali locale e open-source con crittografia zero-knowledge AES-256-GCM e Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Prodotto</h2>
         <ul>
-          <li><a href="/it/" data-i18n="nav-products">Prodotto</a></li>
           <li><a href="/it/#features" data-i18n="nav-features">Funzionalità</a></li>
-          <li><a href="/it/#security" data-i18n="nav-security">Sicurezza</a></li>
+          <li><a href="/it/guvenlik/" data-i18n="nav-security">Sicurezza</a></li>
+          <li><a href="/it/eklenti/" data-i18n="nav-extensions">Estensioni</a></li>
+          <li><a href="/it/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/it/kaynak-kodu/" data-i18n="footer-link-source">Codice Sorgente</a></li>
           <li><a href="/it/download/" data-i18n="nav-download">Scarica</a></li>
         </ul>
       </div>
@@ -316,6 +320,7 @@
         <h2 data-i18n="footer-col4-title">Legale</h2>
         <ul>
           <li><a href="/it/privacy.html" data-i18n="footer-link-privacy">Informativa sulla Privacy</a></li>
+          <li><a href="/it/code-signing-policy.html" data-i18n="footer-link-code-signing">Informativa sulla firma del codice</a></li>
           <li><a href="/it/terms.html" data-i18n="footer-link-terms">Termini di Utilizzo</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -324,7 +329,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tutti i diritti riservati.</span>
-      <span data-i18n="footer-langs-label">🌍 Disponibile in 12 lingue:</span>
+      <span data-i18n="footer-langs-label">🌍 Disponibile in 12 lingue</span>
     </p>
   </div>
 </footer>
@@ -333,8 +338,8 @@
   <a class="btn btn-primary" href="/it/download/" data-i18n="hero-btn-dl">Scarica l'installer</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

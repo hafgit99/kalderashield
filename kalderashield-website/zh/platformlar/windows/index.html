@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/platformlar/windows/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/platformlar/windows/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/platformlar/windows/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/platformlar/windows/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/platformlar/windows/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/platformlar/windows/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/platformlar/windows/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/platformlar/windows/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -58,6 +59,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -138,8 +140,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -182,8 +184,8 @@
         <p data-i18n="p-windows-p3">Windows 专属保护处于启用状态：应用窗口以 WDA_EXCLUDEFROMCAPTURE 请求创建，使应用不会出现在普通截图、屏幕录制和任务切换器预览中；Windows Hello 则通过基于 TPM 2.0 的平台认证器封装便利解锁载荷。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-windows-steps-title">在 Windows 上开始使用</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-steps-title">在 Windows 上开始使用</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-windows-step1-title">下载并验证</h3>
           <p data-i18n="p-windows-step1-desc">从下载页获取安装包，然后在运行之前，将其 SHA-256 哈希与 SHA256SUMS.txt 中对应的行进行比较。</p>
@@ -208,10 +210,10 @@
       <h2 data-i18n="p-windows-sec-title">你应该了解的 Windows 特有事项</h2>
       <div class="notice">
         <strong data-i18n="p-windows-sec-label">签名与 SmartScreen</strong>
-        <p data-i18n="p-windows-sec-body">Windows 安装程序以<strong>未签名预览</strong>形式发布，不带 Authenticode 签名。没有签名证书：发布流水线把未签名的桌面发行版视为失败，因此该预览被标记为<em>预发行版</em>，<code>latest</code> 不会指向它。未签名文件会触发 Windows SmartScreen 的"已保护你的电脑"提示，需要点击"更多信息"→"仍要运行"才能运行安装程序——这是预期行为。安装前请用 SHA256SUMS.txt 核对 SHA-256 摘要。已准备好向 SignPath Foundation 申请免费的开源代码签名，但尚未提交；签名可用后，后续发行版将签名，本提示也会消失。</p>
+        <p data-i18n="p-windows-sec-body">Windows 安装包与其他平台在同一版本中发布（<code>latest</code> 指向它们），但目前<strong>未签名</strong>且不含 Authenticode 签名。Windows SmartScreen 会显示警告（“更多信息”→“仍要运行”）。安装前请对照 SHA256SUMS.txt 核验 SHA-256 摘要。SignPath Foundation 免费签名申请<strong>尚未提交</strong>；证书就绪后该警告将消失。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Windows 10 / 11</span>
           <h3 data-i18n="p-windows-tech1-title">x64 架构</h3>
@@ -235,7 +237,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">常见问题解答</span>
       <h2 data-i18n="p-windows-faq-title">Windows 常见问题</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-windows-faq1-q">setup.exe、MSI 还是便携版——该怎么选？</summary>
         <p data-i18n="p-windows-faq1-a">个人电脑选安装向导。受管部署选 MSI。U 盘或不想安装的机器，选便携版可执行文件。</p>
       </details>
@@ -248,13 +250,13 @@
         <p data-i18n="p-windows-faq3-a">可以。导出一份加密的 .ks 备份，转移它，然后用主密码恢复。密码库文件是可移植的，不绑定某台机器或某种安装形态。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-windows-rel-title">相关页面</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-windows-rel-title">相关页面</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/zh/guvenlik/dogrulama/" data-i18n="p-windows-rel1">验证你的下载</a>
         <a class="btn btn-ghost" href="/zh/guvenlik/" data-i18n="p-windows-rel2">安全总览</a>
         <a class="btn btn-ghost" href="/zh/eklenti/" data-i18n="p-windows-rel3">浏览器扩展</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/zh/download/" data-i18n="cta-dl">下载</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">查看源代码</a>
       </div>
@@ -266,20 +268,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/zh/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">产品</h2>
         <ul>
-          <li><a href="/zh/" data-i18n="nav-products">产品</a></li>
           <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
-          <li><a href="/zh/#security" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
           <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
         </ul>
       </div>
@@ -297,6 +301,7 @@
         <h2 data-i18n="footer-col4-title">法律法规</h2>
         <ul>
           <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
           <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -305,7 +310,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
-      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言：</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
@@ -314,8 +319,8 @@
   <a class="btn btn-primary" href="/zh/download/" data-i18n="hero-btn-dl">下载安装包</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

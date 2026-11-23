@@ -145,9 +145,10 @@ function hreflangBlock(urlPathOf) {
   for (const locale of locales.eligible) {
     lines.push(`<link rel="alternate" hreflang="${locale}" href="${localeUrl(locale, urlPathOf)}">`);
   }
-  // x-default is for visitors whose language is none of the twelve; it belongs
-  // on the unprefixed page, which is Turkish.
-  lines.push(`<link rel="alternate" hreflang="x-default" href="${localeUrl(SOURCE, urlPathOf)}">`);
+  // x-default serves international visitors whose language is outside the twelve
+  // published locales: point at English so global search results land cleanly.
+  const xDefaultLocale = locales.eligible.includes('en') ? 'en' : SOURCE;
+  lines.push(`<link rel="alternate" hreflang="x-default" href="${localeUrl(xDefaultLocale, urlPathOf)}">`);
   return lines.join('\n');
 }
 
@@ -169,6 +170,14 @@ function replaceAlternates(head, block) {
 }
 
 function applyHead(doc, rel, locale) {
+  const head = doc.querySelector('head');
+  if (rel === '404.html') {
+    const canonicalLink = doc.querySelector('link[rel="canonical"]');
+    if (canonicalLink) canonicalLink.remove();
+    if (head) head.innerHTML = head.innerHTML.replace(ALTERNATE_RE, '');
+    return;
+  }
+
   const p = urlPath(rel);
   const target = locale || SOURCE;
   const canonical = localeUrl(target, p);
@@ -176,7 +185,6 @@ function applyHead(doc, rel, locale) {
   const link = doc.querySelector('link[rel="canonical"]');
   if (link) link.setAttribute('href', canonical);
   else {
-    const head = doc.querySelector('head');
     head.insertAdjacentHTML('afterbegin', `<link rel="canonical" href="${canonical}">\n`);
   }
 
@@ -185,7 +193,6 @@ function applyHead(doc, rel, locale) {
   const ogUrl = doc.querySelector('meta[property="og:url"]');
   if (ogUrl) ogUrl.setAttribute('content', canonical);
 
-  const head = doc.querySelector('head');
   replaceAlternates(head, hreflangBlock(p));
 }
 
@@ -223,12 +230,13 @@ const DESCRIPTION_LIMIT = 155;
 const TITLE_LIMIT = 70;
 
 function pageTitle(h1) {
-  const hasBrand = h1.toLowerCase().indexOf(BRAND.toLowerCase()) !== -1;
-  if (hasBrand) return clampTitle(h1);
+  const clean = String(h1 || '').replace(/\.$/, '').trim();
+  const hasBrand = clean.toLowerCase().indexOf(BRAND.toLowerCase()) !== -1;
+  if (hasBrand) return clampTitle(clean);
 
-  const withBrand = h1 + TITLE_SEPARATOR + BRAND;
+  const withBrand = clean + TITLE_SEPARATOR + BRAND;
   if (withBrand.length <= TITLE_LIMIT) return withBrand;
-  return clampTitle(h1);
+  return clampTitle(clean);
 }
 
 function clampTitle(text) {
@@ -249,13 +257,71 @@ function textOf(doc, selector) {
   return el.textContent.replace(/\s+/g, ' ').trim();
 }
 
+const LOCALE_BADGES = {
+  tr: { code: 'TR', label: 'Türkçe' },
+  en: { code: 'EN', label: 'English' },
+  de: { code: 'DE', label: 'Deutsch' },
+  fr: { code: 'FR', label: 'Français' },
+  es: { code: 'ES', label: 'Español' },
+  it: { code: 'IT', label: 'Italiano' },
+  pt: { code: 'PT', label: 'Português' },
+  ru: { code: 'RU', label: 'Русский' },
+  ja: { code: 'JA', label: '日本語' },
+  ko: { code: 'KO', label: '한국어' },
+  zh: { code: 'ZH', label: '中文' },
+  ar: { code: 'AR', label: 'العربية' },
+};
+
 function truncate(text, limit) {
-  if (text.length <= limit) return text;
-  const cut = text.slice(0, limit);
+  const s = String(text || '').replace(/\s+/g, ' ').trim();
+  if (s.length <= limit) return s;
+  const slice = s.slice(0, limit);
+  const sentenceEnd = Math.max(
+    slice.lastIndexOf('. '),
+    slice.lastIndexOf('! '),
+    slice.lastIndexOf('? '),
+    slice.lastIndexOf('。'),
+    slice.lastIndexOf('！'),
+    slice.lastIndexOf('？')
+  );
+  if (sentenceEnd >= Math.floor(limit * 0.55)) {
+    return slice.slice(0, sentenceEnd + 1).trim();
+  }
+  const cut = s.slice(0, limit - 1);
   const space = cut.lastIndexOf(' ');
-  // Falling back to a hard cut rather than to a whole-word search that misses:
-  // a description ending mid-word is a cosmetic flaw, an empty one is worse.
-  return (space > limit * 0.6 ? cut.slice(0, space) : cut).trim();
+  let out = (space > limit * 0.55 ? cut.slice(0, space) : cut).trim();
+  out = out.replace(/[,;:\-–—\s]+$/, '');
+  out = out.replace(/\s+(?:or|and|of|to|the|a|an|in|on|for|with|ve|veya|ile|de|da|und|oder|et|ou|y|o|e|di|per|para|com|или|и)$/i, '');
+  return out + '…';
+}
+
+function hydrateStaticChrome(doc, locale) {
+  // Stamp the page's own locale onto the closed language pill at build time so
+  // non-Turkish pages never flash "TR Türkçe" before site.js runs.
+  const badge = LOCALE_BADGES[locale];
+  if (badge) {
+    for (const el of doc.querySelectorAll('[data-lang-code]')) el.textContent = badge.code;
+    for (const el of doc.querySelectorAll('[data-lang-current]')) el.textContent = badge.label;
+  }
+
+  // Write the real localized counts into .stat-num[data-count] so crawlers and
+  // no-JS visitors never see "0 unit tests, 0 interface languages, 0 platforms".
+  for (const el of doc.querySelectorAll('.stat-num[data-count]')) {
+    const n = parseInt(el.getAttribute('data-count'), 10);
+    if (isFinite(n)) el.textContent = KS.formatTestCount(n, locale);
+  }
+
+  // Provide meaningful localized alt text on informative product screenshots
+  // (brand icons next to the wordmark stay decorative alt="").
+  const h1 = textOf(doc, 'h1');
+  for (const img of doc.querySelectorAll('.hero-shot img, .shot-hero img')) {
+    if (h1) img.setAttribute('alt', `${BRAND} — ${h1}`);
+  }
+  for (const fig of doc.querySelectorAll('.shot-pair')) {
+    const img = fig.querySelector('img');
+    const cap = textOf(fig, 'figcaption h3');
+    if (img && cap) img.setAttribute('alt', `${BRAND} — ${cap}`);
+  }
 }
 
 /* Where a page's description comes from, in order of preference.
@@ -304,7 +370,7 @@ function findDescription(doc) {
   return '';
 }
 
-function localiseHead(doc, sourceH1) {
+function localiseHead(doc, sourceH1, rel, locale) {
   const h1 = textOf(doc, 'h1');
   const title = doc.querySelector('title');
   const ogTitle = doc.querySelector('meta[property="og:title"]');
@@ -316,7 +382,12 @@ function localiseHead(doc, sourceH1) {
   // The title and the description are decided separately. Requiring a changed
   // heading before touching either meant a page whose heading happens to read
   // the same in two languages kept a description that was still Turkish.
-  if (h1 && h1 !== sourceH1) {
+  if (rel === 'index.html' && locale === 'en') {
+    const value = 'KalderaShield — Local-First, Open-Source Password Manager';
+    if (title) title.textContent = value;
+    if (ogTitle) ogTitle.setAttribute('content', value);
+    changed = true;
+  } else if (h1 && h1 !== sourceH1) {
     const value = pageTitle(h1);
     if (title) title.textContent = value;
     if (ogTitle) ogTitle.setAttribute('content', value);
@@ -405,8 +476,9 @@ function render(html, locale, rel, sourceH1) {
 
   KS.setDocumentLang(doc, locale);
   KS.translate(doc, doc, { dictionary: dicts[locale], fallbackDictionary: FALLBACK, locale });
+  hydrateStaticChrome(doc, locale);
 
-  const retitled = localiseHead(doc, sourceH1);
+  const retitled = localiseHead(doc, sourceH1, rel, locale);
   applyHead(doc, rel, locale);
   prefixInternalLinks(doc, locale, PAGE_PATHS);
 
@@ -508,6 +580,7 @@ for (const { rel } of pages({ includeNotFound: true })) {
 
   KS.setDocumentLang(doc, SOURCE);
   KS.translate(doc, doc, { dictionary: dicts[SOURCE], fallbackDictionary: {}, locale: SOURCE });
+  hydrateStaticChrome(doc, SOURCE);
 
   applyHead(doc, rel);
   structuredData.forPage(doc, {

@@ -488,7 +488,7 @@
   "p-windows-step3-desc": "Inscrivez le déverrouillage de plateforme pour que l’accès quotidien soit un regard ou un code PIN, adossé au TPM 2.0. Le mot de passe principal demeure toujours la vraie racine du coffre.",
   "p-windows-sec-title": "Ce qu’il faut savoir côté Windows",
   "p-windows-sec-label": "Signatures et SmartScreen",
-  "p-windows-sec-body": "Les installateurs Windows ne portent pas encore de signature Authenticode : le projet n’a pas de certificat de signature de code, et son garde-fou de version empêche la publication d’artefacts non signés comme versions officielles. Tant que cela ne change pas, Windows SmartScreen peut afficher « Windows a protégé votre PC » pour des fichiers obtenus par une compilation — vérifiez le hachage SHA-256 contre les sommes de contrôle publiées, et voyez la page de vérification pour ce que cet avertissement signifie et ne signifie pas.",
+  "p-windows-sec-body": "Les installateurs Windows sont publiés dans la même sortie que les autres plateformes (<code>latest</code> pointe vers eux), mais ils sont actuellement <strong>non signés</strong> et sans signature Authenticode. Windows SmartScreen affiche un avertissement (« Informations complémentaires » → « Exécuter quand même »). Vérifiez l'empreinte SHA-256 avec SHA256SUMS.txt avant l'installation. La demande auprès de la SignPath Foundation <strong>n'a pas encore été soumise</strong> ; dès qu'un certificat sera en place, cet avertissement disparaîtra.",
   "p-windows-tech1-title": "Architecture x64",
   "p-windows-tech1-desc": "Un seul téléchargement sert aux deux. L’application est livrée comme application de bureau Tauri avec une interface en WebView.",
   "p-windows-tech2-title": "Déverrouillage Windows Hello",

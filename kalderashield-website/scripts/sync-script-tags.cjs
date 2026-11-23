@@ -17,17 +17,25 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const check = process.argv.includes('--check');
 
-const MODULE_TAG = '<script src="/assets/js/i18n-apply.js" defer></script>';
-const SITE_TAG = '<script src="/assets/js/site.js" defer></script>';
+function siteVersion() {
+  const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const m = indexHtml.match(/data-site-version="([^"]+)"/);
+  if (!m) throw new Error('index.html icinden data-site-version okunamadi');
+  return m[1].trim();
+}
+
+const VERSION = siteVersion();
+const MODULE_TAG = `<script src="/assets/js/i18n-apply.js?v=${VERSION}" defer></script>`;
+const SITE_TAG = `<script src="/assets/js/site.js?v=${VERSION}" defer></script>`;
 const BOTH = `${MODULE_TAG}\n${SITE_TAG}`;
 
 /* Generated pages go through jsdom, which writes a valueless attribute as
  * name="". Both spellings are valid and mean the same thing, so the tags are
  * matched either way -- but they are written back in the short form, so a
  * normalised page does not stay normalised. */
-const MODULE_RE = /<script src="\/assets\/js\/i18n-apply\.js" defer(?:="")?><\/script>/;
-const SITE_RE = /<script src="\/assets\/js\/site\.js" defer(?:="")?><\/script>/;
-const PAIR_RE = /<script src="\/assets\/js\/i18n-apply\.js" defer(?:="")?><\/script>\r?\n\s*<script src="\/assets\/js\/site\.js" defer(?:="")?><\/script>/;
+const MODULE_RE = /<script src="\/assets\/js\/i18n-apply\.js(?:\?v=[^"]*)?" defer(?:="")?><\/script>/;
+const SITE_RE = /<script src="\/assets\/js\/site\.js(?:\?v=[^"]*)?" defer(?:="")?><\/script>/;
+const PAIR_RE = /<script src="\/assets\/js\/i18n-apply\.js(?:\?v=[^"]*)?" defer(?:="")?><\/script>\r?\n\s*<script src="\/assets\/js\/site\.js(?:\?v=[^"]*)?" defer(?:="")?><\/script>/;
 
 function htmlFiles() {
   const out = [];
@@ -69,23 +77,23 @@ for (const file of files) {
   const html = fs.readFileSync(file, 'utf8');
 
   if (check) {
-    if (!html.includes(MODULE_TAG)) issues.push(`${rel}: i18n-apply.js yuklenmiyor`);
+    if (!html.includes(MODULE_TAG)) issues.push(`${rel}: i18n-apply.js (?v=${VERSION}) yuklenmiyor`);
     else for (const p of problems(html)) issues.push(`${rel}: ${p}`);
     continue;
   }
 
   let next = html;
-  if (next.includes(MODULE_TAG)) {
-    // Replace the pair wherever it already is, so re-running does not append a
-    // second copy.
+  if (PAIR_RE.test(next)) {
+    // Replace the pair wherever it already is (including unversioned or older
+    // ?v= tags), so re-running does not append a second copy.
     next = next.replace(PAIR_RE, BOTH);
-  }
-  if (!next.includes(MODULE_TAG)) {
-    if (!next.includes(SITE_TAG)) {
-      issues.push(`${rel}: site.js bulunamadi, eklenemedi`);
-      continue;
-    }
-    next = next.replace(SITE_TAG, BOTH);
+  } else if (MODULE_RE.test(next) && SITE_RE.test(next)) {
+    next = next.replace(MODULE_RE, MODULE_TAG).replace(SITE_RE, SITE_TAG);
+  } else if (SITE_RE.test(next)) {
+    next = next.replace(SITE_RE, BOTH);
+  } else {
+    issues.push(`${rel}: site.js bulunamadi, eklenemedi`);
+    continue;
   }
   if (next === html) continue;
   fs.writeFileSync(file, next, 'utf8');

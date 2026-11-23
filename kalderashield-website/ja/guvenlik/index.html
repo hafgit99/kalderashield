@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="言語を選択">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">JA</span>
+          <span data-lang-current="">日本語</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-security.webp" width="1800" height="666" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — 端末から始まるセキュリティ">
       </figure>
     </div>
   </section>
@@ -192,8 +194,8 @@
         <p data-i18n="p-guvenlik-p4">製品版のビルドはエアギャップポリシーの下で動作します。予期しない外向きの通信 ― データの取得、常時接続、対話型の通信などの呼び出し ― は遮断され、記録されます。唯一のネットワーク通信は HIBP の範囲クエリで、送られるのは SHA-1 ハッシュの先頭 5 文字だけで、パスワード自体は送られません。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-guvenlik-steps-title">層が重なるしくみ</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-steps-title">層が重なるしくみ</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-guvenlik-step1-title">マスターパスワードが根幹です</h3>
           <p data-i18n="p-guvenlik-step1-desc">Argon2id がマスターパスワードを保管庫の鍵へと変換します。マスターパスワードがブラウザの sessionStorage に保存されることはありません。解錠後のセッション状態はゼロ化できるメモリ上のバイトバッファであり、ページが読める文字列ではありません。</p>
@@ -221,7 +223,7 @@
         <p data-i18n="p-guvenlik-sec-body">侵害された端末上の保管庫を、ローカルアプリケーションは守れません。保管庫の解錠中にあなたの OS アカウントで動くマルウェア、キーロガー、特権を持つ画面キャプチャ、メモリの検査は、いずれもこのモデルの範囲外です。ハードウェア解錠は利便性のための包み込みであって、マスターパスワードの代わりにはなりません。独立した第三者監査はまだ完了していません。それは隠さず、公表されています。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Argon2id</span>
           <h3 data-i18n="p-guvenlik-tech1-title">メモリ困難な KDF</h3>
@@ -245,7 +247,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">よくある質問</span>
       <h2 data-i18n="p-guvenlik-faq-title">セキュリティ設計について</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-guvenlik-faq1-q">保管庫がサーバーへ送信されることはありますか。</summary>
         <p data-i18n="p-guvenlik-faq1-a">いいえ。アカウントもサーバー側の保管庫も存在しません。WebDAV や S3 などの任意の同期プロバイダーは、自分で設定し所有するストレージへ、暗号化されたペイロードだけをアップロードします。</p>
       </details>
@@ -258,13 +260,13 @@
         <p data-i18n="p-guvenlik-faq3-a">まだです。監査状況のページがこのことを公開しており、現在整っている自動検証についても説明しています。未完成の監査を隠すことは、このサイトのほかのすべての主張と矛盾します。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-guvenlik-rel-title">さらに詳しく</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-rel-title">さらに詳しく</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ja/guvenlik/tehdit-modeli/" data-i18n="p-guvenlik-rel1">脅威モデル</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/dogrulama/" data-i18n="p-guvenlik-rel2">ダウンロードの検証</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/denetim-durumu/" data-i18n="p-guvenlik-rel3">監査状況</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ja/download/" data-i18n="cta-dl">ダウンロード</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">ソースコードを見る</a>
       </div>
@@ -276,20 +278,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ja/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">製品情報</h2>
         <ul>
-          <li><a href="/ja/" data-i18n="nav-products">製品</a></li>
           <li><a href="/ja/#features" data-i18n="nav-features">機能一覧</a></li>
-          <li><a href="/ja/#security" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a></li>
+          <li><a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a></li>
+          <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
           <li><a href="/ja/download/" data-i18n="nav-download">ダウンロード</a></li>
         </ul>
       </div>
@@ -307,6 +311,7 @@
         <h2 data-i18n="footer-col4-title">規約・方針</h2>
         <ul>
           <li><a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a></li>
+          <li><a href="/ja/code-signing-policy.html" data-i18n="footer-link-code-signing">コード署名ポリシー</a></li>
           <li><a href="/ja/terms.html" data-i18n="footer-link-terms">利用規約</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -315,7 +320,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 全著作権所有。</span>
-      <span data-i18n="footer-langs-label">🌍 12言語に対応：</span>
+      <span data-i18n="footer-langs-label">🌍 12言語に対応</span>
     </p>
   </div>
 </footer>
@@ -324,8 +329,8 @@
   <a class="btn btn-primary" href="/ja/download/" data-i18n="hero-btn-dl">インストーラーをダウンロード</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

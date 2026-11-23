@@ -7,21 +7,21 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>개인정보 처리방침 — KalderaShield</title>
-<meta name="description" content="본 웹사이트는 쿠키, 분석 도구, 광고, 제3자 추적 없이 귀하에 대한 개인 데이터를 전혀 수집하지 않습니다. KalderaShield 애플리케이션은 귀하의 볼트 데이터를 절대 열람하거나 전송하지 않으며, 모든 데이터는 귀하의 기기에만 머무릅니다. 아래에서 호스팅 인프라에">
+<meta name="description" content="본 웹사이트는 쿠키, 분석 도구, 광고, 제3자 추적 없이 귀하에 대한 개인 데이터를 전혀 수집하지 않습니다. KalderaShield 애플리케이션은 귀하의 볼트 데이터를 절대 열람하거나 전송하지 않으며, 모든 데이터는 귀하의 기기에만 머무릅니다.">
 <link rel="canonical" href="https://kalderashield.com/ko/privacy.html">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="개인정보 처리방침 — KalderaShield">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
-<meta property="og:description" content="본 웹사이트는 쿠키, 분석 도구, 광고, 제3자 추적 없이 귀하에 대한 개인 데이터를 전혀 수집하지 않습니다. KalderaShield 애플리케이션은 귀하의 볼트 데이터를 절대 열람하거나 전송하지 않으며, 모든 데이터는 귀하의 기기에만 머무릅니다. 아래에서 호스팅 인프라에">
+<meta property="og:description" content="본 웹사이트는 쿠키, 분석 도구, 광고, 제3자 추적 없이 귀하에 대한 개인 데이터를 전혀 수집하지 않습니다. KalderaShield 애플리케이션은 귀하의 볼트 데이터를 절대 열람하거나 전송하지 않으며, 모든 데이터는 귀하의 기기에만 머무릅니다.">
 <meta property="og:url" content="https://kalderashield.com/ko/privacy.html">
 
 <link rel="icon" href="/assets/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/privacy.html">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/privacy.html">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/privacy.html">
@@ -34,9 +34,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/privacy.html">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/privacy.html">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/privacy.html">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/privacy.html">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/privacy.html">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -65,16 +66,49 @@
     </a>
 
     <nav class="site-nav" id="site-nav">
+      <!-- mega:start -->
       <a href="/ko/#features" data-i18n="nav-features">기능</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-products">제품</summary>
+        <div class="menu-panel">
+          <ul>
+        <li><a href="/ko/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">비밀번호 보관함</span><span class="menu-d" data-i18n="menu-d-password-vault">모든 기록을 각각의 키로 암호화</span></a></li>
+        <li><a href="/ko/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">패스키</span><span class="menu-d" data-i18n="menu-d-passkeys">사용자 자신의 인증기에 묶인 WebAuthn</span></a></li>
+        <li><a href="/ko/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">보관함 기록</span><span class="menu-d" data-i18n="menu-d-vault-history">스냅숏, 휴지통, 비밀번호 기록</span></a></li>
+        <li><a href="/ko/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">보안 감사</span><span class="menu-d" data-i18n="menu-d-security-audit">약하고, 재사용되며, 유출된 비밀번호</span></a></li>
+        <li><a href="/ko/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">비밀번호 생성기</span><span class="menu-d" data-i18n="menu-d-password-generator">무작위 문자 또는 Diceware 구절</span></a></li>
+        <li><a href="/ko/urun/unlock-and-recovery/"><span class="menu-t" data-i18n="menu-unlock-and-recovery">잠금 해제와 복구</span><span class="menu-d" data-i18n="menu-d-unlock-and-recovery">생체 인식, 보안 키, 24단어 키트</span></a></li>
+        <li><a href="/ko/urun/autofill/"><span class="menu-t" data-i18n="menu-autofill">자동 입력</span><span class="menu-d" data-i18n="menu-d-autofill">eTLD+1 기준 일치, 사이트 간 유출 없음</span></a></li>
+        <li><a href="/ko/urun/attachments/"><span class="menu-t" data-i18n="menu-attachments">첨부 파일</span><span class="menu-d" data-i18n="menu-d-attachments">보관함 안에서 암호화되는 파일</span></a></li>
+          </ul>
+        </div>
+      </details>
+
       <a href="/ko/guvenlik/" data-i18n="nav-security">보안</a>
       <a href="/ko/eklenti/" data-i18n="nav-extensions">확장 프로그램</a>
+      <a href="/ko/#comparison" data-i18n="nav-comparison">비교</a>
+      <a href="/ko/guvenlik/denetim-durumu/" data-i18n="nav-audit">보안 감사</a>
       <a href="/ko/sss/" data-i18n="nav-faq">자주 묻는 질문</a>
+
+      <details class="menu">
+        <summary data-i18n="nav-source">소스</summary>
+        <div class="menu-panel menu-panel-sm">
+          <ul>
+            <li><a href="/ko/kaynak-kodu/" data-i18n="footer-link-source">소스 코드</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">이슈/버그 제보</a></li>
+            <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">토론 포럼</a></li>
+          </ul>
+        </div>
+      </details>
+
       <a class="nav-cta" href="/ko/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10.5l4.5 4.5 4.5-4.5"></path><path d="M4.5 19.5h15"></path></svg><span data-i18n="nav-download">다운로드</span></a>
+      <!-- mega:end -->
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="언어 선택">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">KO</span>
+          <span data-lang-current="">한국어</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -137,16 +171,56 @@
 
 <footer class="site-footer">
   <div class="wrap">
+    <div class="cols">
+      <div class="footer-brand">
+        <a class="brand" href="/ko/">
+          <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
+          KalderaShield
+        </a>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM 및 Argon2id 영지식 암호화 기술로 구동되는 로컬 우선, 오픈소스 차세대 비밀번호 관리자.</p>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col1-title">제품</h2>
+        <ul>
+          <li><a href="/ko/#features" data-i18n="nav-features">기능</a></li>
+          <li><a href="/ko/guvenlik/" data-i18n="nav-security">보안</a></li>
+          <li><a href="/ko/eklenti/" data-i18n="nav-extensions">확장 프로그램</a></li>
+          <li><a href="/ko/sss/" data-i18n="nav-faq">자주 묻는 질문</a></li>
+          <li><a href="/ko/kaynak-kodu/" data-i18n="footer-link-source">소스 코드</a></li>
+          <li><a href="/ko/download/" data-i18n="nav-download">다운로드</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col3-title">커뮤니티</h2>
+        <ul>
+          <li><a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">소스 코드</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/issues" rel="noopener noreferrer" data-i18n="footer-link-issues">이슈/버그 제보</a></li>
+          <li><a href="https://github.com/hafgit99/kalderashield/discussions" rel="noopener noreferrer" data-i18n="footer-link-discussions">토론 포럼</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 data-i18n="footer-col4-title">법적 고지</h2>
+        <ul>
+          <li><a href="/ko/privacy.html" data-i18n="footer-link-privacy">개인정보 처리방침</a></li>
+          <li><a href="/ko/code-signing-policy.html" data-i18n="footer-link-code-signing">코드 서명 정책</a></li>
+          <li><a href="/ko/terms.html" data-i18n="footer-link-terms">이용 약관</a></li>
+          <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
+        </ul>
+      </div>
+    </div>
+
     <p class="base">
-      <a href="/ko/" style="color:var(--text-muted)">KalderaShield</a>
-      <a href="/ko/terms.html" data-i18n="footer-link-terms">이용 약관</a>
-      <a href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="footer-link-source">소스 코드</a>
+      <span data-i18n="footer-copy">© 2026 KalderaShield. 모든 권리 보유.</span>
+      <span data-i18n="footer-langs-label">🌍 12개 언어 지원</span>
     </p>
   </div>
 </footer>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

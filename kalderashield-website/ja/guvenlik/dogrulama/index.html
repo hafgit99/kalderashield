@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/dogrulama/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/dogrulama/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/dogrulama/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/dogrulama/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="言語を選択">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">JA</span>
+          <span data-lang-current="">日本語</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -189,8 +191,8 @@
         <p data-i18n="p-dogrulama-p4">1 つ正直な注意点があります。コード署名証明書が存在しないあいだは、自分でビルドした Windows インストーラーや CI から入手したものには、Windows の正式なコード署名が付いていません。署名ゲートはそれらを公開リリースから締め出します。ビルドから入手した場合は、実行する前に SHA-256 ハッシュを検証してください。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-dogrulama-steps-title">3 ステップでの検証方法</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-steps-title">3 ステップでの検証方法</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-dogrulama-step1-title">ファイルのハッシュを計算する</h3>
           <p data-i18n="p-dogrulama-step1-desc">Windows では Get-FileHash を実行します。Linux と macOS では sha256sum または shasum -a 256 を実行します。出力を SHA256SUMS.txt の該当行と比べてください。</p>
@@ -218,7 +220,7 @@
         <p data-i18n="p-dogrulama-sec-body">ダウンロードの実績のない未署名の実行ファイルは、Windows のダウンロード警告やアンチウイルスのヒューリスティックが警告するファイルの形そのものです。これは証明書を持たないことのコストであって、マルウェアの証拠ではありません。SHA-256 ハッシュを検証し、公開済みチェックサムと一致するハッシュをアンチウイルスがまだ検出する場合は、誤検知としてベンダーに報告してください。この制限はリポジトリのビルドワークフローのコメントに公開されています。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">SHA-256</span>
           <h3 data-i18n="p-dogrulama-tech1-title">完全性</h3>
@@ -242,7 +244,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">よくある質問</span>
       <h2 data-i18n="p-dogrulama-faq-title">検証について</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-dogrulama-faq1-q">Windows が「Windows によって PC が保護されました」と表示します。どうすればよいですか。</summary>
         <p data-i18n="p-dogrulama-faq1-a">これはウイルスの報告ではなく、未署名のファイルに対する Windows の警告機能の反応です。SHA256SUMS.txt と SHA-256 ハッシュを比べてください。一致すればそのファイルはパイプラインの出力です。リリースが署名証明書を持てば、この警告は恒久的に消えます。</p>
       </details>
@@ -255,13 +257,13 @@
         <p data-i18n="p-dogrulama-faq3-a">ソースからビルドしてください。リポジトリは文書化された npm と cargo のコマンドで再現可能にビルドでき、ローカルのリリーススクリプトは同じ成果物の命名規則で独自のチェックサムを添えて生成します。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-dogrulama-rel-title">関連ページ</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-rel-title">関連ページ</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ja/download/#verify" data-i18n="p-dogrulama-rel1">ダウンロードと検証</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/denetim-durumu/" data-i18n="p-dogrulama-rel2">監査状況</a>
         <a class="btn btn-ghost" href="/ja/guvenlik/" data-i18n="p-dogrulama-rel3">セキュリティ概要</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ja/download/" data-i18n="cta-dl">ダウンロード</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">ソースコードを見る</a>
       </div>
@@ -273,20 +275,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ja/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">AES-256-GCM と Argon2id ゼロ知識暗号化技術を搭載した、ローカル優先・完全オープンソースのパスワード管理ツール。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">製品情報</h2>
         <ul>
-          <li><a href="/ja/" data-i18n="nav-products">製品</a></li>
           <li><a href="/ja/#features" data-i18n="nav-features">機能一覧</a></li>
-          <li><a href="/ja/#security" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/guvenlik/" data-i18n="nav-security">セキュリティ</a></li>
+          <li><a href="/ja/eklenti/" data-i18n="nav-extensions">拡張機能</a></li>
+          <li><a href="/ja/sss/" data-i18n="nav-faq">よくある質問</a></li>
+          <li><a href="/ja/kaynak-kodu/" data-i18n="footer-link-source">ソースコード</a></li>
           <li><a href="/ja/download/" data-i18n="nav-download">ダウンロード</a></li>
         </ul>
       </div>
@@ -304,6 +308,7 @@
         <h2 data-i18n="footer-col4-title">規約・方針</h2>
         <ul>
           <li><a href="/ja/privacy.html" data-i18n="footer-link-privacy">プライバシーポリシー</a></li>
+          <li><a href="/ja/code-signing-policy.html" data-i18n="footer-link-code-signing">コード署名ポリシー</a></li>
           <li><a href="/ja/terms.html" data-i18n="footer-link-terms">利用規約</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -312,7 +317,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. 全著作権所有。</span>
-      <span data-i18n="footer-langs-label">🌍 12言語に対応：</span>
+      <span data-i18n="footer-langs-label">🌍 12言語に対応</span>
     </p>
   </div>
 </footer>
@@ -321,8 +326,8 @@
   <a class="btn btn-primary" href="/ja/download/" data-i18n="hero-btn-dl">インストーラーをダウンロード</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -592,11 +592,17 @@
     var nums = document.querySelectorAll('.stat-num[data-count]');
     if (!nums.length) return;
 
+    function formatStat(n) {
+      return KS && typeof KS.formatTestCount === 'function'
+        ? KS.formatTestCount(n, document.documentElement.getAttribute('lang') || current)
+        : Number(n).toLocaleString();
+    }
+
     var reduced = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced || !('IntersectionObserver' in window)) {
       for (var i = 0; i < nums.length; i++) {
-        nums[i].textContent = Number(nums[i].getAttribute('data-count')).toLocaleString();
+        nums[i].textContent = formatStat(Number(nums[i].getAttribute('data-count')));
       }
       return;
     }
@@ -612,7 +618,7 @@
         if (start === null) start = ts;
         var p = Math.min((ts - start) / DURATION, 1);
         var eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(target * eased).toLocaleString();
+        el.textContent = formatStat(Math.round(target * eased));
         if (p < 1) window.requestAnimationFrame(step);
       };
       window.requestAnimationFrame(step);
@@ -739,13 +745,99 @@
 
     var shots = document.querySelectorAll('.shot, .hero-shot img');
     for (var i = 0; i < shots.length; i++) {
-      shots[i].addEventListener('click', function (event) {
+      var shot = shots[i];
+      if (!shot.hasAttribute('tabindex')) shot.setAttribute('tabindex', '0');
+      shot.setAttribute('role', 'button');
+      shot.setAttribute('aria-haspopup', 'dialog');
+      shot.addEventListener('click', function (event) {
         open(event.currentTarget.getAttribute('src'), event.currentTarget);
+      });
+      shot.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          open(event.currentTarget.getAttribute('src'), event.currentTarget);
+        }
       });
     }
   }
 
   initLightbox();
+
+  /* ---------- code copy buttons ----------
+   * Adds a keyboard-accessible copy button to every <pre><code> block on
+   * pages with shell commands or verification digests (/download/, /guvenlik/dogrulama/).
+   * Uses inline SVG icons so no extra dictionary keys are needed across 12 locales. */
+  function initCodeCopy() {
+    var blocks = document.querySelectorAll('main pre');
+    if (!blocks.length || !navigator.clipboard) return;
+
+    var COPY_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>';
+    var CHECK_ICON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
+
+    for (var i = 0; i < blocks.length; i++) {
+      var pre = blocks[i];
+      if (pre.querySelector('.code-copy')) continue;
+      var code = pre.querySelector('code');
+      if (!code) continue;
+
+      pre.classList.add('has-copy');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.setAttribute('aria-label', 'Copy');
+      btn.innerHTML = COPY_ICON;
+
+      (function (button, codeNode) {
+        var timer = null;
+        button.addEventListener('click', function () {
+          var text = (codeNode.textContent || '').trim();
+          if (!text) return;
+          navigator.clipboard.writeText(text).then(function () {
+            button.classList.add('is-copied');
+            button.innerHTML = CHECK_ICON;
+            if (timer) window.clearTimeout(timer);
+            timer = window.setTimeout(function () {
+              button.classList.remove('is-copied');
+              button.innerHTML = COPY_ICON;
+            }, 1800);
+          }).catch(function () {});
+        });
+      })(btn, code);
+
+      pre.appendChild(btn);
+    }
+  }
+
+  initCodeCopy();
+
+  /* ---------- local zero-network OS highlight ----------
+   * Reads navigator.userAgentData / navigator.platform purely locally (no
+   * network request) and highlights the visitor's matching platform card on
+   * /download/ and on the homepage #platforms grid. */
+  function initOsHighlight() {
+    var ua = (navigator.userAgent || '').toLowerCase();
+    var plat = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '').toLowerCase();
+    var os = null;
+    if (/android/.test(ua)) os = 'android';
+    else if (/win/.test(plat) || /windows/.test(ua)) os = 'windows';
+    else if (/linux|x11/.test(plat) || /linux/.test(ua)) os = 'linux';
+    if (!os) return;
+
+    var dlCard = document.getElementById(os);
+    if (dlCard && dlCard.classList.contains('card')) {
+      dlCard.classList.add('is-recommended-os');
+    }
+
+    var homeLink = document.querySelector(
+      '#platforms a[href$="#' + os + '"], #platforms a[href$="/platformlar/' + os + '/"]'
+    );
+    var homeCard = homeLink && homeLink.closest('.card');
+    if (homeCard) {
+      homeCard.classList.add('is-recommended-os');
+    }
+  }
+
+  initOsHighlight();
 
   /* ---------- scroll reveals ----------
    * Section content fades up the first time it enters the viewport. The

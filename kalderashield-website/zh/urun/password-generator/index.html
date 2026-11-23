@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/urun/password-generator/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/urun/password-generator/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/urun/password-generator/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/urun/password-generator/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/urun/password-generator/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/urun/password-generator/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/urun/password-generator/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/urun/password-generator/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="选择语言">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">ZH</span>
+          <span data-lang-current="">中文</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-generator.webp" width="1800" height="889" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-generator.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — 两种方式生成你不必记住的密码">
       </figure>
     </div>
   </section>
@@ -191,8 +193,8 @@
         <p data-i18n="p-password-generator-p3">无论你生成什么，它都是一条普通的密码库记录：保存时加密，在你要求显示之前保持掩码，并且可以直接复制到剪贴板，带有定时清除。</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-password-generator-steps-title">生成方式</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-password-generator-steps-title">生成方式</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-password-generator-step1-title">随机性来自平台</h3>
           <p data-i18n="p-password-generator-step1-desc">取值来自平台的密码学随机源，而不是带种子的生成器，因此结果无法根据你能观察到的任何信息复现。</p>
@@ -213,7 +215,7 @@
   <section>
     <div class="wrap">
       <figure class="shot-pair">
-        <img class="shot" src="/assets/images/app-audit.webp" width="1800" height="884" loading="lazy" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-audit.webp?v=7.0.31" width="1800" height="893" loading="lazy" decoding="async" alt="KalderaShield — 保留之前先检查结果">
         <figcaption>
           <h3 data-i18n="p-password-generator-shot-title">保留之前先检查结果</h3>
           <p data-i18n="p-password-generator-shot-desc">审计会像评分其他所有内容一样为你生成的结果评分，因此新密码可以在它将被保存的同一位置得到验证。</p>
@@ -231,7 +233,7 @@
         <p data-i18n="p-password-generator-sec-body">生成强密码只有在网站妥善保存它、并且你不在别处使用它时，才能保护那一条凭据。它无法保护你在生成新密码之前已在多个服务间复用的密码，也无法防御已经在被截获的会话。在网站支持通行密钥的地方，请将生成器与通行密钥配合使用，并用安全审计找出需要替换的内容。</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">CSPRNG</span>
           <h3 data-i18n="p-password-generator-tech1-title">平台随机性</h3>
@@ -255,7 +257,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">常见问题解答</span>
       <h2 data-i18n="p-password-generator-faq-title">关于生成的密码</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-password-generator-faq1-q">生成的密码应该多长？</summary>
         <p data-i18n="p-password-generator-faq1-a">长度比堆砌符号更重要。十六个字符或更多是一个合理下限，而五到六个词的 Diceware 短语相当或更好，同时更容易输入。</p>
       </details>
@@ -268,12 +270,12 @@
         <p data-i18n="p-password-generator-faq3-a">可以。它是本地功能，不需要网络连接。</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-password-generator-rel-title">相关页面</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-password-generator-rel-title">相关页面</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/zh/urun/security-audit/" data-i18n="p-password-generator-rel1">安全审计</a>
         <a class="btn btn-ghost" href="/zh/urun/passkeys/" data-i18n="p-password-generator-rel2">通行密钥</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/zh/download/" data-i18n="cta-dl">下载</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">查看源代码</a>
       </div>
@@ -285,20 +287,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/zh/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">由 AES-256-GCM 和 Argon2id 零知识密码学驱动的本地优先、完全开源的新一代凭据管理器。</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">产品</h2>
         <ul>
-          <li><a href="/zh/" data-i18n="nav-products">产品</a></li>
           <li><a href="/zh/#features" data-i18n="nav-features">核心功能</a></li>
-          <li><a href="/zh/#security" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/guvenlik/" data-i18n="nav-security">安全架构</a></li>
+          <li><a href="/zh/eklenti/" data-i18n="nav-extensions">浏览器扩展</a></li>
+          <li><a href="/zh/sss/" data-i18n="nav-faq">常见问题</a></li>
+          <li><a href="/zh/kaynak-kodu/" data-i18n="footer-link-source">源码浏览</a></li>
           <li><a href="/zh/download/" data-i18n="nav-download">立即下载</a></li>
         </ul>
       </div>
@@ -316,6 +320,7 @@
         <h2 data-i18n="footer-col4-title">法律法规</h2>
         <ul>
           <li><a href="/zh/privacy.html" data-i18n="footer-link-privacy">隐私权政策</a></li>
+          <li><a href="/zh/code-signing-policy.html" data-i18n="footer-link-code-signing">代码签名政策</a></li>
           <li><a href="/zh/terms.html" data-i18n="footer-link-terms">服务使用条款</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -324,7 +329,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield。保留所有权利。</span>
-      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言：</span>
+      <span data-i18n="footer-langs-label">🌍 支持 12 种国际化语言</span>
     </p>
   </div>
 </footer>
@@ -333,8 +338,8 @@
   <a class="btn btn-primary" href="/zh/download/" data-i18n="hero-btn-dl">下载安装包</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

@@ -58,9 +58,9 @@ const OK_TERMS = [
   'setup', 'Setup', 'chmod', 'script-src', 'script', 'self',
   'data_collection_permissions', 'data', 'collection', 'fetch', 'WebSocket',
   'WebRTC', 'XHR', 'sendBeacon', 'EventSource', 'GitHub Actions', 'Actions',
-  'json', 'WebView', 'HTML', 'Release', 'Beta', 'THIRD-PARTY', 'THIRD',
+  'json', 'WebView', 'HTML', 'Release', 'Releases', 'Beta', 'THIRD-PARTY', 'THIRD',
   'PARTY', 'SECURITY.md', 'SECURITY', 'release-local', 'local', 'platform',
-  'none',
+  'none', 'SignPath', 'Foundation', 'SmartScreen',
   // Lowercase forms: these are established loanwords written lowercase in
   // Russian and Chinese technical copy, so they are not untranslated text.
   'passkey', 'passkeys', 'pwned',
@@ -72,7 +72,7 @@ const OK_TERMS = [
 const OK_SORTED = OK_TERMS.slice().sort((a, b) => b.length - a.length);
 
 function stripTerms(text) {
-  let s = text;
+  let s = text.replace(/<[^>]+>/g, ' ');
   for (const t of OK_SORTED) s = s.split(t).join(' ');
   return s;
 }

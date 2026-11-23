@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Доверяйте установленному файлу, а не странице, откуда он пришёл</title>
-<meta name="description" content="Каждый релиз KalderaShield публикует контрольные суммы SHA-256 и подписи обновлений. Проверка занимает одну команду. Именно этим отличается запуск файла,">
+<meta name="description" content="Каждый релиз KalderaShield публикует контрольные суммы SHA-256 и подписи обновлений. Проверка занимает одну команду.">
 <link rel="canonical" href="https://kalderashield.com/ru/guvenlik/dogrulama/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Доверяйте установленному файлу, а не странице, откуда он пришёл">
-<meta property="og:description" content="Каждый релиз KalderaShield публикует контрольные суммы SHA-256 и подписи обновлений. Проверка занимает одну команду. Именно этим отличается запуск файла,">
+<meta property="og:description" content="Каждый релиз KalderaShield публикует контрольные суммы SHA-256 и подписи обновлений. Проверка занимает одну команду.">
 <meta property="og:url" content="https://kalderashield.com/ru/guvenlik/dogrulama/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/dogrulama/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/dogrulama/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/dogrulama/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/dogrulama/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/dogrulama/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Выбрать язык">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">RU</span>
+          <span data-lang-current="">Русский</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -189,8 +191,8 @@
         <p data-i18n="p-dogrulama-p4">Одна честная оговорка: пока сертификата подписи кода нет, установщики Windows, собранные вами или загруженные из CI, не подписаны Authenticode. Шлюз подписи не пускает их в публичные релизы; если вы получили такой файл из сборки, проверьте хэш SHA-256 перед запуском.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-dogrulama-steps-title">Как проверить за три шага</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-steps-title">Как проверить за три шага</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-dogrulama-step1-title">Вычислите хэш своего файла</h3>
           <p data-i18n="p-dogrulama-step1-desc">В Windows выполните Get-FileHash в PowerShell. В Linux и macOS выполните sha256sum или shasum -a 256. Сравните вывод с соответствующей строкой в SHA256SUMS.txt.</p>
@@ -218,7 +220,7 @@
         <p data-i18n="p-dogrulama-sec-body">Неподписанный исполняемый файл без репутации загрузок — именно та форма файла, о которой предупреждают Windows SmartScreen и эвристики антивирусов; это издержка отсутствия сертификата, а не признак вредоносного ПО. Проверьте хэш SHA-256, и если ваш антивирус всё же помечает хэш, совпадающий с опубликованной контрольной суммой, сообщите о ложном срабатывании его разработчику. Комментарии в скрипте сборки в репозитории открыто документируют это ограничение.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">SHA-256</span>
           <h3 data-i18n="p-dogrulama-tech1-title">Целостность</h3>
@@ -242,7 +244,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Часто задаваемые вопросы</span>
       <h2 data-i18n="p-dogrulama-faq-title">О проверке</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-dogrulama-faq1-q">Windows сообщает «Windows защитила ваш компьютер». Что делать?</summary>
         <p data-i18n="p-dogrulama-faq1-a">Это реакция SmartScreen на неподписанный файл, а не сообщение о вирусе. Сверьте хэш SHA-256 с SHA256SUMS.txt. Если он совпадает, файл — результат работы конвейера; предупреждение исчезнет навсегда, как только релизы получат сертификат подписи.</p>
       </details>
@@ -255,13 +257,13 @@
         <p data-i18n="p-dogrulama-faq3-a">Соберите из исходного кода: репозиторий собирается воспроизводимо задокументированными командами npm и cargo, а локальный скрипт релиза создаёт артефакты с теми же именами и собственными контрольными суммами.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-dogrulama-rel-title">Связанные страницы</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-dogrulama-rel-title">Связанные страницы</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/ru/download/#verify" data-i18n="p-dogrulama-rel1">Загрузка и проверка</a>
         <a class="btn btn-ghost" href="/ru/guvenlik/denetim-durumu/" data-i18n="p-dogrulama-rel2">Статус аудита</a>
         <a class="btn btn-ghost" href="/ru/guvenlik/" data-i18n="p-dogrulama-rel3">Обзор безопасности</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/ru/download/" data-i18n="cta-dl">Скачать</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Посмотреть исходный код</a>
       </div>
@@ -273,20 +275,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/ru/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Локальный менеджер паролей с открытым исходным кодом на базе криптографии zero-knowledge AES-256-GCM и Argon2id.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Локальный менеджер паролей с открытым исходным кодом на базе криптографии zero-knowledge AES-256-GCM и Argon2id.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Продукт</h2>
         <ul>
-          <li><a href="/ru/" data-i18n="nav-products">Продукт</a></li>
           <li><a href="/ru/#features" data-i18n="nav-features">Возможности</a></li>
-          <li><a href="/ru/#security" data-i18n="nav-security">Безопасность</a></li>
+          <li><a href="/ru/guvenlik/" data-i18n="nav-security">Безопасность</a></li>
+          <li><a href="/ru/eklenti/" data-i18n="nav-extensions">Расширения</a></li>
+          <li><a href="/ru/sss/" data-i18n="nav-faq">Вопросы и ответы</a></li>
+          <li><a href="/ru/kaynak-kodu/" data-i18n="footer-link-source">Исходный код</a></li>
           <li><a href="/ru/download/" data-i18n="nav-download">Скачать</a></li>
         </ul>
       </div>
@@ -304,6 +308,7 @@
         <h2 data-i18n="footer-col4-title">Правовая информация</h2>
         <ul>
           <li><a href="/ru/privacy.html" data-i18n="footer-link-privacy">Политика конфиденциальности</a></li>
+          <li><a href="/ru/code-signing-policy.html" data-i18n="footer-link-code-signing">Политика подписания кода</a></li>
           <li><a href="/ru/terms.html" data-i18n="footer-link-terms">Условия использования</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -312,7 +317,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Все права защищены.</span>
-      <span data-i18n="footer-langs-label">🌍 Доступно на 12 языках:</span>
+      <span data-i18n="footer-langs-label">🌍 Доступно на 12 языках</span>
     </p>
   </div>
 </footer>
@@ -321,8 +326,8 @@
   <a class="btn btn-primary" href="/ru/download/" data-i18n="hero-btn-dl">Скачать установщик</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>

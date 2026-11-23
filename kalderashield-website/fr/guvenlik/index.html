@@ -11,13 +11,13 @@
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Une sécurité qui commence sur votre appareil — KalderaShield</title>
-<meta name="description" content="KalderaShield est un gestionnaire de mots de passe résolument local : votre coffre réside sur votre appareil, le chiffrement s’y effectue, et ni compte ni">
+<meta name="description" content="KalderaShield est un gestionnaire de mots de passe résolument local : votre coffre réside sur votre appareil, le chiffrement s’y effectue, et ni compte…">
 <link rel="canonical" href="https://kalderashield.com/fr/guvenlik/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Une sécurité qui commence sur votre appareil — KalderaShield">
-<meta property="og:description" content="KalderaShield est un gestionnaire de mots de passe résolument local : votre coffre réside sur votre appareil, le chiffrement s’y effectue, et ni compte ni">
+<meta property="og:description" content="KalderaShield est un gestionnaire de mots de passe résolument local : votre coffre réside sur votre appareil, le chiffrement s’y effectue, et ni compte…">
 <meta property="og:url" content="https://kalderashield.com/fr/guvenlik/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -26,7 +26,7 @@
 <link rel="icon" href="/assets/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/assets/images/icon-192.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/site.css?v=7.0.31">
 <link rel="alternate" hreflang="ar" href="https://kalderashield.com/ar/guvenlik/">
 <link rel="alternate" hreflang="de" href="https://kalderashield.com/de/guvenlik/">
 <link rel="alternate" hreflang="en" href="https://kalderashield.com/en/guvenlik/">
@@ -39,9 +39,10 @@
 <link rel="alternate" hreflang="ru" href="https://kalderashield.com/ru/guvenlik/">
 <link rel="alternate" hreflang="tr" href="https://kalderashield.com/guvenlik/">
 <link rel="alternate" hreflang="zh" href="https://kalderashield.com/zh/guvenlik/">
-<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/guvenlik/">
+<link rel="alternate" hreflang="x-default" href="https://kalderashield.com/en/guvenlik/">
 
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
     {
@@ -64,6 +65,7 @@
   ]
 }</script>
 <script type="application/ld+json">{
+  "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
     {
@@ -144,8 +146,8 @@
 
       <details class="lang">
         <summary data-i18n-attr="aria-label:lang-switch-label" aria-label="Choisir la langue">
-          <span class="lang-code" data-lang-code="">TR</span>
-          <span data-lang-current="">Türkçe</span>
+          <span class="lang-code" data-lang-code="">FR</span>
+          <span data-lang-current="">Français</span>
         </summary>
         <div class="lang-menu" id="lang-menu"></div>
       </details>
@@ -177,7 +179,7 @@
       </div>
       
       <figure class="shot-hero">
-        <img class="shot" src="/assets/images/app-security.webp" width="1800" height="666" loading="eager" decoding="async" alt="">
+        <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="eager" decoding="async" alt="KalderaShield — Une sécurité qui commence sur votre appareil">
       </figure>
     </div>
   </section>
@@ -192,8 +194,8 @@
         <p data-i18n="p-guvenlik-p4">Les builds de production s’exécutent derrière une politique d’isolement réseau (air-gap) : les appels sortants inattendus — fetch, WebSocket, WebRTC et équivalents — sont bloqués et journalisés. Le seul trafic réseau est la vérification par plage Have I Been Pwned, qui envoie les cinq premiers caractères d’un hachage SHA-1 et jamais votre mot de passe.</p></div>
 
       
-      <h3 class="eyebrow" style="margin-top:2.2rem" data-i18n="p-guvenlik-steps-title">Comment les couches s’empilent</h3>
-      <div class="grid" style="margin-top:.9rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-steps-title">Comment les couches s’empilent</h3>
+      <div class="grid mt-sm">
         <article class="card">
           <h3 data-i18n="p-guvenlik-step1-title">Votre mot de passe principal est la racine</h3>
           <p data-i18n="p-guvenlik-step1-desc">Argon2id le transforme en clé du coffre. Le mot de passe principal n’est jamais stocké dans le sessionStorage du navigateur ; après le déverrouillage, l’état de session est un tampon d’octets en mémoire remis à zéro, et non une chaîne lisible par la page.</p>
@@ -221,7 +223,7 @@
         <p data-i18n="p-guvenlik-sec-body">Aucune application locale ne peut protéger un coffre sur un appareil compromis : un maliciel exécuté avec votre compte OS pendant que le coffre est déverrouillé, les enregistreurs de frappe, la capture d’écran privilégiée et l’inspection de la mémoire sont tous hors de ce modèle. Le déverrouillage matériel est un habillage de confort, pas un remplacement du mot de passe principal. Aucun audit indépendant n’a encore été réalisé — c’est dit ouvertement, et non dissimulé.</p>
       </div>
       
-      <div class="grid grid-3" style="margin-top:1.6rem">
+      <div class="grid grid-3 mt-md">
         <article class="card">
           <span class="eyebrow">Argon2id</span>
           <h3 data-i18n="p-guvenlik-tech1-title">KDF résistant à la mémoire</h3>
@@ -245,7 +247,7 @@
     <div class="wrap">
       <span class="eyebrow" data-i18n="faq-eyebrow">Foire Aux Questions</span>
       <h2 data-i18n="p-guvenlik-faq-title">À propos de la conception de sécurité</h2>
-      <div class="faq" style="margin-top:1.4rem"><details>
+      <div class="faq mt-md"><details>
         <summary data-i18n="p-guvenlik-faq1-q">Mon coffre est-il un jour envoyé à un serveur ?</summary>
         <p data-i18n="p-guvenlik-faq1-a">Non. Il n’existe ni compte ni coffre côté serveur. Les fournisseurs de synchronisation facultatifs tels que WebDAV et S3 ne téléversent que la charge utile chiffrée vers un stockage que vous configurez et possédez.</p>
       </details>
@@ -258,13 +260,13 @@
         <p data-i18n="p-guvenlik-faq3-a">Pas encore. La page d’état de l’audit le dit ouvertement et décrit la vérification automatisée déjà en place. Dissimuler un audit inachevé contredirait tout le reste de ce site.</p>
       </details></div>
       
-      <h3 class="eyebrow" style="margin-top:2.4rem" data-i18n="p-guvenlik-rel-title">Pour aller plus loin</h3>
-      <div class="cta-row" style="margin-top:.8rem">
+      <h3 class="eyebrow mt-xl" data-i18n="p-guvenlik-rel-title">Pour aller plus loin</h3>
+      <div class="cta-row mt-xs">
         <a class="btn btn-ghost" href="/fr/guvenlik/tehdit-modeli/" data-i18n="p-guvenlik-rel1">Modèle de menace</a>
         <a class="btn btn-ghost" href="/fr/guvenlik/dogrulama/" data-i18n="p-guvenlik-rel2">Vérifier votre téléchargement</a>
         <a class="btn btn-ghost" href="/fr/guvenlik/denetim-durumu/" data-i18n="p-guvenlik-rel3">État de l’audit</a>
       </div>
-      <div class="cta-row" style="margin-top:2rem">
+      <div class="cta-row mt-lg">
         <a class="btn btn-primary" href="/fr/download/" data-i18n="cta-dl">Télécharger</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="cta-src">Lire le code source</a>
       </div>
@@ -276,20 +278,22 @@
 <footer class="site-footer">
   <div class="wrap">
     <div class="cols">
-      <div style="max-width:24rem">
+      <div class="footer-brand">
         <a class="brand" href="/fr/">
           <img src="/assets/images/icon-128.png" alt="" width="26" height="26">
           KalderaShield
         </a>
-        <p class="faint" style="margin-top:.7rem" data-i18n="footer-brand-desc">Gestionnaire de mots de passe local et open-source propulsé par la cryptographie AES-256-GCM et Argon2id zero-knowledge.</p>
+        <p class="faint mt-xs" data-i18n="footer-brand-desc">Gestionnaire de mots de passe local et open-source propulsé par la cryptographie AES-256-GCM et Argon2id zero-knowledge.</p>
       </div>
 
       <div>
         <h2 data-i18n="footer-col1-title">Produit</h2>
         <ul>
-          <li><a href="/fr/" data-i18n="nav-products">Produit</a></li>
           <li><a href="/fr/#features" data-i18n="nav-features">Fonctionnalités</a></li>
-          <li><a href="/fr/#security" data-i18n="nav-security">Sécurité</a></li>
+          <li><a href="/fr/guvenlik/" data-i18n="nav-security">Sécurité</a></li>
+          <li><a href="/fr/eklenti/" data-i18n="nav-extensions">Extensions</a></li>
+          <li><a href="/fr/sss/" data-i18n="nav-faq">FAQ</a></li>
+          <li><a href="/fr/kaynak-kodu/" data-i18n="footer-link-source">Code Source</a></li>
           <li><a href="/fr/download/" data-i18n="nav-download">Télécharger</a></li>
         </ul>
       </div>
@@ -307,6 +311,7 @@
         <h2 data-i18n="footer-col4-title">Légal</h2>
         <ul>
           <li><a href="/fr/privacy.html" data-i18n="footer-link-privacy">Politique de Confidentialité</a></li>
+          <li><a href="/fr/code-signing-policy.html" data-i18n="footer-link-code-signing">Politique de signature de code</a></li>
           <li><a href="/fr/terms.html" data-i18n="footer-link-terms">Conditions d'Utilisation</a></li>
           <li><a href="/.well-known/security.txt" rel="noopener noreferrer">security.txt</a></li>
         </ul>
@@ -315,7 +320,7 @@
 
     <p class="base">
       <span data-i18n="footer-copy">© 2026 KalderaShield. Tous droits réservés.</span>
-      <span data-i18n="footer-langs-label">🌍 Disponible en 12 langues :</span>
+      <span data-i18n="footer-langs-label">🌍 Disponible en 12 langues</span>
     </p>
   </div>
 </footer>
@@ -324,8 +329,8 @@
   <a class="btn btn-primary" href="/fr/download/" data-i18n="hero-btn-dl">Télécharger l'installateur</a>
 </div>
 
-<script src="/assets/js/i18n-apply.js" defer></script>
-<script src="/assets/js/site.js" defer></script>
+<script src="/assets/js/i18n-apply.js?v=7.0.31" defer></script>
+<script src="/assets/js/site.js?v=7.0.31" defer></script>
 
 
 </body></html>
