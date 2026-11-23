@@ -1,5 +1,6 @@
 /**
  * @vitest-environment jsdom
+ * @vitest-environment-options { "url": "https://github.com/" }
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -44,12 +45,8 @@ describe('extension WebAuthn origin & RP ID security boundaries', () => {
 });
 
 describe('extension MAIN-world WebAuthn interceptor', () => {
-  const listeners: Array<(e: MessageEvent) => void> = [];
-
   afterEach(() => {
-    while (listeners.length) {
-      window.removeEventListener('message', listeners.pop()!);
-    }
+    vi.restoreAllMocks();
     delete (navigator as { credentials?: unknown }).credentials;
   });
 
@@ -65,18 +62,31 @@ describe('extension MAIN-world WebAuthn interceptor', () => {
   }
 
   function mockRelay(responder: (action: string, payload: Record<string, unknown>) => Record<string, unknown>) {
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type !== KS_WEBAUTHN_REQ_TYPE) return;
-      const resp = responder(event.data.action, event.data.payload);
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          data: { type: KS_WEBAUTHN_RES_TYPE, requestId: event.data.requestId, response: resp },
-          source: window,
-        }),
-      );
-    };
-    listeners.push(handler);
-    window.addEventListener('message', handler);
+    vi.spyOn(window, 'postMessage').mockImplementation(((message: unknown, targetOrigin?: string | WindowPostMessageOptions) => {
+      const originStr = typeof targetOrigin === 'string' ? targetOrigin : targetOrigin?.targetOrigin;
+      expect(originStr).toBe(window.location.origin);
+      const data = message as { type?: string; requestId?: string; action?: string; payload?: Record<string, unknown> };
+      if (data?.type !== KS_WEBAUTHN_REQ_TYPE || !data.action || !data.payload) return;
+      const resp = responder(data.action, data.payload);
+      queueMicrotask(() => {
+        // First dispatch a cross-origin spoofed response that must be ignored
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: { type: KS_WEBAUTHN_RES_TYPE, requestId: data.requestId, response: { status: 'cancelled', fallback: false } },
+            source: window,
+            origin: 'https://evil.example',
+          }),
+        );
+        // Then dispatch the genuine same-origin response
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            data: { type: KS_WEBAUTHN_RES_TYPE, requestId: data.requestId, response: resp },
+            source: window,
+            origin: window.location.origin,
+          }),
+        );
+      });
+    }) as typeof window.postMessage);
   }
 
   it('returns a WebAuthn PublicKeyCredential when KalderaShield approves create()', async () => {

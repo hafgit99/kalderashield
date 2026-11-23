@@ -6,7 +6,7 @@
  * the browser extension over the AEAD native-messaging channel.
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Fingerprint, Globe, KeyRound, ShieldCheck, User, X } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import type { PasskeyRecord } from '../lib/passkey';
@@ -36,14 +36,6 @@ export function ExtensionPasskeyModal({
 }: ExtensionPasskeyModalProps) {
   const { t } = useLanguage();
   const [selectedCredentialId, setSelectedCredentialId] = useState<string>('');
-
-  useEffect(() => {
-    if (request?.kind === 'get' && matchingRecords.length > 0) {
-      setSelectedCredentialId(matchingRecords[0]!.credentialId);
-    } else {
-      setSelectedCredentialId('');
-    }
-  }, [request, matchingRecords]);
 
   if (!request) return null;
 

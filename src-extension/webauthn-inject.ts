@@ -208,8 +208,14 @@ function sendBridgeRequest(
       reject(new DOMException('The operation was aborted.', 'AbortError'));
     };
 
+    const expectedOrigin = window.location?.origin ?? '';
+    if (!expectedOrigin || expectedOrigin === 'null') {
+      resolve({ status: 'invalid_origin', fallback: true });
+      return;
+    }
+
     const onMessage = (event: MessageEvent) => {
-      if (event.source !== window) return;
+      if (event.source !== window || event.origin !== expectedOrigin) return;
       const data = event.data;
       if (!data || typeof data !== 'object') return;
       if (data.type !== KS_WEBAUTHN_RES_TYPE || data.requestId !== requestId) return;
@@ -229,10 +235,6 @@ function sendBridgeRequest(
     window.addEventListener('message', onMessage);
     signal?.addEventListener('abort', onAbort, { once: true });
 
-    const targetOrigin = window.location?.origin && window.location.origin !== 'null'
-      ? window.location.origin
-      : '*';
-
     window.postMessage(
       {
         type: KS_WEBAUTHN_REQ_TYPE,
@@ -240,7 +242,7 @@ function sendBridgeRequest(
         action,
         payload,
       },
-      targetOrigin,
+      expectedOrigin,
     );
   });
 }

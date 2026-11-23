@@ -11,7 +11,9 @@ import { KS_WEBAUTHN_REQ_TYPE, KS_WEBAUTHN_RES_TYPE } from './webauthn-bridge';
 
 if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
   window.addEventListener('message', (event: MessageEvent) => {
-    if (event.source !== window) return;
+    const expectedOrigin = window.location?.origin ?? '';
+    if (!expectedOrigin || expectedOrigin === 'null') return;
+    if (event.source !== window || event.origin !== expectedOrigin) return;
     const data = event.data;
     if (!data || typeof data !== 'object' || data.type !== KS_WEBAUTHN_REQ_TYPE) return;
 
@@ -20,10 +22,6 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
       ? data.action
       : null;
     if (!requestId || !action || !data.payload || typeof data.payload !== 'object') return;
-
-    const targetOrigin = window.location?.origin && window.location.origin !== 'null'
-      ? window.location.origin
-      : '*';
 
     try {
       chrome.runtime.sendMessage(
@@ -38,7 +36,7 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
                 ? { status: 'host_unavailable', fallback: true, error: runtimeError.message }
                 : (response ?? { status: 'no_response', fallback: true }),
             },
-            targetOrigin,
+            expectedOrigin,
           );
         },
       );
@@ -49,7 +47,7 @@ if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome.run
           requestId,
           response: { status: 'relay_error', fallback: true },
         },
-        targetOrigin,
+        expectedOrigin,
       );
     }
   });
