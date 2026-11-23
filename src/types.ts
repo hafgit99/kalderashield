@@ -161,7 +161,9 @@ export interface VaultItem {
   passkeyTransports?: string[];
   passkeyCreatedAt?: string;
   passkeyLastUsedAt?: string;
-  /** WebCryptoAesGcmPayload JSON shape — vault-key-wrapped private key JWK. */
+  /** Distinguishes hardware-bound WebAuthn records from vault-backed software passkeys. */
+  passkeyProviderKind?: 'hardware' | 'software';
+  /** WebCryptoAesGcmPayload JSON shape — vault-key-wrapped private key JWK or credential handle. */
   passkeyPrivateKeyBundle?: {
     iv: string;
     tag: string;

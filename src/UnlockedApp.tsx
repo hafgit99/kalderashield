@@ -46,6 +46,8 @@ import { VaultStaleBanner } from './components/VaultStaleBanner';
 import { useLinuxSecurityStatus } from './hooks/useLinuxSecurityStatus';
 import { useExtensionCredentialSync } from './hooks/useExtensionCredentialSync';
 import { useExtensionCredentialListener, type ExtensionCredentialUpdatePayload } from './hooks/useExtensionCredentialListener';
+import { useExtensionPasskeyListener } from './hooks/useExtensionPasskeyListener';
+import { ExtensionPasskeyModal } from './components/ExtensionPasskeyModal';
 import { recordPasswordHistory } from './lib/passwordHistory';
 import { useKeyboardShortcuts, dispatchFocusSearchShortcut } from './hooks/useKeyboardShortcuts';
 import { useVaultOrganisation } from './hooks/useVaultOrganisation';
@@ -294,6 +296,21 @@ export default function UnlockedApp({
     handleAddCredentialFromExtension,
     handleUpdateCredentialFromExtension,
   );
+
+  const {
+    pendingPasskeyRequest,
+    matchingPasskeyRecords,
+    passkeyRequestBusy,
+    passkeyRequestError,
+    approvePasskeyCreate,
+    approvePasskeyGet,
+    fallbackPasskeyToDevice,
+    cancelPasskeyRequest,
+  } = useExtensionPasskeyListener({
+    items,
+    onSaveItem: handleSaveItem,
+    onNotify: showNotification,
+  });
 
   // Share & Receive Modals state
   const {
@@ -639,6 +656,17 @@ export default function UnlockedApp({
           shareReceiveError={handleShareReceiveError}
           onSubmitSharePassword={handleSubmitSharePassword}
           onCancelSharePasswordPrompt={handleCancelSharePasswordPrompt}
+        />
+
+        <ExtensionPasskeyModal
+          request={pendingPasskeyRequest}
+          matchingRecords={matchingPasskeyRecords}
+          busy={passkeyRequestBusy}
+          errorMessage={passkeyRequestError}
+          onApproveCreate={approvePasskeyCreate}
+          onApproveGet={approvePasskeyGet}
+          onFallbackToDevice={fallbackPasskeyToDevice}
+          onCancel={cancelPasskeyRequest}
         />
 
         <CopiedToastNotification copiedField={copiedField} />

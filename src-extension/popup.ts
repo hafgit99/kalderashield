@@ -28,6 +28,7 @@ const toast = document.getElementById('toast') as HTMLDivElement;
 const focusAppBtn = document.getElementById('focusAppBtn') as HTMLButtonElement;
 const autoSubmitBtn = document.getElementById('autoSubmitBtn') as HTMLButtonElement;
 const autoSubmitText = document.getElementById('autoSubmitText') as HTMLSpanElement;
+const passkeyToggleBtn = document.getElementById('passkeyToggleBtn') as HTMLButtonElement | null;
 
 // Helper to update auto-submit button visual state
 function updateAutoSubmitState(isEnabled: boolean) {
@@ -37,10 +38,29 @@ function updateAutoSubmitState(isEnabled: boolean) {
   }
 }
 
-// Load auto-submit setting
-chrome.storage.local.get(['autoSubmit'], (res) => {
+function updatePasskeyProviderState(isEnabled: boolean) {
+  if (passkeyToggleBtn) {
+    passkeyToggleBtn.classList.toggle('active', isEnabled);
+    passkeyToggleBtn.setAttribute('aria-pressed', String(isEnabled));
+  }
+}
+
+// Load auto-submit & passkey provider settings
+chrome.storage.local.get(['autoSubmit', 'passkeyProviderEnabled'], (res) => {
   updateAutoSubmitState(res.autoSubmit === true);
+  updatePasskeyProviderState(res.passkeyProviderEnabled !== false);
 });
+
+if (passkeyToggleBtn) {
+  passkeyToggleBtn.addEventListener('click', () => {
+    chrome.storage.local.get(['passkeyProviderEnabled'], (res) => {
+      const nextState = res.passkeyProviderEnabled === false;
+      chrome.storage.local.set({ passkeyProviderEnabled: nextState }, () => {
+        updatePasskeyProviderState(nextState);
+      });
+    });
+  });
+}
 
 if (autoSubmitBtn) {
   autoSubmitBtn.addEventListener('click', () => {

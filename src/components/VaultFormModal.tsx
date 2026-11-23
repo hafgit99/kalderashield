@@ -402,6 +402,7 @@ export default function VaultFormModal({
         passkeyTransports: editingItem.passkeyTransports,
         passkeyCreatedAt: editingItem.passkeyCreatedAt,
         passkeyLastUsedAt: editingItem.passkeyLastUsedAt,
+        passkeyProviderKind: editingItem.passkeyProviderKind,
         passkeyPrivateKeyBundle: editingItem.passkeyPrivateKeyBundle,
       } : {}),
 

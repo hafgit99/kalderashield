@@ -43,6 +43,29 @@
   "content_scripts": [
     {
       "matches": [
+        "https://*/*",
+        "http://localhost/*",
+        "http://*.localhost/*"
+      ],
+      "js": [
+        "webauthn-inject.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://*/*",
+        "http://localhost/*",
+        "http://*.localhost/*"
+      ],
+      "js": [
+        "webauthn-relay.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
         "http://*/*",
         "https://*/*"
       ],

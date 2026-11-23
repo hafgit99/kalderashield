@@ -84,6 +84,7 @@ export interface PasskeyRecord {
   lastUsedAt?: string;
   transports?: string[];
   attachment?: 'platform' | 'cross-platform';
+  providerKind?: 'hardware' | 'software';
 }
 
 export interface VaultPasskeyFields {
@@ -99,6 +100,7 @@ export interface VaultPasskeyFields {
   passkeyTransports?: string[];
   passkeyCreatedAt?: string;
   passkeyLastUsedAt?: string;
+  passkeyProviderKind?: 'hardware' | 'software';
   passkeyPrivateKeyBundle?: WebCryptoAesGcmPayload;
 }
 
@@ -209,7 +211,7 @@ async function derivePasskeySubkey(vaultKey: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(bits);
 }
 
-async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise<WebCryptoAesGcmPayload> {
+export async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise<WebCryptoAesGcmPayload> {
   const subkey = await derivePasskeySubkey(vaultKey);
   const plaintext = new TextEncoder().encode(JSON.stringify(jwk));
   const iv = generateSafeIv();
@@ -225,7 +227,7 @@ async function wrapPrivateKeyJwk(jwk: JsonWebKey, vaultKey: Uint8Array): Promise
   };
 }
 
-async function unwrapPrivateKeyJwk(bundle: WebCryptoAesGcmPayload, vaultKey: Uint8Array): Promise<JsonWebKey> {
+export async function unwrapPrivateKeyJwk(bundle: WebCryptoAesGcmPayload, vaultKey: Uint8Array): Promise<JsonWebKey> {
   const subkey = await derivePasskeySubkey(vaultKey);
   const buffer = base64ToArrayBuffer(bundle.ciphertext);
   let plaintext: ArrayBuffer;
@@ -614,6 +616,7 @@ export function recordToVaultFields(record: PasskeyRecord): VaultPasskeyFields {
     passkeyTransports: record.transports,
     passkeyCreatedAt: record.createdAt,
     passkeyLastUsedAt: record.lastUsedAt,
+    passkeyProviderKind: record.providerKind,
     passkeyPrivateKeyBundle: record.privateKeyBundle,
   };
 }
@@ -637,6 +640,7 @@ export function vaultFieldsToRecord(itemId: string, fields: VaultPasskeyFields):
     lastUsedAt: fields.passkeyLastUsedAt,
     transports: fields.passkeyTransports,
     attachment: fields.passkeyAttachment,
+    providerKind: fields.passkeyProviderKind,
   };
 }
 

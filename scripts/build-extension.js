@@ -29,7 +29,9 @@ async function build() {
     entryPoints: [
       path.join(srcDir, 'background.ts'),
       path.join(srcDir, 'content.ts'),
-      path.join(srcDir, 'popup.ts')
+      path.join(srcDir, 'popup.ts'),
+      path.join(srcDir, 'webauthn-inject.ts'),
+      path.join(srcDir, 'webauthn-relay.ts')
     ],
     bundle: true,
     outdir: outDir,
