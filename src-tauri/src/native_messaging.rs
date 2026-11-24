@@ -250,7 +250,8 @@ pub const MAX_PENDING_PASSKEY_REQUESTS: usize = 8;
 /// (`requestId`) to the IPC handler thread awaiting the desktop user's decision.
 #[derive(Clone, Default)]
 pub struct PendingPasskeyRequests {
-    inner: Arc<Mutex<std::collections::HashMap<String, std::sync::mpsc::Sender<serde_json::Value>>>>,
+    inner:
+        Arc<Mutex<std::collections::HashMap<String, std::sync::mpsc::Sender<serde_json::Value>>>>,
 }
 
 impl PendingPasskeyRequests {
@@ -313,7 +314,12 @@ pub fn validate_passkey_origin_and_rp_id(
         return None;
     }
     // Reject paths, queries, fragments, or userinfo in an origin string.
-    if rest.is_empty() || rest.contains('/') || rest.contains('?') || rest.contains('#') || rest.contains('@') {
+    if rest.is_empty()
+        || rest.contains('/')
+        || rest.contains('?')
+        || rest.contains('#')
+        || rest.contains('@')
+    {
         return None;
     }
     let host_only = if rest.starts_with('[') {
@@ -330,7 +336,10 @@ pub fn validate_passkey_origin_and_rp_id(
         return None;
     }
     // Reject IPv4 literals.
-    if host_only.split('.').all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit())) {
+    if host_only
+        .split('.')
+        .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()))
+    {
         return None;
     }
 
@@ -344,7 +353,10 @@ pub fn validate_passkey_origin_and_rp_id(
     if rp_id.starts_with('.') || rp_id.ends_with('.') || rp_id.contains("..") {
         return None;
     }
-    if !rp_id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-') {
+    if !rp_id
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-')
+    {
         return None;
     }
     if rp_id != host_only && !host_only.ends_with(&format!(".{rp_id}")) {
@@ -361,10 +373,16 @@ pub fn validate_passkey_origin_and_rp_id(
         if labels.len() <= suffix_len {
             return None;
         }
-        if labels.iter().all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_digit())) {
+        if labels
+            .iter()
+            .all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_digit()))
+        {
             return None;
         }
-        if labels.iter().any(|l| l.is_empty() || l.len() > 63 || l.starts_with('-') || l.ends_with('-')) {
+        if labels
+            .iter()
+            .any(|l| l.is_empty() || l.len() > 63 || l.starts_with('-') || l.ends_with('-'))
+        {
             return None;
         }
     }
@@ -384,7 +402,9 @@ pub fn has_matching_software_passkey(
             return false;
         }
         match allow_credential_ids {
-            Some(allowed) if !allowed.is_empty() => allowed.iter().any(|id| id == &entry.credential_id),
+            Some(allowed) if !allowed.is_empty() => {
+                allowed.iter().any(|id| id == &entry.credential_id)
+            }
             _ => true,
         }
     })
@@ -1326,9 +1346,8 @@ fn handle_client(
                     } else if let Some((canonical_origin, validated_rp_id)) =
                         validate_passkey_origin_and_rp_id(origin, requested_rp_id)
                     {
-                        let allow_ids: Option<Vec<String>> = req["allowCredentialIds"]
-                            .as_array()
-                            .map(|arr| {
+                        let allow_ids: Option<Vec<String>> =
+                            req["allowCredentialIds"].as_array().map(|arr| {
                                 arr.iter()
                                     .filter_map(|v| v.as_str().map(str::to_string))
                                     .take(64)
@@ -1360,19 +1379,27 @@ fn handle_client(
                                 "crossOrigin": req["crossOrigin"].as_bool().unwrap_or(false),
                             });
                             if is_create {
-                                event_payload["rpName"] = serde_json::json!(req["rpName"].as_str().unwrap_or(""));
-                                event_payload["userName"] = serde_json::json!(req["userName"].as_str().unwrap_or(""));
-                                event_payload["userDisplayName"] = serde_json::json!(req["userDisplayName"].as_str().unwrap_or(""));
+                                event_payload["rpName"] =
+                                    serde_json::json!(req["rpName"].as_str().unwrap_or(""));
+                                event_payload["userName"] =
+                                    serde_json::json!(req["userName"].as_str().unwrap_or(""));
+                                event_payload["userDisplayName"] = serde_json::json!(req
+                                    ["userDisplayName"]
+                                    .as_str()
+                                    .unwrap_or(""));
                                 if let Some(uid) = req["userIdBase64Url"].as_str() {
                                     event_payload["userIdBase64Url"] = serde_json::json!(uid);
                                 }
                                 if let Some(algs) = req["pubKeyCredAlgs"].as_array() {
-                                    let clean_algs: Vec<i64> = algs.iter().filter_map(|v| v.as_i64()).take(16).collect();
+                                    let clean_algs: Vec<i64> =
+                                        algs.iter().filter_map(|v| v.as_i64()).take(16).collect();
                                     event_payload["pubKeyCredAlgs"] = serde_json::json!(clean_algs);
                                 }
                                 if let Some(excl) = req["excludeCredentialIds"].as_array() {
-                                    let clean_excl: Vec<&str> = excl.iter().filter_map(|v| v.as_str()).take(64).collect();
-                                    event_payload["excludeCredentialIds"] = serde_json::json!(clean_excl);
+                                    let clean_excl: Vec<&str> =
+                                        excl.iter().filter_map(|v| v.as_str()).take(64).collect();
+                                    event_payload["excludeCredentialIds"] =
+                                        serde_json::json!(clean_excl);
                                 }
                             } else if let Some(allowed) = allow_ids {
                                 event_payload["allowCredentialIds"] = serde_json::json!(allowed);
@@ -1384,7 +1411,8 @@ fn handle_client(
                                 focus_webview_window(window);
                             }
 
-                            match rx.recv_timeout(Duration::from_secs(PASSKEY_REQUEST_TIMEOUT_SECS)) {
+                            match rx.recv_timeout(Duration::from_secs(PASSKEY_REQUEST_TIMEOUT_SECS))
+                            {
                                 Ok(resp) => resp,
                                 Err(_) => {
                                     pending_passkeys.remove(&request_id);
@@ -2490,8 +2518,14 @@ mod tests {
             Some(("https://github.com".to_string(), "github.com".to_string()))
         );
         assert_eq!(
-            super::validate_passkey_origin_and_rp_id("https://login.github.com", Some("github.com")),
-            Some(("https://login.github.com".to_string(), "github.com".to_string()))
+            super::validate_passkey_origin_and_rp_id(
+                "https://login.github.com",
+                Some("github.com")
+            ),
+            Some((
+                "https://login.github.com".to_string(),
+                "github.com".to_string()
+            ))
         );
         assert_eq!(
             super::validate_passkey_origin_and_rp_id("http://localhost:3000", Some("localhost")),
@@ -2499,12 +2533,30 @@ mod tests {
         );
 
         // Reject insecure non-localhost HTTP, cross-origin spoofing, IP literals, and bare public suffixes
-        assert!(super::validate_passkey_origin_and_rp_id("http://github.com", Some("github.com")).is_none());
-        assert!(super::validate_passkey_origin_and_rp_id("https://evil.com", Some("github.com")).is_none());
-        assert!(super::validate_passkey_origin_and_rp_id("https://example.co.uk", Some("co.uk")).is_none());
-        assert!(super::validate_passkey_origin_and_rp_id("https://example.com", Some("com")).is_none());
-        assert!(super::validate_passkey_origin_and_rp_id("https://127.0.0.1", Some("127.0.0.1")).is_none());
-        assert!(super::validate_passkey_origin_and_rp_id("https://github.com/path", Some("github.com")).is_none());
+        assert!(
+            super::validate_passkey_origin_and_rp_id("http://github.com", Some("github.com"))
+                .is_none()
+        );
+        assert!(
+            super::validate_passkey_origin_and_rp_id("https://evil.com", Some("github.com"))
+                .is_none()
+        );
+        assert!(
+            super::validate_passkey_origin_and_rp_id("https://example.co.uk", Some("co.uk"))
+                .is_none()
+        );
+        assert!(
+            super::validate_passkey_origin_and_rp_id("https://example.com", Some("com")).is_none()
+        );
+        assert!(
+            super::validate_passkey_origin_and_rp_id("https://127.0.0.1", Some("127.0.0.1"))
+                .is_none()
+        );
+        assert!(super::validate_passkey_origin_and_rp_id(
+            "https://github.com/path",
+            Some("github.com")
+        )
+        .is_none());
     }
 
     #[test]
@@ -2512,7 +2564,9 @@ mod tests {
         let registry = super::PendingPasskeyRequests::new();
         let (req_id, rx) = registry.register().expect("should register");
         assert!(registry.resolve(&req_id, serde_json::json!({ "status": "ok" })));
-        let received = rx.recv_timeout(std::time::Duration::from_secs(1)).expect("should receive");
+        let received = rx
+            .recv_timeout(std::time::Duration::from_secs(1))
+            .expect("should receive");
         assert_eq!(received["status"], "ok");
         // Resolving twice returns false
         assert!(!registry.resolve(&req_id, serde_json::json!({ "status": "ok" })));
@@ -2526,7 +2580,9 @@ mod tests {
         assert!(registry.register().is_none(), "must reject above capacity");
         registry.cancel_all();
         for r in receivers {
-            let msg = r.recv_timeout(std::time::Duration::from_secs(1)).expect("cancel message");
+            let msg = r
+                .recv_timeout(std::time::Duration::from_secs(1))
+                .expect("cancel message");
             assert_eq!(msg["status"], "cancelled");
         }
     }
@@ -2543,8 +2599,16 @@ mod tests {
                 credential_id: "cred-2".to_string(),
             },
         ];
-        assert!(super::has_matching_software_passkey(&index, "GITHUB.COM", None));
-        assert!(!super::has_matching_software_passkey(&index, "gitlab.com", None));
+        assert!(super::has_matching_software_passkey(
+            &index,
+            "GITHUB.COM",
+            None
+        ));
+        assert!(!super::has_matching_software_passkey(
+            &index,
+            "gitlab.com",
+            None
+        ));
         assert!(super::has_matching_software_passkey(
             &index,
             "github.com",
