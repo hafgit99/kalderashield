@@ -35,6 +35,7 @@ release-local/**/KalderaShield-host.bat
 # Local tool states
 .commandcode/
 .kilo/
+.vscode/
 
 # Desktop / mobile build outputs
 src-tauri/target/
