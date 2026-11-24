@@ -997,6 +997,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             android_update::fetch_android_update_manifest,
             hibp::fetch_hibp_range,
+            hibp::select_hibp_local_file,
+            hibp::validate_hibp_local_file,
+            hibp::check_hibp_local_file,
             get_asset_integrity_anchor,
             record_asset_integrity_result,
             read_vault_database,

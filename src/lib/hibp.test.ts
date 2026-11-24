@@ -5,9 +5,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   checkPasswordAgainstHibp,
+  getLocalHibpFilePath,
+  HIBP_LOCAL_PATH_KEY,
   HIBP_STORAGE_KEY,
+  isLocalHibpSupported,
   resetHibpCacheForTesting,
   scanVaultItemsAgainstHibp,
+  scanVaultItemsAgainstLocalHibp,
+  selectLocalHibpFile,
+  setLocalHibpFilePath,
 } from './hibp';
 import { closeVaultSession } from './vaultSession';
 
@@ -311,5 +317,53 @@ describe('HIBP password checks', () => {
     });
     expect(offlineRes.status).toBe('unavailable');
     expect(offlineCheck).toHaveBeenCalledTimes(2);
+  });
+
+  it('persists local HIBP DB path and runs fully offline batch scans via Tauri IPC', async () => {
+    expect(isLocalHibpSupported()).toBe(false);
+    expect(getLocalHibpFilePath()).toBeNull();
+    expect(await selectLocalHibpFile()).toBeNull();
+
+    setLocalHibpFilePath('  C:\\hibp\\pwned-sha1.txt  ');
+    expect(getLocalHibpFilePath()).toBe('C:\\hibp\\pwned-sha1.txt');
+    expect(localStorage.getItem(HIBP_LOCAL_PATH_KEY)).toBe('C:\\hibp\\pwned-sha1.txt');
+
+    // Without Tauri runtime, local scan fails closed as unavailable
+    const noTauriRes = await scanVaultItemsAgainstLocalHibp('C:\\hibp\\pwned-sha1.txt', [
+      { id: 'item-1', password: 'password' },
+    ]);
+    expect(noTauriRes.status).toBe('unavailable');
+
+    // With Tauri runtime, sends only 40-char SHA-1 hashes and maps matches back to itemId
+    const invokeMock = vi.fn(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'select_hibp_local_file') {
+        return { path: 'C:\\hibp\\pwned-sha1.txt', fileName: 'pwned-sha1.txt', sizeBytes: 12345 };
+      }
+      if (cmd === 'check_hibp_local_file') {
+        expect(args?.path).toBe('C:\\hibp\\pwned-sha1.txt');
+        expect(args?.hashes).toEqual(['5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8']);
+        return [{ hash: '5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8', count: 555 }];
+      }
+      throw new Error(`unexpected ${cmd}`);
+    });
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = { invoke: invokeMock };
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(isLocalHibpSupported()).toBe(true);
+    const picked = await selectLocalHibpFile();
+    expect(picked?.fileName).toBe('pwned-sha1.txt');
+
+    const localRes = await scanVaultItemsAgainstLocalHibp('C:\\hibp\\pwned-sha1.txt', [
+      { id: 'a', password: 'password' },
+      { id: 'b', password: 'password' },
+    ]);
+    expect(localRes.status).toBe('complete');
+    expect(localRes.pwnedByItemId.get('a')).toBe(555);
+    expect(localRes.pwnedByItemId.get('b')).toBe(555);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    setLocalHibpFilePath(null);
+    expect(getLocalHibpFilePath()).toBeNull();
   });
 });
