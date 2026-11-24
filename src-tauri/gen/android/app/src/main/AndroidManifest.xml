@@ -64,6 +64,21 @@
             android:noHistory="false"
             android:theme="@style/Theme.KalderaShield.AutofillBridge" />
 
+        <!--
+            Non-exported Android 14+ Credential Manager relay Activity.
+            Mirrors AutofillAuthActivity (K-1 trust boundary): runs in the calling
+            app's task (launchMode="standard", taskAffinity="") so setResult reaches
+            Credential Manager while MainActivity stays singleTask.
+        -->
+        <activity
+            android:name=".PasskeyProviderActivity"
+            android:exported="false"
+            android:launchMode="standard"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="false"
+            android:theme="@style/Theme.KalderaShield.AutofillBridge" />
+
         <!-- The single exported surface. Forwards nothing. -->
         <activity
             android:name=".LauncherActivity"
@@ -104,6 +119,25 @@
           <meta-data
             android:name="android.autofill"
             android:resource="@xml/kalderashield_autofill_service" />
+        </service>
+
+        <!--
+            Android 14+ (API 34+) Credential Manager provider service for Passkeys.
+            Permission-gated by BIND_CREDENTIAL_PROVIDER_SERVICE so only the Android
+            framework can bind it; never loaded below API 34.
+        -->
+        <service
+          android:name=".KalderaShieldCredentialProviderService"
+          android:exported="true"
+          android:label="@string/credential_provider_service_label"
+          android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+          tools:targetApi="34">
+          <intent-filter>
+            <action android:name="android.service.credentials.CredentialProviderService" />
+          </intent-filter>
+          <meta-data
+            android:name="android.credentials.provider"
+            android:resource="@xml/kalderashield_credential_provider" />
         </service>
 
         <provider

@@ -3,34 +3,34 @@
   "i18n": {
     "en": {
       "menuLabel": "Passkeys",
-      "menuDesc": "WebAuthn bound to your own authenticator",
+      "menuDesc": "Vault-backed WebAuthn passkey provider",
       "title": "Passkeys — KalderaShield",
-      "description": "Create and store WebAuthn passkeys in your local vault, bound to your platform authenticator or a FIDO2 security key such as YubiKey.",
+      "description": "Create and sign WebAuthn passkeys directly from your encrypted KalderaShield vault via the browser extension, desktop approval modal, and Android 14+.",
       "eyebrow": "Product / Passkeys",
       "h1": "Passkeys that never leave your vault",
-      "lead": "Create WebAuthn credentials inside your own vault, bound to the authenticator your device already has. Nothing is registered with a third party.",
+      "lead": "Create and sign WebAuthn passkeys inside your encrypted local vault. Approve logins from the desktop modal, browser extension, or Android 14+ Credential Manager — with zero cloud dependency.",
       "primary": "Download KalderaShield",
       "secondary": "View the source",
       "whatLabel": "What it does",
-      "whatTitle": "Passwordless sign-in, stored locally",
+      "whatTitle": "Passwordless sign-in, owned by your vault",
       "what": [
-        "A passkey is created through the WebAuthn API of your platform, so the private half of the credential never enters the vault in a usable form and never leaves your device. The vault stores the credential id and its metadata so you can recognise and revoke it later.",
-        "The page reports which authenticator is available before you create anything, and lets you choose the relying party, display name, account and signature algorithm.",
-        "Passkeys sit alongside the rest of the vault rather than in a separate system, so they are encrypted, searchable and restorable in exactly the same way as a password."
+        "KalderaShield acts as a standards-compliant WebAuthn Passkey Provider. When a site asks to create or use a passkey, the browser extension or Android 14+ Credential Manager forwards the request to your local vault, where an ECDSA P-256 key pair is generated and signed after your explicit approval.",
+        "Every passkey private key is wrapped inside the vault with AES-256-GCM and HKDF-SHA256 using your active vault key. Private keys never leave KalderaShield in plaintext and are never sent to the browser or any third-party cloud.",
+        "If you prefer a hardware token for a specific account, every approval prompt includes a one-click fallback to Windows Hello, Touch ID, Android biometrics, or a FIDO2 security key such as YubiKey."
       ],
-      "stepsTitle": "How a passkey is created",
+      "stepsTitle": "How a passkey sign-in works",
       "steps": [
         {
-          "title": "Your device creates the key pair",
-          "desc": "The private key is generated inside the platform authenticator — TPM 2.0, Secure Enclave or AndroidKeyStore — and is not exportable."
+          "title": "A site requests a passkey",
+          "desc": "The browser extension (Chrome, Edge, Firefox, Safari) or Android 14+ Credential Manager intercepts the WebAuthn call and validates the site's origin and relying party ID."
         },
         {
-          "title": "The vault records the credential",
-          "desc": "Only the credential id and display metadata are saved, encrypted with the rest of the vault."
+          "title": "You approve inside KalderaShield",
+          "desc": "KalderaShield brings forward a trusted approval dialog showing the exact domain and account. Nothing is signed until the vault is unlocked and you confirm."
         },
         {
-          "title": "Signing happens in hardware",
-          "desc": "Because the private key is non-exportable, a signature for a site cannot be produced by anything other than the authenticator itself."
+          "title": "The vault signs and returns only the assertion",
+          "desc": "KalderaShield signs the WebAuthn challenge with the vault-encrypted ES256 private key, increments the signature counter, and returns only the public assertion to the site."
         }
       ],
       "heroShot": {
@@ -44,42 +44,42 @@
           "w": 1800,
           "h": 893,
           "title": "Hardware unlock sits next to it",
-          "desc": "The same settings panel holds the FIDO2 and biometric unlock options, so passkeys and hardware-bound unlocking live together rather than in separate products."
+          "desc": "The same settings panel holds the FIDO2 and biometric unlock options, so vault-backed passkeys and hardware-bound vault unlocking live together in one local security model."
         }
       ],
-      "secTitle": "What passkeys do and do not remove",
-      "secLabel": "Passkeys are not a backup plan",
-      "secBody": "A passkey replaces the password at a site; it does not replace your vault. If you lose the device holding your authenticator and have no passkey stored elsewhere, that credential is gone with it. Passkeys also only help at sites that support WebAuthn, which is most large services and a growing share of smaller ones.",
+      "secTitle": "What passkeys do and do not replace",
+      "secLabel": "Portable with your encrypted backups",
+      "secBody": "Because vault-backed passkeys are stored encrypted inside your KalderaShield vault, they travel safely with your encrypted backups and survive losing a device — without relying on a vendor cloud. Hardware-bound passkeys created on a YubiKey or platform authenticator stay pinned to that device. In both cases, passkeys replace site passwords rather than your vault's master password and secret key.",
       "tech": [
         {
-          "tag": "WebAuthn",
-          "title": "Standard, not a private format",
-          "desc": "Credentials are created through the WebAuthn API, so they are the same kind of object any compliant site expects."
+          "tag": "WebAuthn / ES256",
+          "title": "Standards-compliant, not a private format",
+          "desc": "Credentials produce standard CBOR/COSE ECDSA P-256 attestations and signed assertions that work with any compliant WebAuthn relying party."
         },
         {
-          "tag": "Non-exportable",
-          "title": "The private key stays put",
-          "desc": "Hardware-backed authenticators generate the key pair and never release the private half, so copying your vault does not copy the credential."
+          "tag": "AEAD Bridge",
+          "title": "Private keys never touch the browser",
+          "desc": "Desktop browser extension requests cross an authenticated AEAD native messaging channel, and Android 14+ uses a non-exported Credential Manager relay with 128-bit tokens."
         },
         {
           "tag": "AES-256-GCM",
-          "title": "Stored like everything else",
-          "desc": "Credential records are encrypted by the same per-item key scheme as the rest of your vault."
+          "title": "Encrypted like every other vault item",
+          "desc": "Each passkey private key is wrapped with HKDF-SHA256 + AES-256-GCM, re-wrapped automatically on master password rotation, and backed up with your vault."
         }
       ],
       "faqTitle": "About passkeys",
       "faq": [
         {
           "q": "Do I still need my master password?",
-          "a": "Yes. The vault itself is unlocked by your master password and secret key. A passkey only replaces the password at the specific sites where you register one."
+          "a": "Yes. Your vault is still unlocked by your master password and secret key (or your configured biometric/FIDO2 unlock). A passkey replaces the password on the sites where you register one."
         },
         {
-          "q": "Which authenticators work?",
-          "a": "Any platform authenticator your device exposes: Windows Hello, Touch ID, Face ID, Android biometrics, or a FIDO2 security key such as YubiKey."
+          "q": "Where can I use KalderaShield passkeys?",
+          "a": "On desktop via the KalderaShield browser extension (Chrome, Edge, Firefox, Safari) paired with the desktop app, and on Android 14+ via Android Credential Manager for mobile browsers and apps. You can also fall back to Windows Hello, Touch ID, or YubiKey on any prompt."
         },
         {
-          "q": "What if I lose the device?",
-          "a": "That specific passkey is lost with its authenticator. Your vault, its passwords and its backups are unaffected, because those never depended on that device."
+          "q": "What if I lose my device?",
+          "a": "Passkeys created inside your KalderaShield vault are encrypted inside your vault backups, so restoring your encrypted backup on a new device restores your passkeys too. Any passkey you chose to store only on a hardware authenticator remains tied to that device."
         }
       ],
       "relatedTitle": "Related pages",
@@ -96,34 +96,34 @@
     },
     "tr": {
       "menuLabel": "Passkey",
-      "menuDesc": "Kendi doğrulayıcınıza bağlı WebAuthn",
+      "menuDesc": "Kasa destekli WebAuthn passkey sağlayıcısı",
       "title": "Passkey — KalderaShield",
-      "description": "WebAuthn passkey'lerini kendi yerel kasanızda oluşturun ve saklayın; platform doğrulayıcınıza veya YubiKey gibi bir FIDO2 güvenlik anahtarına bağlanır.",
+      "description": "Şifreli KalderaShield kasanızdan tarayıcı eklentisi, masaüstü onay penceresi ve Android 14+ ile doğrudan WebAuthn passkey oluşturun ve oturum açın.",
       "eyebrow": "Ürün / Passkey",
       "h1": "Kasanızdan hiç çıkmayan passkey'ler",
-      "lead": "WebAuthn kimlik bilgilerini kendi kasanızın içinde, cihazınızın zaten sahibi olduğu doğrulayıcıya bağlı olarak oluşturun. Hiçbir şey üçüncü bir tarafa kaydedilmez.",
+      "lead": "WebAuthn passkey'lerini şifreli yerel kasanızın içinde oluşturun ve imzalayın. Oturum açma isteklerini masaüstü onay penceresinden, tarayıcı eklentisinden veya Android 14+ Kimlik Yöneticisinden onaylayın — bulut bağımlılığı olmadan.",
       "primary": "KalderaShield'i indirin",
       "secondary": "Kaynağı görün",
       "whatLabel": "Ne yapar",
-      "whatTitle": "Yerelde saklanan parolasız giriş",
+      "whatTitle": "Kasanızın sahip olduğu parolasız giriş",
       "what": [
-        "Passkey, platformunuzun WebAuthn API'si üzerinden oluşturulur; bu yüzden kimbilğin gizli yarısı kullanılabilir biçimde kasaya hiç girmez ve cihazınızdan hiç çıkmaz. Kasa yalnızca kimlik kimliğini ve üst verisini saklar; böylece sonra tanıyıp iptal edebilirsiniz.",
-        "Sayfa, bir şey oluşturmadan önce hangi doğrulayıcının kullanılabilir olduğunu bildirir; bağımlı taraf, görünen ad, hesap ve imza algoritmasını siz seçersiniz.",
-        "Passkey'ler kasanın geri kalanından ayrı bir sistemde değil, onunla birlikte durur: aynı şekilde şifrelenir, aranır ve geri yüklenir."
+        "KalderaShield, standartlara tam uyumlu bir WebAuthn Passkey Sağlayıcısı olarak çalışır. Bir site passkey oluşturmak veya oturum açmak istediğinde tarayıcı eklentisi ya da Android 14+ Kimlik Yöneticisi isteği yerel kasanıza iletir; ECDSA P-256 anahtar çifti yalnızca sizin açık onayınızla üretilir ve imzalanır.",
+        "Her passkey'in özel anahtarı kasa içinde etkin kasa anahtarınızla AES-256-GCM ve HKDF-SHA256 kullanılarak sarılır. Özel anahtarlar KalderaShield dışına asla düz metin olarak çıkmaz ve hiçbir tarayıcıya ya da üçüncü taraf buluta gönderilmez.",
+        "Belirli bir hesapta donanım anahtarı kullanmak isterseniz her onay penceresinde Windows Hello, Touch ID, Android biyometrisi veya YubiKey gibi bir FIDO2 güvenlik anahtarına tek tıkla geri dönüş seçeneği bulunur."
       ],
-      "stepsTitle": "Passkey nasıl oluşturulur",
+      "stepsTitle": "Passkey ile oturum açma nasıl çalışır",
       "steps": [
         {
-          "title": "Cihazınız anahtar çiftini üretir",
-          "desc": "Gizli anahtar, platform doğrulayıcısının — TPM 2.0, Secure Enclave veya AndroidKeyStore — içinde üretilir ve dışa aktarılamaz."
+          "title": "Site bir passkey ister",
+          "desc": "Tarayıcı eklentisi (Chrome, Edge, Firefox, Safari) veya Android 14+ Kimlik Yöneticisi WebAuthn çağrısını yakalar; sitenin kökenini ve bağımlı taraf kimliğini doğrular."
         },
         {
-          "title": "Kasa kimbilği kaydeder",
-          "desc": "Yalnızca kimlik kimliği ve görüntüleme üst verisi kaydedilir; bunlar da kasanın geri kalanıyla birlikte şifrelenir."
+          "title": "KalderaShield içinde onaylarsınız",
+          "desc": "KalderaShield, tam alan adını ve hesabı gösteren güvenli bir onay penceresi açar. Kasa açılmadan ve siz onay vermeden hiçbir imza üretilmez."
         },
         {
-          "title": "İmza donanımda üretilir",
-          "desc": "Gizli anahtar dışa aktarılamaz olduğu için bir siteye ait imza, yalnızca doğrulayıcının kendisi tarafından üretilebilir."
+          "title": "Kasa imzalar ve yalnızca doğrulama yanıtını döner",
+          "desc": "KalderaShield, WebAuthn sınamasını kasada şifreli ES256 özel anahtarıyla imzalar, imza sayacını artırır ve siteye yalnızca açık doğrulama yanıtını gönderir."
         }
       ],
       "heroShot": {
@@ -137,42 +137,42 @@
           "w": 1800,
           "h": 893,
           "title": "Donanım kilidi yanında durur",
-          "desc": "Aynı ayar panelinde FIDO2 ve biyometrik kilit açma seçenekleri de bulunur; böylece passkey'ler ve donanıma bağlı kilit ayrı ürünler değil, aynı yerde durur."
+          "desc": "Aynı ayar panelinde FIDO2 ve biyometrik kilit açma seçenekleri de bulunur; böylece kasa destekli passkey'ler ile donanıma bağlı kasa kilidi tek yerel güvenlik modelinde birleşir."
         }
       ],
-      "secTitle": "Passkey'lerin kaldırdıkları ve kaldırmadıkları",
-      "secLabel": "Passkey bir yedekleme planı değildir",
-      "secBody": "Passkey bir sitede parolanın yerini alır; kasayın yerini değil. Doğrulayıcınızın bulunduğu cihazı kaybeder ve başka bir yerde saklanmış passkey'iniz yoksa o kimlik cihazla birlikte gider. Ayrıca passkey yalnızca WebAuthn'i destekleyen sitelerde işe yarar; bu, büyük servislerin çoğu ve giderek artan küçük servisler için geçerlidir.",
+      "secTitle": "Passkey'lerin yerini aldıkları ve almadıkları",
+      "secLabel": "Şifreli yedeklerinizle taşınabilir",
+      "secBody": "Kasa destekli passkey'ler KalderaShield kasanızın içinde şifreli saklandığı için şifreli yedeklerinizle güvenle taşınır ve bir cihazı kaybetseniz bile üretici bulutuna bağlı kalmadan geri yüklenebilir. YubiKey veya cihaz içi donanım doğrulayıcıda tutulan passkey'ler ise o cihaza bağlı kalır. Her iki durumda da passkey'ler site parolalarının yerini alır; kasanızın ana parolası ve secret key'inin değil.",
       "tech": [
         {
-          "tag": "WebAuthn",
+          "tag": "WebAuthn / ES256",
           "title": "Özel biçim değil, standart",
-          "desc": "Kimlikler WebAuthn API'si üzerinden oluşturulur; yani uyumlu her sitenin beklediği türden nesnelerdir."
+          "desc": "Kimlikler, uyumlu her WebAuthn sitesinin beklediği standart CBOR/COSE ECDSA P-256 doğrulama ve imzalı yanıtlarını üretir."
         },
         {
-          "tag": "Dışa aktarılamaz",
-          "title": "Gizli anahtar yerinde kalır",
-          "desc": "Donanım destekli doğrulayıcılar anahtar çiftini üretir ve gizli yarıyı asla bırakmaz; kasanızı kopyalamak kimliği kopyalamaz."
+          "tag": "AEAD Köprüsü",
+          "title": "Özel anahtarlar tarayıcıya hiç değmez",
+          "desc": "Masaüstü eklenti istekleri kimliği doğrulanmış AEAD yerel mesajlaşma kanalından geçer; Android 14+ ise 128-bit belirteçli ve dışa kapalı Kimlik Yöneticisi aktarımını kullanır."
         },
         {
           "tag": "AES-256-GCM",
-          "title": "Her şeyle aynı şekilde saklanır",
-          "desc": "Kimlik kayıtları, kasanızın geri kalanıyla aynı kayıt başına anahtar şemasıyla şifrelenir."
+          "title": "Diğer tüm kasa kayıtlarıyla aynı şifreleme",
+          "desc": "Her passkey özel anahtarı HKDF-SHA256 + AES-256-GCM ile sarılır, ana parola değişiminde otomatik yeniden sarılır ve kasanızla birlikte yedeklenir."
         }
       ],
       "faqTitle": "Passkey hakkında",
       "faq": [
         {
           "q": "Hâlâ ana parolama mı ihtiyacım var?",
-          "a": "Evet. Kasanın kendisi ana parolanız ve secret key ile açılır. Passkey yalnızca bir passkey kaydettiğiniz belirli sitelerde parolanın yerini alır."
+          "a": "Evet. Kasanız ana parolanız ve secret key'inizle (veya yapılandırdığınız biyometrik/FIDO2 kilidiyle) açılır. Passkey yalnızca kaydettiğiniz sitelerde parolanın yerini alır."
         },
         {
-          "q": "Hangi doğrulayıcılar çalışır?",
-          "a": "Cihazınızın sunduğu her platform doğrulayıcısı: Windows Hello, Touch ID, Face ID, Android biyometrisi veya YubiKey gibi bir FIDO2 güvenlik anahtarı."
+          "q": "KalderaShield passkey'lerini nerede kullanabilirim?",
+          "a": "Masaüstünde KalderaShield tarayıcı eklentisi (Chrome, Edge, Firefox, Safari) ve masaüstü uygulaması eşleşmesiyle, Android 14+ üzerinde ise mobil tarayıcı ve uygulamalar için Android Kimlik Yöneticisi üzerinden kullanabilirsiniz. Her istemde Windows Hello, Touch ID veya YubiKey'e de geçebilirsiniz."
         },
         {
-          "q": "Cihazı kaybedersem ne olur?",
-          "a": "O belirli passkey, doğrulayıcısıyla birlikte kaybolur. Kasayınız, şifreleriniz ve yedekleriniz etkilenmez; çünkü onlar o cihaza bağlı değildi."
+          "q": "Cihazımı kaybedersem ne olur?",
+          "a": "KalderaShield kasanız içinde oluşturulan passkey'ler şifreli kasa yedeklerinizin içinde saklanır; şifreli yedeğinizi yeni bir cihaza geri yüklediğinizde passkey'leriniz de geri gelir. Yalnızca donanım doğrulayıcıda saklamayı seçtiğiniz passkey'ler o cihaza bağlı kalır."
         }
       ],
       "relatedTitle": "İlgili sayfalar",

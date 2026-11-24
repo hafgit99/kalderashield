@@ -386,6 +386,30 @@ if (manifest === null) {
     }
   }
 
+  const passkeyProviderActivity = extractManifestElement(manifest, 'activity', '.PasskeyProviderActivity');
+  if (passkeyProviderActivity === null) {
+    fail('AndroidManifest.xml does not declare .PasskeyProviderActivity relay');
+  } else {
+    if (!/android:exported="false"/.test(passkeyProviderActivity) || /android:exported="true"/.test(passkeyProviderActivity)) {
+      fail('PasskeyProviderActivity must be explicitly android:exported="false" (K-1 trust boundary)');
+    } else {
+      pass('PasskeyProviderActivity is android:exported="false"');
+    }
+    if (/<intent-filter[\s\S]*?<\/intent-filter>/.test(passkeyProviderActivity)) {
+      fail('PasskeyProviderActivity must declare no <intent-filter>');
+    } else {
+      pass('PasskeyProviderActivity declares no intent-filter');
+    }
+    if (/android:launchMode="singleTask"/.test(passkeyProviderActivity)) {
+      fail(
+        'PasskeyProviderActivity must NOT use android:launchMode="singleTask" — Android cancels ' +
+        'Credential Manager setResult() across tasks for singleTask Activities'
+      );
+    } else {
+      pass('PasskeyProviderActivity runs in client task (not singleTask) so setResult reaches Credential Manager');
+    }
+  }
+
   // A single exported launcher must exist, and it must not be MainActivity.
   const launcherElement = extractManifestElement(manifest, 'activity', '.LauncherActivity');
   if (launcherElement === null) {
@@ -438,6 +462,27 @@ if (manifest === null) {
     );
   } else {
     pass('KalderaShieldAutofillService keeps the system-only BIND_AUTOFILL_SERVICE guard');
+  }
+
+  const credServiceElement = extractManifestElement(manifest, 'service', '.KalderaShieldCredentialProviderService');
+  if (credServiceElement === null) {
+    fail('AndroidManifest.xml does not declare .KalderaShieldCredentialProviderService');
+  } else {
+    if (!/android:permission="android\.permission\.BIND_CREDENTIAL_PROVIDER_SERVICE"/.test(credServiceElement)) {
+      fail(
+        'KalderaShieldCredentialProviderService must declare ' +
+        'android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE".'
+      );
+    } else {
+      pass('KalderaShieldCredentialProviderService keeps the system-only BIND_CREDENTIAL_PROVIDER_SERVICE guard');
+    }
+    if (!/tools:targetApi="34"/.test(credServiceElement)) {
+      fail(
+        'KalderaShieldCredentialProviderService needs tools:targetApi="34" — CredentialProviderService is API 34+ while minSdk is 24'
+      );
+    } else {
+      pass('KalderaShieldCredentialProviderService declares its API 34 requirement via tools:targetApi');
+    }
   }
 
   // The registry is in-memory, so a secondary process would silently break it.
@@ -646,6 +691,67 @@ if (kotlinFiles.length === 0) {
   }
   if (!findings.some((f) => f.includes('may write the registry'))) {
     pass('AutofillRequestRegistry is written only by KalderaShieldAutofillService');
+  }
+
+  // Passkey Credential Provider (Android 14+) K-1 checks.
+  const passkeyServicePath = path.join(kotlinDir, 'KalderaShieldCredentialProviderService.kt');
+  const passkeyActivityPath = path.join(kotlinDir, 'PasskeyProviderActivity.kt');
+  const passkeyRegistryPath = path.join(kotlinDir, 'security', 'PasskeyRequestRegistry.kt');
+
+  for (const required of [passkeyServicePath, passkeyActivityPath, passkeyRegistryPath]) {
+    if (!fs.existsSync(required)) {
+      fail(`Expected Android 14+ passkey source missing: ${path.relative(rootDir, required)}`);
+    }
+  }
+
+  if (fs.existsSync(passkeyServicePath)) {
+    const code = readWithoutComments(passkeyServicePath);
+    if (!/UUID\.randomUUID\(\)/.test(code)) {
+      fail('KalderaShieldCredentialProviderService must generate 128-bit random tokens via UUID.randomUUID()');
+    } else if (!/PasskeyRequestRegistry\.registerPendingToken/.test(code)) {
+      fail('KalderaShieldCredentialProviderService must register pending tokens in PasskeyRequestRegistry');
+    } else {
+      pass('KalderaShieldCredentialProviderService issues 128-bit random pending tokens in PasskeyRequestRegistry');
+    }
+  }
+
+  if (fs.existsSync(passkeyActivityPath)) {
+    const code = readWithoutComments(passkeyActivityPath);
+    if (!/PasskeyRequestRegistry\.consumePendingToken/.test(code)) {
+      fail('PasskeyProviderActivity must verify and consume the pending token via PasskeyRequestRegistry.consumePendingToken');
+    } else if (!/PendingIntentHandler\.retrieveProvider(Create|Get)CredentialRequest/.test(code)) {
+      fail('PasskeyProviderActivity must retrieve authoritative requests via Jetpack PendingIntentHandler');
+    } else {
+      pass('PasskeyProviderActivity verifies pending tokens and extracts requests via PendingIntentHandler');
+    }
+  }
+
+  if (fs.existsSync(passkeyRegistryPath)) {
+    const code = readWithoutComments(passkeyRegistryPath);
+    if (!code.includes('synchronized') || !code.includes('MAX_ENTRIES')) {
+      fail('PasskeyRequestRegistry must be synchronized and bounded');
+    } else {
+      pass('PasskeyRequestRegistry is synchronized and bounded');
+    }
+  }
+
+  for (const file of kotlinFiles) {
+    const code = readWithoutComments(file);
+    if (file !== passkeyServicePath && /PasskeyRequestRegistry\.registerPendingToken\s*\(/.test(code)) {
+      fail(
+        `${path.relative(rootDir, file)} calls PasskeyRequestRegistry.registerPendingToken(). ` +
+        'Only KalderaShieldCredentialProviderService may mint pending passkey tokens.'
+      );
+    }
+    if (file !== passkeyActivityPath && /PasskeyRequestRegistry\.register\s*\(/.test(code)) {
+      fail(
+        `${path.relative(rootDir, file)} calls PasskeyRequestRegistry.register(). ` +
+        'Only PasskeyProviderActivity may register parsed Credential Manager requests.'
+      );
+    }
+  }
+  if (!findings.some((f) => f.includes('PasskeyRequestRegistry.'))) {
+    pass('PasskeyRequestRegistry mutators are restricted to CredentialProviderService and PasskeyProviderActivity');
   }
 }
 

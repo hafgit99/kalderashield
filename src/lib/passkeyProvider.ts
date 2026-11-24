@@ -141,18 +141,32 @@ function isValidHostLabelSequence(host: string): boolean {
   return true;
 }
 
+const ANDROID_APK_KEY_HASH_ORIGIN_RE = /^android:apk-key-hash:[A-Za-z0-9_-]{43,44}$/;
+
 /**
- * Validates that `origin` is a WebAuthn-eligible secure origin (`https://` or
- * `http://localhost`) and that `rpId` is a valid registrable domain suffix of
- * the origin's hostname. Returns the normalized lowercase `rpId` and canonical `origin`.
+ * Validates that `origin` is either:
+ *  - a WebAuthn-eligible web origin (`https://` or `http://localhost`) whose
+ *    hostname matches or ends with `.rpId`, OR
+ *  - a standard Android native app origin (`android:apk-key-hash:<base64url-sha256>`)
+ *    paired with an explicit syntactically valid `rpId`.
+ * Returns the normalized lowercase `rpId` and canonical `origin`.
  */
 export function validateOriginAndRpId(
   origin: string,
   requestedRpId?: string,
 ): { origin: string; rpId: string; hostname: string } {
+  const trimmedOrigin = (origin || '').trim();
+  if (ANDROID_APK_KEY_HASH_ORIGIN_RE.test(trimmedOrigin)) {
+    const rpId = (requestedRpId || '').trim().toLowerCase();
+    if (!isValidHostLabelSequence(rpId)) {
+      throw new PasskeyError(passkeyErrorCodes.missingRpId);
+    }
+    return { origin: trimmedOrigin, rpId, hostname: rpId };
+  }
+
   let parsed: URL;
   try {
-    parsed = new URL(origin);
+    parsed = new URL(trimmedOrigin);
   } catch {
     throw new PasskeyError(passkeyErrorCodes.rpIdOriginMismatch);
   }
