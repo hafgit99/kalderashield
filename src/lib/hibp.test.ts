@@ -3,10 +3,17 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkPasswordAgainstHibp, HIBP_STORAGE_KEY, resetHibpCacheForTesting } from './hibp';
+import {
+  checkPasswordAgainstHibp,
+  HIBP_STORAGE_KEY,
+  resetHibpCacheForTesting,
+  scanVaultItemsAgainstHibp,
+} from './hibp';
+import { closeVaultSession } from './vaultSession';
 
 describe('HIBP password checks', () => {
   afterEach(() => {
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
     resetHibpCacheForTesting();
     localStorage.clear();
     vi.restoreAllMocks();
@@ -90,6 +97,8 @@ describe('HIBP password checks', () => {
     expect(calls[0]![0]).not.toContain('1E4C9B93F3F0682250B6CF8331B7EE68FD8');
     expect(calls[0]![1]).toEqual(expect.objectContaining({
       cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
       headers: {
         'Add-Padding': 'true',
       },
@@ -202,5 +211,105 @@ describe('HIBP password checks', () => {
 
     setHibpCheckEnabled(true);
     expect(isHibpCheckEnabled()).toBe(true);
+  });
+
+  it('clears cached prefix buckets when the vault session closes', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      text: async () => '1E4C9B93F3F0682250B6CF8331B7EE68FD8:7',
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await checkPasswordAgainstHibp('password');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    closeVaultSession(true);
+
+    await checkPasswordAgainstHibp('password');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('routes range lookups through Tauri Rust invoke when running inside Tauri', async () => {
+    const invokeMock = vi.fn(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'fetch_hibp_range' && args?.prefix === '5BAA6') {
+        return '1E4C9B93F3F0682250B6CF8331B7EE68FD8:321\r\n';
+      }
+      throw new Error(`unexpected command ${cmd}`);
+    });
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {
+      invoke: invokeMock,
+    };
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(checkPasswordAgainstHibp('password')).resolves.toEqual({
+      status: 'pwned',
+      count: 321,
+    });
+    expect(invokeMock).toHaveBeenCalledWith('fetch_hibp_range', { prefix: '5BAA6' }, undefined);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized HIBP range payloads and honours AbortSignal', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      text: async () => 'A'.repeat(600 * 1024),
+    })));
+    await expect(checkPasswordAgainstHibp('password')).resolves.toMatchObject({
+      status: 'unavailable',
+      count: 0,
+    });
+
+    const controller = new AbortController();
+    controller.abort();
+    await expect(checkPasswordAgainstHibp('password', { signal: controller.signal })).resolves.toMatchObject({
+      status: 'unavailable',
+      reason: 'HIBP check aborted.',
+    });
+  });
+
+  it('batch-scans items by itemId, deduplicates passwords, reports progress, and trips circuit-breaker offline', async () => {
+    const progressCalls: [number, number][] = [];
+    const checkPassword = vi.fn(async (pw: string) => {
+      if (pw === 'leaked') return { status: 'pwned' as const, count: 88 };
+      return { status: 'clean' as const, count: 0 as const };
+    });
+
+    const res = await scanVaultItemsAgainstHibp(
+      [
+        { id: 'a', password: 'leaked' },
+        { id: 'b', password: 'leaked' },
+        { id: 'c', password: 'safe' },
+      ],
+      {
+        checkPassword,
+        onProgress: (done, total) => progressCalls.push([done, total]),
+      },
+    );
+
+    expect(res.status).toBe('complete');
+    expect(res.pwnedByItemId.get('a')).toBe(88);
+    expect(res.pwnedByItemId.get('b')).toBe(88);
+    expect(res.pwnedByItemId.has('c')).toBe(false);
+    expect(checkPassword).toHaveBeenCalledTimes(2);
+    expect(progressCalls).toHaveLength(2);
+
+    // Circuit-breaker trips after 2 consecutive offline failures instead of checking all 10 passwords
+    const offlineCheck = vi.fn(async () => ({
+      status: 'unavailable' as const,
+      count: 0 as const,
+      reason: 'offline',
+    }));
+    const offlineItems = Array.from({ length: 10 }, (_, idx) => ({
+      id: `item-${idx}`,
+      password: `pw-${idx}`,
+    }));
+    const offlineRes = await scanVaultItemsAgainstHibp(offlineItems, {
+      checkPassword: offlineCheck,
+      concurrency: 1,
+      maxConsecutiveFailures: 2,
+    });
+    expect(offlineRes.status).toBe('unavailable');
+    expect(offlineCheck).toHaveBeenCalledTimes(2);
   });
 });

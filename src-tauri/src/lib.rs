@@ -11,6 +11,7 @@ const MAX_VAULT_FILE_BYTES: u64 = 25 * 1024 * 1024; // 25 MB
 
 mod android_update;
 mod credential_handler;
+mod hibp;
 mod linux_security;
 mod native_messaging;
 mod secure_storage;
@@ -995,6 +996,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             android_update::fetch_android_update_manifest,
+            hibp::fetch_hibp_range,
             get_asset_integrity_anchor,
             record_asset_integrity_result,
             read_vault_database,

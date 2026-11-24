@@ -3,20 +3,59 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { invoke } from '@tauri-apps/api/core';
+import { acquireHibpOriginLease } from './airgapNetworkPolicy';
+import { secureRandomIndex } from './random';
+import { registerOnCloseSession } from './vaultSession';
+
 export type HibpPasswordCheck =
   | { status: 'clean'; count: 0 }
   | { status: 'pwned'; count: number }
-  | { status: 'unavailable'; count: 0; reason: string };
+  | { status: 'unavailable'; count: 0; reason: string; rateLimited?: boolean };
+
+export interface HibpCheckOptions {
+  signal?: AbortSignal;
+}
+
+export interface HibpScanItem {
+  id: string;
+  password: string;
+}
+
+export interface HibpBatchScanOptions {
+  signal?: AbortSignal;
+  concurrency?: number;
+  maxConsecutiveFailures?: number;
+  onProgress?: (done: number, total: number) => void;
+  checkPassword?: (password: string, options?: HibpCheckOptions) => Promise<HibpPasswordCheck>;
+}
+
+export interface HibpBatchScanResult {
+  pwnedByItemId: Map<string, number>;
+  status: 'complete' | 'unavailable' | 'aborted';
+  checkedCount: number;
+  totalCount: number;
+}
 
 const HIBP_RANGE_URL = 'https://api.pwnedpasswords.com/range/';
 const HIBP_TIMEOUT_MS = 4500;
+const MAX_RANGE_BYTES = 512 * 1024; // 512 KiB safety ceiling (~10x typical padded response)
+const SUFFIX_HEX_RE = /^[0-9A-F]{35}$/;
+
 interface CacheEntry {
   data: Map<string, number>;
   timestamp: number;
 }
+
 const prefixCache = new Map<string, CacheEntry>();
 const MAX_CACHE_SIZE = 100;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// Clear cached SHA-1 prefix buckets whenever the vault locks so no password
+// metadata lingers in RAM across locked sessions.
+registerOnCloseSession(() => {
+  prefixCache.clear();
+});
 
 function toHex(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)]
@@ -35,38 +74,80 @@ async function sha1Hex(value: string): Promise<string> {
 }
 
 function parseRangeResponse(text: string): Map<string, number> {
+  if (text.length > MAX_RANGE_BYTES) {
+    throw new Error('HIBP range response exceeded maximum allowed size.');
+  }
+
   const suffixes = new Map<string, number>();
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const [suffix, count] = line.split(':');
-    if (!suffix || !count) continue;
+    const colonIndex = line.indexOf(':');
+    if (colonIndex <= 0) continue;
 
-    const parsedCount = Number(count);
-    if (!Number.isFinite(parsedCount) || parsedCount <= 0) continue;
-    suffixes.set(suffix.toUpperCase(), parsedCount);
+    const suffix = line.slice(0, colonIndex).trim().toUpperCase();
+    const countRaw = line.slice(colonIndex + 1).trim();
+    if (!SUFFIX_HEX_RE.test(suffix) || !countRaw) continue;
+
+    const parsedCount = Number(countRaw);
+    // HIBP Add-Padding entries have count === 0 and must be ignored.
+    if (!Number.isSafeInteger(parsedCount) || parsedCount <= 0) continue;
+    suffixes.set(suffix, parsedCount);
   }
 
   return suffixes;
 }
 
-async function fetchRange(prefix: string): Promise<Map<string, number>> {
-  const cached = prefixCache.get(prefix);
-  if (cached) {
-    if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.data;
-    }
-    prefixCache.delete(prefix);
-  }
+function isTauriInvokeAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  const internals = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: unknown } }).__TAURI_INTERNALS__;
+  return typeof internals?.invoke === 'function';
+}
+
+function createAbortError(): Error {
+  const err = new Error('HIBP check aborted.');
+  err.name = 'AbortError';
+  return err;
+}
+
+async function fetchRangeTextViaTauri(prefix: string, signal?: AbortSignal): Promise<string> {
+  if (signal?.aborted) throw createAbortError();
+
+  const invokePromise = invoke<string>('fetch_hibp_range', { prefix });
+  if (!signal) return invokePromise;
+
+  return new Promise<string>((resolve, reject) => {
+    const onAbort = () => reject(createAbortError());
+    signal.addEventListener('abort', onAbort, { once: true });
+    invokePromise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (err) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(err);
+      },
+    );
+  });
+}
+
+async function fetchRangeTextViaWeb(prefix: string, signal?: AbortSignal): Promise<string> {
+  if (signal?.aborted) throw createAbortError();
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), HIBP_TIMEOUT_MS);
+  const onExternalAbort = () => controller.abort();
+  signal?.addEventListener('abort', onExternalAbort, { once: true });
 
+  const releaseLease = acquireHibpOriginLease();
   try {
     const response = await fetch(`${HIBP_RANGE_URL}${prefix}`, {
       cache: 'no-store',
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
       headers: {
         'Add-Padding': 'true',
       },
@@ -77,67 +158,189 @@ async function fetchRange(prefix: string): Promise<Map<string, number>> {
       throw new Error(`HIBP range request failed with HTTP ${response.status}.`);
     }
 
-    const parsed = parseRangeResponse(await response.text());
-    
-    // Bounded eviction
-    if (prefixCache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = prefixCache.keys().next().value;
-      if (oldestKey !== undefined) {
-        prefixCache.delete(oldestKey);
+    const contentLengthHeader = response.headers?.get?.('content-length');
+    if (contentLengthHeader) {
+      const contentLength = Number(contentLengthHeader);
+      if (Number.isFinite(contentLength) && contentLength > MAX_RANGE_BYTES) {
+        throw new Error('HIBP range response exceeded maximum allowed size.');
       }
     }
-    
-    prefixCache.set(prefix, { data: parsed, timestamp: Date.now() });
-    return parsed;
+
+    return await response.text();
   } finally {
+    releaseLease();
     clearTimeout(timeout);
+    signal?.removeEventListener('abort', onExternalAbort);
   }
 }
 
-export async function checkPasswordAgainstHibp(password: string): Promise<HibpPasswordCheck> {
+async function fetchRange(prefix: string, signal?: AbortSignal): Promise<Map<string, number>> {
+  if (signal?.aborted) throw createAbortError();
+
+  const cached = prefixCache.get(prefix);
+  if (cached) {
+    if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+    prefixCache.delete(prefix);
+  }
+
+  const rawText = isTauriInvokeAvailable()
+    ? await fetchRangeTextViaTauri(prefix, signal)
+    : await fetchRangeTextViaWeb(prefix, signal);
+
+  const parsed = parseRangeResponse(rawText);
+
+  // Bounded eviction (FIFO)
+  if (prefixCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = prefixCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      prefixCache.delete(oldestKey);
+    }
+  }
+
+  prefixCache.set(prefix, { data: parsed, timestamp: Date.now() });
+  return parsed;
+}
+
+export async function checkPasswordAgainstHibp(
+  password: string,
+  options?: HibpCheckOptions,
+): Promise<HibpPasswordCheck> {
   if (!password) return { status: 'clean', count: 0 };
+  if (options?.signal?.aborted) {
+    return { status: 'unavailable', count: 0, reason: 'HIBP check aborted.' };
+  }
 
   try {
     const hash = await sha1Hex(password);
     const prefix = hash.slice(0, 5);
     const suffix = hash.slice(5);
-    const range = await fetchRange(prefix);
+    const range = await fetchRange(prefix, options?.signal);
     const count = range.get(suffix) ?? 0;
 
     return count > 0
       ? { status: 'pwned', count }
       : { status: 'clean', count: 0 };
   } catch (error) {
+    const reason = error instanceof Error ? error.message : 'HIBP check failed.';
+    const rateLimited = /HTTP 429\b/.test(reason);
     return {
       status: 'unavailable',
       count: 0,
-      reason: error instanceof Error ? error.message : 'HIBP check failed.',
+      reason,
+      ...(rateLimited ? { rateLimited: true } : {}),
     };
   }
+}
+
+function shuffleWithCsprng<T>(items: T[]): T[] {
+  const copy = items.slice();
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = secureRandomIndex(i + 1);
+    const tmp = copy[i]!;
+    copy[i] = copy[j]!;
+    copy[j] = tmp;
+  }
+  return copy;
+}
+
+/**
+ * Privacy-preserving batch HIBP scan for vault items.
+ *
+ * - Groups items by unique password so identical passwords are checked once.
+ * - Shuffles lookup order using CSPRNG (`secureRandomIndex`) so network
+ *   observers cannot fingerprint a vault by deterministic prefix ordering.
+ * - Limits concurrency (default 3) and trips a circuit-breaker after
+ *   consecutive failures or HTTP 429 so offline vaults do not hang for
+ *   `timeout * N`.
+ * - Returns results keyed by `itemId` rather than plaintext password.
+ */
+export async function scanVaultItemsAgainstHibp(
+  items: HibpScanItem[],
+  options?: HibpBatchScanOptions,
+): Promise<HibpBatchScanResult> {
+  const itemIdsByPassword = new Map<string, string[]>();
+  for (const item of items) {
+    if (!item.password) continue;
+    const list = itemIdsByPassword.get(item.password);
+    if (list) {
+      list.push(item.id);
+    } else {
+      itemIdsByPassword.set(item.password, [item.id]);
+    }
+  }
+
+  const uniquePasswords = shuffleWithCsprng([...itemIdsByPassword.keys()]);
+  const totalCount = uniquePasswords.length;
+  const pwnedByItemId = new Map<string, number>();
+
+  if (totalCount === 0) {
+    return { pwnedByItemId, status: 'complete', checkedCount: 0, totalCount: 0 };
+  }
+
+  const signal = options?.signal;
+  const checkFn = options?.checkPassword ?? checkPasswordAgainstHibp;
+  const maxConsecutiveFailures = Math.max(1, options?.maxConsecutiveFailures ?? 2);
+  const workerCount = Math.min(Math.max(1, options?.concurrency ?? 3), totalCount);
+
+  let nextIndex = 0;
+  let checkedCount = 0;
+  let consecutiveFailures = 0;
+  let unavailable = false;
+  let circuitTripped = false;
+
+  const runWorker = async () => {
+    while (true) {
+      if (signal?.aborted || circuitTripped) return;
+      const current = nextIndex;
+      if (current >= totalCount) return;
+      nextIndex += 1;
+
+      const password = uniquePasswords[current]!;
+      const result = await checkFn(password, { signal });
+      if (signal?.aborted) return;
+
+      checkedCount += 1;
+      options?.onProgress?.(checkedCount, totalCount);
+
+      if (result.status === 'pwned') {
+        consecutiveFailures = 0;
+        for (const itemId of itemIdsByPassword.get(password) ?? []) {
+          pwnedByItemId.set(itemId, result.count);
+        }
+      } else if (result.status === 'clean') {
+        consecutiveFailures = 0;
+      } else {
+        unavailable = true;
+        consecutiveFailures += 1;
+        if (result.rateLimited || consecutiveFailures >= maxConsecutiveFailures) {
+          circuitTripped = true;
+          return;
+        }
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+
+  if (signal?.aborted) {
+    return { pwnedByItemId, status: 'aborted', checkedCount, totalCount };
+  }
+
+  return {
+    pwnedByItemId,
+    status: unavailable ? 'unavailable' : 'complete',
+    checkedCount,
+    totalCount,
+  };
 }
 
 /**
  * Opt-in, and the opt-in has to be explicit.
  *
- * The breach check was on by default: `isHibpCheckEnabled()` read
- * `stored !== 'false'`, so an installation that had never been asked anything
- * answered yes, and the Security Audit screen sent a request for every
- * password in the vault the moment it was opened.
- *
- * The request itself is built so that no password can leave the device — only
- * the first five hex characters of a SHA-1 digest go out, and `Add-Padding`
- * pads the response so its size cannot be correlated back. That is a strong
- * property and it is why the feature is worth having. It is not, though, a
- * reason to make the decision for the user: a password manager is the one
- * category of software where "it contacts a server" has to be earned rather
- * than assumed, and the published privacy policy did not mention this request
- * at all. Defaulting it on meant the shipped product and the shipped policy
- * described two different programs.
- *
- * Installations that already made the choice are unaffected: the key is only
- * written by `setHibpCheckEnabled`, so anyone who turned this on before has
- * `'true'` stored and keeps it, and anyone who turned it off has `'false'`.
- * Only the never-asked case moves, which is the case this change is about.
+ * The breach check starts off until the user enables it. Turning it on or off
+ * persists in localStorage under `HIBP_STORAGE_KEY`.
  */
 export const HIBP_STORAGE_KEY = 'KalderaShield_hibp_audit_enabled';
 
