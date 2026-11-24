@@ -114,4 +114,26 @@ describe('androidPasskey bridge', () => {
     expect(cancelAndroidPasskeyRequest('req-android-1')).toBe(true);
     expect(cancelPasskeyRequest).toHaveBeenCalledWith('req-android-1');
   });
+
+  it('catches native bridge exceptions safely', () => {
+    window.KalderaShieldAndroidPasskey = {
+      isSupported: () => true,
+      getPendingRequest: () => {
+        throw new Error('bridge crash');
+      },
+      completePasskeyRequest: () => {
+        throw new Error('bridge crash');
+      },
+      cancelPasskeyRequest: () => {
+        throw new Error('bridge crash');
+      },
+      failPasskeyRequest: () => {
+        throw new Error('bridge crash');
+      },
+    };
+
+    expect(getPendingAndroidPasskeyRequest()).toBeNull();
+    expect(completeAndroidPasskeyRequest('req-1', '{}')).toBe(false);
+    expect(cancelAndroidPasskeyRequest('req-1')).toBe(false);
+  });
 });
