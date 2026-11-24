@@ -37,6 +37,17 @@ export interface HibpBatchScanResult {
   totalCount: number;
 }
 
+export interface LocalHibpFileInfo {
+  path: string;
+  fileName: string;
+  sizeBytes: number;
+}
+
+interface LocalHibpMatch {
+  hash: string;
+  count: number;
+}
+
 const HIBP_RANGE_URL = 'https://api.pwnedpasswords.com/range/';
 const HIBP_TIMEOUT_MS = 4500;
 const MAX_RANGE_BYTES = 512 * 1024; // 512 KiB safety ceiling (~10x typical padded response)
@@ -343,6 +354,108 @@ export async function scanVaultItemsAgainstHibp(
  * persists in localStorage under `HIBP_STORAGE_KEY`.
  */
 export const HIBP_STORAGE_KEY = 'KalderaShield_hibp_audit_enabled';
+export const HIBP_LOCAL_PATH_KEY = 'KalderaShield_hibp_local_db_path';
+
+export function isLocalHibpSupported(): boolean {
+  return isTauriInvokeAvailable();
+}
+
+export function getLocalHibpFilePath(): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  const value = localStorage.getItem(HIBP_LOCAL_PATH_KEY)?.trim();
+  return value ? value : null;
+}
+
+export function setLocalHibpFilePath(path: string | null): void {
+  if (typeof localStorage === 'undefined') return;
+  const trimmed = path?.trim();
+  if (trimmed) {
+    localStorage.setItem(HIBP_LOCAL_PATH_KEY, trimmed);
+  } else {
+    localStorage.removeItem(HIBP_LOCAL_PATH_KEY);
+  }
+}
+
+export async function selectLocalHibpFile(): Promise<LocalHibpFileInfo | null> {
+  if (!isTauriInvokeAvailable()) return null;
+  return invoke<LocalHibpFileInfo | null>('select_hibp_local_file');
+}
+
+/**
+ * Fully offline (air-gap) HIBP scan against a local sorted SHA-1 database file.
+ *
+ * Computes SHA-1 hashes locally via WebCrypto and sends only the 40-char hex
+ * digests to Rust (`check_hibp_local_file`), which executes O(log N) binary
+ * search directly on disk with < 1 MiB RAM and zero network traffic.
+ */
+export async function scanVaultItemsAgainstLocalHibp(
+  filePath: string,
+  items: HibpScanItem[],
+  options?: { signal?: AbortSignal },
+): Promise<HibpBatchScanResult> {
+  const signal = options?.signal;
+  const pwnedByItemId = new Map<string, number>();
+
+  if (!filePath.trim() || !isTauriInvokeAvailable()) {
+    return { pwnedByItemId, status: 'unavailable', checkedCount: 0, totalCount: 0 };
+  }
+
+  const itemIdsByHash = new Map<string, string[]>();
+  try {
+    for (const item of items) {
+      if (signal?.aborted) {
+        return { pwnedByItemId, status: 'aborted', checkedCount: 0, totalCount: 0 };
+      }
+      if (!item.password) continue;
+      const hash = await sha1Hex(item.password);
+      const list = itemIdsByHash.get(hash);
+      if (list) {
+        list.push(item.id);
+      } else {
+        itemIdsByHash.set(hash, [item.id]);
+      }
+    }
+
+    const uniqueHashes = [...itemIdsByHash.keys()];
+    if (uniqueHashes.length === 0) {
+      return { pwnedByItemId, status: 'complete', checkedCount: 0, totalCount: 0 };
+    }
+    if (signal?.aborted) {
+      return { pwnedByItemId, status: 'aborted', checkedCount: 0, totalCount: uniqueHashes.length };
+    }
+
+    const matches = await invoke<LocalHibpMatch[]>('check_hibp_local_file', {
+      path: filePath,
+      hashes: uniqueHashes,
+    });
+
+    if (signal?.aborted) {
+      return { pwnedByItemId, status: 'aborted', checkedCount: 0, totalCount: uniqueHashes.length };
+    }
+
+    for (const match of matches) {
+      if (!Number.isSafeInteger(match.count) || match.count <= 0) continue;
+      const normalized = match.hash.toUpperCase();
+      for (const itemId of itemIdsByHash.get(normalized) ?? []) {
+        pwnedByItemId.set(itemId, match.count);
+      }
+    }
+
+    return {
+      pwnedByItemId,
+      status: 'complete',
+      checkedCount: uniqueHashes.length,
+      totalCount: uniqueHashes.length,
+    };
+  } catch {
+    return {
+      pwnedByItemId,
+      status: 'unavailable',
+      checkedCount: 0,
+      totalCount: itemIdsByHash.size,
+    };
+  }
+}
 
 export function isHibpCheckEnabled(): boolean {
   if (typeof localStorage === 'undefined') return false;

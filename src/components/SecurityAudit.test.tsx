@@ -318,4 +318,40 @@ describe('SecurityAudit', () => {
     fireEvent.click(screen.getByText('No TOTP Service'));
     expect(onSelectItem).toHaveBeenCalledWith(itemWithNoTotp);
   });
+
+  it('allows selecting, scanning, and clearing a local offline HIBP database in Tauri runtime', async () => {
+    const invokeMock = vi.fn(async (cmd: string) => {
+      if (cmd === 'select_hibp_local_file') {
+        return { path: 'C:\\hibp\\pwned.txt', fileName: 'pwned.txt', sizeBytes: 4096 };
+      }
+      if (cmd === 'check_hibp_local_file') {
+        return [{ hash: '5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8', count: 77 }];
+      }
+      return null;
+    });
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = { invoke: invokeMock };
+
+    try {
+      render(
+        <SecurityAudit
+          items={[makeItem({ id: 'local-pwn', title: 'Offline Breached', password: 'password' })]}
+          onSelectItem={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId('security-audit-hibp-local-select'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('security-audit-hibp-local-badge')).toBeTruthy();
+        expect(screen.getByTestId('security-audit-pwned-count').textContent).toBe('1');
+      });
+      expect(checkPasswordAgainstHibp).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByTestId('security-audit-hibp-local-clear'));
+      expect(screen.queryByTestId('security-audit-hibp-local-badge')).toBeNull();
+      expect(screen.getByTestId('security-audit-pwned-count').textContent).toBe('—');
+    } finally {
+      delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+    }
+  });
 });

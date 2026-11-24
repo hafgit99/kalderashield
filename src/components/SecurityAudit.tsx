@@ -4,13 +4,23 @@
  */
 
 import React from 'react';
-import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp, RefreshCw } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp, RefreshCw, HardDrive, X } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatPercent } from '../lib/formatters';
 import type { VaultItem } from '../types';
 import { runVaultAudit, calculatePasswordScore, getPasswordAgeInDays, isUnsecureHttpUrl, supportsTwoFactor, getAuditScoreHistory } from '../lib/security';
-import { checkPasswordAgainstHibp, isHibpCheckEnabled, scanVaultItemsAgainstHibp, setHibpCheckEnabled } from '../lib/hibp';
+import {
+  checkPasswordAgainstHibp,
+  getLocalHibpFilePath,
+  isHibpCheckEnabled,
+  isLocalHibpSupported,
+  scanVaultItemsAgainstHibp,
+  scanVaultItemsAgainstLocalHibp,
+  selectLocalHibpFile,
+  setHibpCheckEnabled,
+  setLocalHibpFilePath,
+} from '../lib/hibp';
 
 interface SecurityAuditProps {
   items: VaultItem[];
@@ -20,6 +30,8 @@ interface SecurityAuditProps {
 export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProps) {
   const { language, t } = useLanguage();
   const [hibpEnabled, setHibpEnabled] = React.useState<boolean>(() => isHibpCheckEnabled());
+  const [localHibpPath, setLocalHibpPath] = React.useState<string | null>(() => getLocalHibpFilePath());
+  const [localHibpError, setLocalHibpError] = React.useState<string | null>(null);
   const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(new Map());
   const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>('idle');
   const [hibpProgress, setHibpProgress] = React.useState<{ done: number; total: number } | null>(null);
@@ -29,13 +41,44 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     itemsRef.current = items;
   }, [items]);
   const audit = runVaultAudit(items);
+  const localHibpSupported = isLocalHibpSupported();
+  const isBreachCheckActive = Boolean(localHibpPath) || hibpEnabled;
 
   const handleToggleHibp = (e: React.MouseEvent) => {
     e.stopPropagation();
     const next = !hibpEnabled;
     setHibpEnabled(next);
     setHibpCheckEnabled(next);
-    if (!next) {
+    setLocalHibpError(null);
+    if (!next && !localHibpPath) {
+      setPwnedByItemId(new Map());
+      setHibpProgress(null);
+      setHibpStatus('idle');
+    } else if (next) {
+      setScanNonce((n) => n + 1);
+    }
+  };
+
+  const handleSelectLocalHibp = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLocalHibpError(null);
+    try {
+      const selected = await selectLocalHibpFile();
+      if (!selected) return;
+      setLocalHibpFilePath(selected.path);
+      setLocalHibpPath(selected.path);
+      setScanNonce((n) => n + 1);
+    } catch {
+      setLocalHibpError(t('securityAudit.hibpLocalError'));
+    }
+  };
+
+  const handleClearLocalHibp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLocalHibpFilePath(null);
+    setLocalHibpPath(null);
+    setLocalHibpError(null);
+    if (!hibpEnabled) {
       setPwnedByItemId(new Map());
       setHibpProgress(null);
       setHibpStatus('idle');
@@ -46,12 +89,13 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
   const handleManualRescan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!hibpEnabled || hibpStatus === 'checking') return;
+    if (!isBreachCheckActive || hibpStatus === 'checking') return;
+    setLocalHibpError(null);
     setScanNonce((n) => n + 1);
   };
 
   React.useEffect(() => {
-    if (!hibpEnabled) {
+    if (!isBreachCheckActive) {
       setPwnedByItemId(new Map());
       setHibpProgress(null);
       setHibpStatus('idle');
@@ -74,15 +118,17 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     setHibpProgress({ done: 0, total: new Set(scanItems.map((i) => i.password)).size });
 
     (async () => {
-      const scanResult = await scanVaultItemsAgainstHibp(scanItems, {
-        signal: controller.signal,
-        checkPassword: checkPasswordAgainstHibp,
-        onProgress: (done, total) => {
-          if (!controller.signal.aborted) {
-            setHibpProgress({ done, total });
-          }
-        },
-      });
+      const scanResult = localHibpPath
+        ? await scanVaultItemsAgainstLocalHibp(localHibpPath, scanItems, { signal: controller.signal })
+        : await scanVaultItemsAgainstHibp(scanItems, {
+          signal: controller.signal,
+          checkPassword: checkPasswordAgainstHibp,
+          onProgress: (done, total) => {
+            if (!controller.signal.aborted) {
+              setHibpProgress({ done, total });
+            }
+          },
+        });
 
       if (!controller.signal.aborted && scanResult.status !== 'aborted') {
         setPwnedByItemId(scanResult.pwnedByItemId);
@@ -94,7 +140,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     return () => {
       controller.abort();
     };
-  }, [hibpEnabled, scanNonce]);
+  }, [isBreachCheckActive, localHibpPath, scanNonce]);
 
   // Group items by security status (only audit password-bearing / login records)
   const weakItems = items.filter((i) => {
@@ -407,20 +453,55 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold tracking-wider text-on-surface-variant uppercase">{t('securityAudit.pwnedPasswords')}</span>
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  data-testid="security-audit-hibp-toggle"
-                  onClick={handleToggleHibp}
-                  title={hibpEnabled ? t('securityAudit.hibpToggleEnabled') : t('securityAudit.hibpToggleDisabled')}
-                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                    hibpEnabled
-                      ? 'bg-brand-primary/20 text-brand-primary border-brand-primary/30'
-                      : 'bg-outline-variant/10 text-on-surface-variant border-outline-variant/20'
-                  }`}
-                >
-                  {hibpEnabled ? t('securityAudit.hibpStatusOn') : t('securityAudit.hibpStatusOffline')}
-                </button>
-                {hibpEnabled && (
+                {localHibpPath ? (
+                  <span
+                    data-testid="security-audit-hibp-local-badge"
+                    title={localHibpPath}
+                    className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                  >
+                    <HardDrive className="w-2.5 h-2.5" />
+                    <span>{t('securityAudit.hibpLocalActive')}</span>
+                    <button
+                      type="button"
+                      data-testid="security-audit-hibp-local-clear"
+                      onClick={handleClearLocalHibp}
+                      title={t('securityAudit.hibpLocalClear')}
+                      aria-label={t('securityAudit.hibpLocalClear')}
+                      className="ml-0.5 hover:text-white cursor-pointer"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      data-testid="security-audit-hibp-toggle"
+                      onClick={handleToggleHibp}
+                      title={hibpEnabled ? t('securityAudit.hibpToggleEnabled') : t('securityAudit.hibpToggleDisabled')}
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                        hibpEnabled
+                          ? 'bg-brand-primary/20 text-brand-primary border-brand-primary/30'
+                          : 'bg-outline-variant/10 text-on-surface-variant border-outline-variant/20'
+                      }`}
+                    >
+                      {hibpEnabled ? t('securityAudit.hibpStatusOn') : t('securityAudit.hibpStatusOffline')}
+                    </button>
+                    {localHibpSupported && (
+                      <button
+                        type="button"
+                        data-testid="security-audit-hibp-local-select"
+                        onClick={handleSelectLocalHibp}
+                        title={t('securityAudit.hibpLocalSelect')}
+                        aria-label={t('securityAudit.hibpLocalSelect')}
+                        className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-outline-variant/15 transition-colors cursor-pointer"
+                      >
+                        <HardDrive className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </>
+                )}
+                {isBreachCheckActive && (
                   <button
                     type="button"
                     data-testid="security-audit-hibp-rescan"
@@ -433,7 +514,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                     <RefreshCw className={`w-3.5 h-3.5 ${hibpStatus === 'checking' ? 'animate-spin' : ''}`} />
                   </button>
                 )}
-                {hibpEnabled && (
+                {isBreachCheckActive && (
                   hibpStatus === 'unavailable' ? (
                     <WifiOff className="w-4 h-4 text-amber-300" />
                   ) : (
@@ -444,18 +525,20 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <span data-testid="security-audit-pwned-count" className="text-3xl font-bold font-sans text-red-300">
-                {hibpEnabled ? pwnedItems.length : '—'}
+                {isBreachCheckActive ? pwnedItems.length : '—'}
               </span>
               <span className="text-xs text-on-surface-variant">
-                {!hibpEnabled
-                  ? t('securityAudit.pwnedDisabled')
-                  : hibpStatus === 'checking'
-                    ? (hibpProgress && hibpProgress.total > 0
-                      ? `${t('securityAudit.pwnedChecking')} (${hibpProgress.done}/${hibpProgress.total})`
-                      : t('securityAudit.pwnedChecking'))
-                    : hibpStatus === 'unavailable'
-                      ? t('securityAudit.pwnedUnavailable')
-                      : t('securityAudit.pwnedDescription')}
+                {localHibpError
+                  ? localHibpError
+                  : !isBreachCheckActive
+                    ? t('securityAudit.pwnedDisabled')
+                    : hibpStatus === 'checking'
+                      ? (hibpProgress && hibpProgress.total > 0
+                        ? `${t('securityAudit.pwnedChecking')} (${hibpProgress.done}/${hibpProgress.total})`
+                        : t('securityAudit.pwnedChecking'))
+                      : hibpStatus === 'unavailable'
+                        ? t('securityAudit.pwnedUnavailable')
+                        : t('securityAudit.pwnedDescription')}
               </span>
             </div>
           </div>
