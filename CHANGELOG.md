@@ -2,6 +2,20 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.1.0 - Hardened HIBP Rust IPC Bridge, Zero-External-Network WebView CSP & Offline Local HIBP DB
+
+### Added
+
+- **Zero-dependency Rust local offline HIBP SHA-1 scanner (air-gap mode).** Added `select_hibp_local_file`, `validate_hibp_local_file`, and `check_hibp_local_file` Tauri commands executing O(log N) binary search directly on disk over user-supplied sorted HIBP SHA-1 files (`< 1 MiB` RAM on 40 GB+ databases, zero network requests, strict `40-hex:count` header validation) with a 1-click Local DB picker and badge in Security Audit across all 12 locales.
+- **Rust HIBP k-anonymity IPC bridge (`fetch_hibp_range`).** Routed desktop and Android HIBP range lookups through Rust (`reqwest` + `rustls` + `webpki-roots`) with strict 5-hex prefix validation, disabled redirects (`Policy::none()`), `Add-Padding: true`, and a 512 KiB response ceiling.
+- **Zero external internet access in Tauri WebView CSP.** Removed `https://api.pwnedpasswords.com` from `src-tauri/tauri.conf.json` `connect-src` (`connect-src 'self' ipc: http://ipc.localhost`).
+
+### Fixed & Hardened
+
+- **Air-gap network policy lease for web-mode HIBP.** Gated `api.pwnedpasswords.com` behind a short-lived `acquireHibpOriginLease()` restricted to `fetch` only (blocked on `XHR`, `WebSocket`, `sendBeacon`, `EventSource`, and when HIBP is idle/off).
+- **HIBP memory hygiene, CSPRNG shuffling, circuit-breaker, and honest audit scoring.** Cleared `prefixCache` on vault lock (`registerOnCloseSession`), replaced plaintext-password state keys with `pwnedByItemId`, shuffled batch lookup order via CSPRNG (`secureRandomIndex`), added `AbortSignal`, manual rescan, live progress, and an offline circuit-breaker (`429` / consecutive failures), and excluded breached passwords from the "Strong / Secure" count.
+- **CI stability.** Pinned `ossf/scorecard-action` to `v2.5.0` until upstream resolves `ossf/scorecard-action#1752`.
+
 ## 7.1.0.0 - Vault-Backed WebAuthn Passkey Provider (Desktop, Extensions & Android 14+)
 
 ### Added
