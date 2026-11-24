@@ -41,6 +41,14 @@ const VERSION =
 const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+const escAttr = (s) =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 /* Markup blocks keep their own HTML, so only the attribute values they carry
  * are escaped here; the paragraph text is escaped separately. */
 const blocks = {
@@ -63,7 +71,7 @@ const blocks = {
     c.heroShot
       ? `
       <figure class="shot-hero">
-        <img class="shot" src="${c.heroShot.src}" width="${c.heroShot.w}" height="${c.heroShot.h}" loading="eager" decoding="async" alt="${esc(c.h1)}">
+        <img class="shot" src="${escAttr(c.heroShot.src)}" width="${c.heroShot.w}" height="${c.heroShot.h}" loading="eager" decoding="async" alt="${escAttr(c.h1)}">
       </figure>`
       : '',
 
@@ -75,7 +83,7 @@ const blocks = {
       ${c.shots
         .map(
           (s) => `<figure class="shot-pair">
-        <img class="shot" src="${s.src}" width="${s.w}" height="${s.h}" loading="lazy" decoding="async" alt="${esc(s.title)}">
+        <img class="shot" src="${escAttr(s.src)}" width="${s.w}" height="${s.h}" loading="lazy" decoding="async" alt="${escAttr(s.title)}">
         <figcaption>
           <h3 data-i18n="${k}-shot-title">${esc(s.title)}</h3>
           <p data-i18n="${k}-shot-desc">${esc(s.desc)}</p>
@@ -119,7 +127,7 @@ const blocks = {
       <h3 class="eyebrow mt-xl" data-i18n="${k}-rel-title">${esc(c.relatedTitle)}</h3>
       <div class="cta-row mt-xs">
         ${c.related
-          .map((r, i) => `<a class="btn btn-ghost" href="${r.href}" data-i18n="${k}-rel${i + 1}">${esc(r.label)}</a>`)
+          .map((r, i) => `<a class="btn btn-ghost" href="${escAttr(r.href)}" data-i18n="${k}-rel${i + 1}">${esc(r.label)}</a>`)
           .join('\n        ')}
       </div>`;
   },
@@ -303,8 +311,8 @@ function render(page, locale, dict, pageList) {
       // head -- two addresses for one page, which is what the per-language URLs
       // exist to prevent.
       case 'TITLE': return esc(title);
-      case 'OG_TITLE': return esc(title);
-      case 'DESCRIPTION': return esc(description);
+      case 'OG_TITLE': return escAttr(title);
+      case 'DESCRIPTION': return escAttr(description);
 
       case 'EYEBROW': return esc(src.eyebrow);
       case 'EYEBROW_KEY': return k + '-eyebrow';
