@@ -4,20 +4,20 @@
   The placeholder list lives in assets/templates/page.html.
 --><html lang="tr" dir="ltr" data-site-version="7.0.31"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2508">
+<meta name="x-test-count" content="2512">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Passkey — KalderaShield</title>
-<meta name="description" content="WebAuthn passkey'lerini kendi yerel kasanızda oluşturun ve saklayın; platform doğrulayıcınıza veya YubiKey gibi bir FIDO2 güvenlik anahtarına bağlanır.">
+<meta name="description" content="Şifreli KalderaShield kasanızdan tarayıcı eklentisi, masaüstü onay penceresi ve Android 14+ ile doğrudan WebAuthn passkey oluşturun ve oturum açın.">
 <link rel="canonical" href="https://kalderashield.com/urun/passkeys/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Passkey — KalderaShield">
-<meta property="og:description" content="WebAuthn passkey'lerini kendi yerel kasanızda oluşturun ve saklayın; platform doğrulayıcınıza veya YubiKey gibi bir FIDO2 güvenlik anahtarına bağlanır.">
+<meta property="og:description" content="Şifreli KalderaShield kasanızdan tarayıcı eklentisi, masaüstü onay penceresi ve Android 14+ ile doğrudan WebAuthn passkey oluşturun ve oturum açın.">
 <meta property="og:url" content="https://kalderashield.com/urun/passkeys/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -73,23 +73,23 @@
       "name": "Hâlâ ana parolama mı ihtiyacım var?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Evet. Kasanın kendisi ana parolanız ve secret key ile açılır. Passkey yalnızca bir passkey kaydettiğiniz belirli sitelerde parolanın yerini alır."
+        "text": "Evet. Kasanız ana parolanız ve secret key'inizle (veya yapılandırdığınız biyometrik/FIDO2 kilidiyle) açılır. Passkey yalnızca kaydettiğiniz sitelerde parolanın yerini alır."
       }
     },
     {
       "@type": "Question",
-      "name": "Hangi doğrulayıcılar çalışır?",
+      "name": "KalderaShield passkey'lerini nerede kullanabilirim?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Cihazınızın sunduğu her platform doğrulayıcısı: Windows Hello, Touch ID, Face ID, Android biyometrisi veya YubiKey gibi bir FIDO2 güvenlik anahtarı."
+        "text": "Masaüstünde KalderaShield tarayıcı eklentisi (Chrome, Edge, Firefox, Safari) ve masaüstü uygulaması eşleşmesiyle, Android 14+ üzerinde ise mobil tarayıcı ve uygulamalar için Android Kimlik Yöneticisi üzerinden kullanabilirsiniz. Her istemde Windows Hello, Touch ID veya YubiKey'e de geçebilirsiniz."
       }
     },
     {
       "@type": "Question",
-      "name": "Cihazı kaybedersem ne olur?",
+      "name": "Cihazımı kaybedersem ne olur?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "O belirli passkey, doğrulayıcısıyla birlikte kaybolur. Kasayınız, şifreleriniz ve yedekleriniz etkilenmez; çünkü onlar o cihaza bağlı değildi."
+        "text": "KalderaShield kasanız içinde oluşturulan passkey'ler şifreli kasa yedeklerinizin içinde saklanır; şifreli yedeğinizi yeni bir cihaza geri yüklediğinizde passkey'leriniz de geri gelir. Yalnızca donanım doğrulayıcıda saklamayı seçtiğiniz passkey'ler o cihaza bağlı kalır."
       }
     }
   ]
@@ -114,7 +114,7 @@
         <div class="menu-panel">
           <ul>
         <li><a href="/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">Şifre kasası</span><span class="menu-d" data-i18n="menu-d-password-vault">Her kayıt kendi anahtarıyla şifrelenir</span></a></li>
-        <li><a href="/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Passkey</span><span class="menu-d" data-i18n="menu-d-passkeys">Kendi doğrulayıcınıza bağlı WebAuthn</span></a></li>
+        <li><a href="/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Passkey</span><span class="menu-d" data-i18n="menu-d-passkeys">Kasa destekli WebAuthn passkey sağlayıcısı</span></a></li>
         <li><a href="/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">Kasa geçmişi</span><span class="menu-d" data-i18n="menu-d-vault-history">Anlık görüntüler, çöp kutusu ve şifre geçmişi</span></a></li>
         <li><a href="/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">Güvenlik denetimi</span><span class="menu-d" data-i18n="menu-d-security-audit">Zayıf, tekrarlanan ve sızmış şifreler</span></a></li>
         <li><a href="/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">Şifre üretici</span><span class="menu-d" data-i18n="menu-d-password-generator">Rastgele karakterler veya Diceware cümleleri</span></a></li>
@@ -172,7 +172,7 @@
     <div class="wrap">
       <p class="eyebrow" data-i18n="p-passkeys-eyebrow">Ürün / Passkey</p>
       <h1 data-i18n="p-passkeys-h1">Kasanızdan hiç çıkmayan passkey'ler</h1>
-      <p class="lead" data-i18n="p-passkeys-lead">WebAuthn kimlik bilgilerini kendi kasanızın içinde, cihazınızın zaten sahibi olduğu doğrulayıcıya bağlı olarak oluşturun. Hiçbir şey üçüncü bir tarafa kaydedilmez.</p>
+      <p class="lead" data-i18n="p-passkeys-lead">WebAuthn passkey'lerini şifreli yerel kasanızın içinde oluşturun ve imzalayın. Oturum açma isteklerini masaüstü onay penceresinden, tarayıcı eklentisinden veya Android 14+ Kimlik Yöneticisinden onaylayın — bulut bağımlılığı olmadan.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/download/" data-i18n="p-passkeys-primary">KalderaShield'i indirin</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="p-passkeys-secondary">Kaynağı görün</a>
@@ -187,25 +187,25 @@
   <section>
     <div class="wrap">
       <span class="eyebrow" data-i18n="p-passkeys-what-label">Ne yapar</span>
-      <h2 data-i18n="p-passkeys-what-title">Yerelde saklanan parolasız giriş</h2>
-      <div class="prose"><p data-i18n="p-passkeys-p1">Passkey, platformunuzun WebAuthn API'si üzerinden oluşturulur; bu yüzden kimbilğin gizli yarısı kullanılabilir biçimde kasaya hiç girmez ve cihazınızdan hiç çıkmaz. Kasa yalnızca kimlik kimliğini ve üst verisini saklar; böylece sonra tanıyıp iptal edebilirsiniz.</p>
-        <p data-i18n="p-passkeys-p2">Sayfa, bir şey oluşturmadan önce hangi doğrulayıcının kullanılabilir olduğunu bildirir; bağımlı taraf, görünen ad, hesap ve imza algoritmasını siz seçersiniz.</p>
-        <p data-i18n="p-passkeys-p3">Passkey'ler kasanın geri kalanından ayrı bir sistemde değil, onunla birlikte durur: aynı şekilde şifrelenir, aranır ve geri yüklenir.</p></div>
+      <h2 data-i18n="p-passkeys-what-title">Kasanızın sahip olduğu parolasız giriş</h2>
+      <div class="prose"><p data-i18n="p-passkeys-p1">KalderaShield, standartlara tam uyumlu bir WebAuthn Passkey Sağlayıcısı olarak çalışır. Bir site passkey oluşturmak veya oturum açmak istediğinde tarayıcı eklentisi ya da Android 14+ Kimlik Yöneticisi isteği yerel kasanıza iletir; ECDSA P-256 anahtar çifti yalnızca sizin açık onayınızla üretilir ve imzalanır.</p>
+        <p data-i18n="p-passkeys-p2">Her passkey'in özel anahtarı kasa içinde etkin kasa anahtarınızla AES-256-GCM ve HKDF-SHA256 kullanılarak sarılır. Özel anahtarlar KalderaShield dışına asla düz metin olarak çıkmaz ve hiçbir tarayıcıya ya da üçüncü taraf buluta gönderilmez.</p>
+        <p data-i18n="p-passkeys-p3">Belirli bir hesapta donanım anahtarı kullanmak isterseniz her onay penceresinde Windows Hello, Touch ID, Android biyometrisi veya YubiKey gibi bir FIDO2 güvenlik anahtarına tek tıkla geri dönüş seçeneği bulunur.</p></div>
 
       
-      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-steps-title">Passkey nasıl oluşturulur</h3>
+      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-steps-title">Passkey ile oturum açma nasıl çalışır</h3>
       <div class="grid mt-sm">
         <article class="card">
-          <h3 data-i18n="p-passkeys-step1-title">Cihazınız anahtar çiftini üretir</h3>
-          <p data-i18n="p-passkeys-step1-desc">Gizli anahtar, platform doğrulayıcısının — TPM 2.0, Secure Enclave veya AndroidKeyStore — içinde üretilir ve dışa aktarılamaz.</p>
+          <h3 data-i18n="p-passkeys-step1-title">Site bir passkey ister</h3>
+          <p data-i18n="p-passkeys-step1-desc">Tarayıcı eklentisi (Chrome, Edge, Firefox, Safari) veya Android 14+ Kimlik Yöneticisi WebAuthn çağrısını yakalar; sitenin kökenini ve bağımlı taraf kimliğini doğrular.</p>
         </article>
         <article class="card">
-          <h3 data-i18n="p-passkeys-step2-title">Kasa kimbilği kaydeder</h3>
-          <p data-i18n="p-passkeys-step2-desc">Yalnızca kimlik kimliği ve görüntüleme üst verisi kaydedilir; bunlar da kasanın geri kalanıyla birlikte şifrelenir.</p>
+          <h3 data-i18n="p-passkeys-step2-title">KalderaShield içinde onaylarsınız</h3>
+          <p data-i18n="p-passkeys-step2-desc">KalderaShield, tam alan adını ve hesabı gösteren güvenli bir onay penceresi açar. Kasa açılmadan ve siz onay vermeden hiçbir imza üretilmez.</p>
         </article>
         <article class="card">
-          <h3 data-i18n="p-passkeys-step3-title">İmza donanımda üretilir</h3>
-          <p data-i18n="p-passkeys-step3-desc">Gizli anahtar dışa aktarılamaz olduğu için bir siteye ait imza, yalnızca doğrulayıcının kendisi tarafından üretilebilir.</p>
+          <h3 data-i18n="p-passkeys-step3-title">Kasa imzalar ve yalnızca doğrulama yanıtını döner</h3>
+          <p data-i18n="p-passkeys-step3-desc">KalderaShield, WebAuthn sınamasını kasada şifreli ES256 özel anahtarıyla imzalar, imza sayacını artırır ve siteye yalnızca açık doğrulama yanıtını gönderir.</p>
         </article>
       </div>
     </div>
@@ -218,7 +218,7 @@
         <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="lazy" decoding="async" alt="KalderaShield — Donanım kilidi yanında durur">
         <figcaption>
           <h3 data-i18n="p-passkeys-shot-title">Donanım kilidi yanında durur</h3>
-          <p data-i18n="p-passkeys-shot-desc">Aynı ayar panelinde FIDO2 ve biyometrik kilit açma seçenekleri de bulunur; böylece passkey'ler ve donanıma bağlı kilit ayrı ürünler değil, aynı yerde durur.</p>
+          <p data-i18n="p-passkeys-shot-desc">Aynı ayar panelinde FIDO2 ve biyometrik kilit açma seçenekleri de bulunur; böylece kasa destekli passkey'ler ile donanıma bağlı kasa kilidi tek yerel güvenlik modelinde birleşir.</p>
         </figcaption>
       </figure>
     </div>
@@ -227,27 +227,27 @@
   <section id="security">
     <div class="wrap">
       <span class="eyebrow" data-i18n="sec-eyebrow">Güvenlik Mimarisi</span>
-      <h2 data-i18n="p-passkeys-sec-title">Passkey'lerin kaldırdıkları ve kaldırmadıkları</h2>
+      <h2 data-i18n="p-passkeys-sec-title">Passkey'lerin yerini aldıkları ve almadıkları</h2>
       <div class="notice">
-        <strong data-i18n="p-passkeys-sec-label">Passkey bir yedekleme planı değildir</strong>
-        <p data-i18n="p-passkeys-sec-body">Passkey bir sitede parolanın yerini alır; kasayın yerini değil. Doğrulayıcınızın bulunduğu cihazı kaybeder ve başka bir yerde saklanmış passkey'iniz yoksa o kimlik cihazla birlikte gider. Ayrıca passkey yalnızca WebAuthn'i destekleyen sitelerde işe yarar; bu, büyük servislerin çoğu ve giderek artan küçük servisler için geçerlidir.</p>
+        <strong data-i18n="p-passkeys-sec-label">Şifreli yedeklerinizle taşınabilir</strong>
+        <p data-i18n="p-passkeys-sec-body">Kasa destekli passkey'ler KalderaShield kasanızın içinde şifreli saklandığı için şifreli yedeklerinizle güvenle taşınır ve bir cihazı kaybetseniz bile üretici bulutuna bağlı kalmadan geri yüklenebilir. YubiKey veya cihaz içi donanım doğrulayıcıda tutulan passkey'ler ise o cihaza bağlı kalır. Her iki durumda da passkey'ler site parolalarının yerini alır; kasanızın ana parolası ve secret key'inin değil.</p>
       </div>
       
       <div class="grid grid-3 mt-md">
         <article class="card">
-          <span class="eyebrow">WebAuthn</span>
+          <span class="eyebrow">WebAuthn / ES256</span>
           <h3 data-i18n="p-passkeys-tech1-title">Özel biçim değil, standart</h3>
-          <p data-i18n="p-passkeys-tech1-desc">Kimlikler WebAuthn API'si üzerinden oluşturulur; yani uyumlu her sitenin beklediği türden nesnelerdir.</p>
+          <p data-i18n="p-passkeys-tech1-desc">Kimlikler, uyumlu her WebAuthn sitesinin beklediği standart CBOR/COSE ECDSA P-256 doğrulama ve imzalı yanıtlarını üretir.</p>
         </article>
         <article class="card">
-          <span class="eyebrow">Dışa aktarılamaz</span>
-          <h3 data-i18n="p-passkeys-tech2-title">Gizli anahtar yerinde kalır</h3>
-          <p data-i18n="p-passkeys-tech2-desc">Donanım destekli doğrulayıcılar anahtar çiftini üretir ve gizli yarıyı asla bırakmaz; kasanızı kopyalamak kimliği kopyalamaz.</p>
+          <span class="eyebrow">AEAD Köprüsü</span>
+          <h3 data-i18n="p-passkeys-tech2-title">Özel anahtarlar tarayıcıya hiç değmez</h3>
+          <p data-i18n="p-passkeys-tech2-desc">Masaüstü eklenti istekleri kimliği doğrulanmış AEAD yerel mesajlaşma kanalından geçer; Android 14+ ise 128-bit belirteçli ve dışa kapalı Kimlik Yöneticisi aktarımını kullanır.</p>
         </article>
         <article class="card">
           <span class="eyebrow">AES-256-GCM</span>
-          <h3 data-i18n="p-passkeys-tech3-title">Her şeyle aynı şekilde saklanır</h3>
-          <p data-i18n="p-passkeys-tech3-desc">Kimlik kayıtları, kasanızın geri kalanıyla aynı kayıt başına anahtar şemasıyla şifrelenir.</p>
+          <h3 data-i18n="p-passkeys-tech3-title">Diğer tüm kasa kayıtlarıyla aynı şifreleme</h3>
+          <p data-i18n="p-passkeys-tech3-desc">Her passkey özel anahtarı HKDF-SHA256 + AES-256-GCM ile sarılır, ana parola değişiminde otomatik yeniden sarılır ve kasanızla birlikte yedeklenir.</p>
         </article>
       </div>
     </div>
@@ -259,15 +259,15 @@
       <h2 data-i18n="p-passkeys-faq-title">Passkey hakkında</h2>
       <div class="faq mt-md"><details>
         <summary data-i18n="p-passkeys-faq1-q">Hâlâ ana parolama mı ihtiyacım var?</summary>
-        <p data-i18n="p-passkeys-faq1-a">Evet. Kasanın kendisi ana parolanız ve secret key ile açılır. Passkey yalnızca bir passkey kaydettiğiniz belirli sitelerde parolanın yerini alır.</p>
+        <p data-i18n="p-passkeys-faq1-a">Evet. Kasanız ana parolanız ve secret key'inizle (veya yapılandırdığınız biyometrik/FIDO2 kilidiyle) açılır. Passkey yalnızca kaydettiğiniz sitelerde parolanın yerini alır.</p>
       </details>
       <details>
-        <summary data-i18n="p-passkeys-faq2-q">Hangi doğrulayıcılar çalışır?</summary>
-        <p data-i18n="p-passkeys-faq2-a">Cihazınızın sunduğu her platform doğrulayıcısı: Windows Hello, Touch ID, Face ID, Android biyometrisi veya YubiKey gibi bir FIDO2 güvenlik anahtarı.</p>
+        <summary data-i18n="p-passkeys-faq2-q">KalderaShield passkey'lerini nerede kullanabilirim?</summary>
+        <p data-i18n="p-passkeys-faq2-a">Masaüstünde KalderaShield tarayıcı eklentisi (Chrome, Edge, Firefox, Safari) ve masaüstü uygulaması eşleşmesiyle, Android 14+ üzerinde ise mobil tarayıcı ve uygulamalar için Android Kimlik Yöneticisi üzerinden kullanabilirsiniz. Her istemde Windows Hello, Touch ID veya YubiKey'e de geçebilirsiniz.</p>
       </details>
       <details>
-        <summary data-i18n="p-passkeys-faq3-q">Cihazı kaybedersem ne olur?</summary>
-        <p data-i18n="p-passkeys-faq3-a">O belirli passkey, doğrulayıcısıyla birlikte kaybolur. Kasayınız, şifreleriniz ve yedekleriniz etkilenmez; çünkü onlar o cihaza bağlı değildi.</p>
+        <summary data-i18n="p-passkeys-faq3-q">Cihazımı kaybedersem ne olur?</summary>
+        <p data-i18n="p-passkeys-faq3-a">KalderaShield kasanız içinde oluşturulan passkey'ler şifreli kasa yedeklerinizin içinde saklanır; şifreli yedeğinizi yeni bir cihaza geri yüklediğinizde passkey'leriniz de geri gelir. Yalnızca donanım doğrulayıcıda saklamayı seçtiğiniz passkey'ler o cihaza bağlı kalır.</p>
       </details></div>
       
       <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-rel-title">İlgili sayfalar</h3>

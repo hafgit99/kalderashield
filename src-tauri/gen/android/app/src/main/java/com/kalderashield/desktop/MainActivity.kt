@@ -24,6 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.kalderashield.desktop.bridges.AndroidAutofillBridge
 import com.kalderashield.desktop.bridges.AndroidBiometricKeyStoreBridge
 import com.kalderashield.desktop.bridges.AndroidFileBridge
+import com.kalderashield.desktop.bridges.AndroidPasskeyBridge
 import com.kalderashield.desktop.bridges.AndroidRuntimeSecurityBridge
 import com.kalderashield.desktop.bridges.AndroidSecureStorageBridge
 import com.kalderashield.desktop.bridges.AndroidUpdateBridge
@@ -31,10 +32,13 @@ import com.kalderashield.desktop.crypto.SecureStorageKeyStore
 import com.kalderashield.desktop.model.AndroidImportFile
 import com.kalderashield.desktop.model.AutofillLaunchRequest
 import com.kalderashield.desktop.model.AutofillSaveCandidate
+import com.kalderashield.desktop.model.PasskeyProviderRequest
 import com.kalderashield.desktop.model.PendingSave
 import com.kalderashield.desktop.security.AutofillRequestRegistry
 import com.kalderashield.desktop.security.AutofillResultMailbox
 import com.kalderashield.desktop.security.AutofillSecurityLog
+import com.kalderashield.desktop.security.PasskeyRequestRegistry
+import com.kalderashield.desktop.security.PasskeyResultMailbox
 import com.kalderashield.desktop.security.RuntimeSecurityPosture
 import java.util.concurrent.atomic.AtomicInteger
 import org.json.JSONObject
@@ -52,6 +56,7 @@ class MainActivity : TauriActivity() {
    */
   private var pendingAutofillRequestId: String? = null
   private var pendingAutofillSaveCandidateId: String? = null
+  private var pendingPasskeyRequestId: String? = null
 
   private lateinit var secureKeyStore: SecureStorageKeyStore
   private lateinit var runtimePosture: RuntimeSecurityPosture
@@ -66,6 +71,7 @@ class MainActivity : TauriActivity() {
     runtimePosture = RuntimeSecurityPosture(this)
 
     captureAutofillIntent(intent)
+    capturePasskeyIntent(intent)
     super.onCreate(savedInstanceState)
 
     // With enableEdgeToEdge() on Android 15/16, resize the WebView host above the
@@ -98,6 +104,13 @@ class MainActivity : TauriActivity() {
             AutofillResultMailbox.cancel(activeRequestId)
             notifyAutofillCleared(activeRequestId)
           }
+          val activePasskeyId = pendingPasskeyRequestId
+          if (activePasskeyId != null) {
+            pendingPasskeyRequestId = null
+            PasskeyRequestRegistry.consume(activePasskeyId)
+            PasskeyResultMailbox.cancel(activePasskeyId)
+            notifyPasskeyCleared(activePasskeyId)
+          }
           moveTaskToBack(true)
         }
       },
@@ -120,6 +133,9 @@ class MainActivity : TauriActivity() {
       if (pendingAutofillRequestId != null) {
         notifyAutofillIntent()
       }
+      if (pendingPasskeyRequestId != null) {
+        notifyPasskeyIntent()
+      }
       dismissPrivacyShield()
     }
   }
@@ -129,8 +145,10 @@ class MainActivity : TauriActivity() {
     super.onNewIntent(intent)
     setIntent(intent)
     captureAutofillIntent(intent)
+    capturePasskeyIntent(intent)
     notifyAutofillIntent()
     notifyAutofillSaveCandidate()
+    notifyPasskeyIntent()
   }
 
   override fun onResume() {
@@ -143,10 +161,12 @@ class MainActivity : TauriActivity() {
     }
     notifyAutofillIntent()
     notifyAutofillSaveCandidate()
+    notifyPasskeyIntent()
     dismissPrivacyShield()
-    if (pendingAutofillRequestId != null) {
+    if (pendingAutofillRequestId != null || pendingPasskeyRequestId != null) {
       webViewRef?.postDelayed({
         notifyAutofillIntent()
+        notifyPasskeyIntent()
         dismissPrivacyShield()
       }, 200L)
     }
@@ -163,9 +183,13 @@ class MainActivity : TauriActivity() {
     // but the OS keeps the process alive because KalderaShieldAutofillService is
     // bound. Reclaiming the zombie process ensures the next MainActivity launch
     // (including from Autofill) initializes a fresh WebView instead of a black screen.
-    if (hadWebView && isFinishing && !isChangingConfigurations && remaining <= 0 && !AutofillResultMailbox.hasActiveSession()) {
+    val hasActiveBridgeSession =
+      AutofillResultMailbox.hasActiveSession() || PasskeyResultMailbox.hasActiveSession()
+    if (hadWebView && isFinishing && !isChangingConfigurations && remaining <= 0 && !hasActiveBridgeSession) {
       Handler(Looper.getMainLooper()).post {
-        if (activeMainActivityCount.get() <= 0 && !AutofillResultMailbox.hasActiveSession()) {
+        val stillActive =
+          AutofillResultMailbox.hasActiveSession() || PasskeyResultMailbox.hasActiveSession()
+        if (activeMainActivityCount.get() <= 0 && !stillActive) {
           Process.killProcess(Process.myPid())
         }
       }
@@ -240,9 +264,20 @@ class MainActivity : TauriActivity() {
     // RUST-O4: biometric-bound wrapping key bridge (wrap/unwrap only; opaque handle transport)
     val biometricKeyBridge = AndroidBiometricKeyStoreBridge(this, secureKeyStore, ::evaluateOnWebView)
 
+    val passkeyBridge = AndroidPasskeyBridge(
+      activity = this,
+      getPendingPasskeyRequest = { currentPasskeyRequest() },
+      clearPendingPasskeyRequest = {
+        val currentId = pendingPasskeyRequestId
+        pendingPasskeyRequestId = null
+        PasskeyRequestRegistry.consume(currentId)
+      },
+    )
+
     webView.addJavascriptInterface(fileBridge, "KalderaShieldAndroidFiles")
     webView.addJavascriptInterface(secureStorageBridge, "KalderaShieldAndroidSecureStorage")
     webView.addJavascriptInterface(autofillBridge, "KalderaShieldAndroidAutofill")
+    webView.addJavascriptInterface(passkeyBridge, "KalderaShieldAndroidPasskey")
     webView.addJavascriptInterface(securityBridge, "KalderaShieldAndroidSecurity")
     webView.addJavascriptInterface(biometricKeyBridge, "KalderaShieldAndroidBiometric")
     webView.addJavascriptInterface(updateBridge, "KalderaShieldAndroidUpdate")
@@ -250,10 +285,12 @@ class MainActivity : TauriActivity() {
     webView.post {
       notifyAutofillIntent()
       notifyAutofillSaveCandidate()
+      notifyPasskeyIntent()
     }
     webView.postDelayed({
       notifyAutofillIntent()
       notifyAutofillSaveCandidate()
+      notifyPasskeyIntent()
     }, 350L)
   }
 
@@ -496,6 +533,38 @@ class MainActivity : TauriActivity() {
   private fun notifyAutofillSaveCandidate() {
     val payload = currentAutofillSaveCandidate()?.toJson()?.toString() ?: "null"
     val script = "window.__KalderaShieldAndroidAutofill && window.__KalderaShieldAndroidAutofill.onSave($payload)"
+    evaluateOnWebView(script)
+  }
+
+  @Suppress("NewApi")
+  private fun capturePasskeyIntent(intent: Intent?) {
+    if (intent?.action != KalderaShieldCredentialProviderService.ACTION_PASSKEY_REQUEST) return
+    val requestId = intent.getStringExtra(KalderaShieldCredentialProviderService.EXTRA_PASSKEY_REQUEST_ID)
+    if (PasskeyRequestRegistry.find(requestId) == null) {
+      pendingPasskeyRequestId = null
+      return
+    }
+    pendingPasskeyRequestId = requestId
+  }
+
+  private fun currentPasskeyRequest(): PasskeyProviderRequest? =
+    PasskeyRequestRegistry.find(pendingPasskeyRequestId)
+
+  private fun notifyPasskeyIntent() {
+    val currentId = pendingPasskeyRequestId
+    val active = currentPasskeyRequest()
+    if (currentId != null && active == null) {
+      pendingPasskeyRequestId = null
+      notifyPasskeyCleared(currentId)
+    }
+    val payload = active?.toJson()?.toString() ?: "null"
+    val script = "window.__KalderaShieldAndroidPasskey && window.__KalderaShieldAndroidPasskey.onRequest($payload)"
+    evaluateOnWebView(script)
+  }
+
+  private fun notifyPasskeyCleared(requestId: String) {
+    val script = "window.__KalderaShieldAndroidPasskey && window.__KalderaShieldAndroidPasskey.onRequestCleared && " +
+      "window.__KalderaShieldAndroidPasskey.onRequestCleared(${JSONObject.quote(requestId)})"
     evaluateOnWebView(script)
   }
 

@@ -4,20 +4,20 @@
   The placeholder list lives in assets/templates/page.html.
 --><html lang="en" dir="ltr" data-site-version="7.0.31"><head>
 <meta charset="utf-8">
-<meta name="x-test-count" content="2508">
+<meta name="x-test-count" content="2512">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#08090e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
 <link rel="sitemap" href="/sitemap.xml" type="application/xml">
 
 <title>Passkeys that never leave your vault — KalderaShield</title>
-<meta name="description" content="Create WebAuthn credentials inside your own vault, bound to the authenticator your device already has. Nothing is registered with a third party.">
+<meta name="description" content="Create and sign WebAuthn passkeys inside your encrypted local vault. Approve logins from the desktop modal, browser extension, or Android 14+ Credential…">
 <link rel="canonical" href="https://kalderashield.com/en/urun/passkeys/">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KalderaShield">
 <meta property="og:title" content="Passkeys that never leave your vault — KalderaShield">
-<meta property="og:description" content="Create WebAuthn credentials inside your own vault, bound to the authenticator your device already has. Nothing is registered with a third party.">
+<meta property="og:description" content="Create and sign WebAuthn passkeys inside your encrypted local vault. Approve logins from the desktop modal, browser extension, or Android 14+ Credential…">
 <meta property="og:url" content="https://kalderashield.com/en/urun/passkeys/">
 <meta property="og:image" content="https://kalderashield.com/assets/images/og-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -73,23 +73,23 @@
       "name": "Do I still need my master password?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. The vault itself is unlocked by your master password and secret key. A passkey only replaces the password at the specific sites where you register one."
+        "text": "Yes. Your vault is still unlocked by your master password and secret key (or your configured biometric/FIDO2 unlock). A passkey replaces the password on the sites where you register one."
       }
     },
     {
       "@type": "Question",
-      "name": "Which authenticators work?",
+      "name": "Where can I use KalderaShield passkeys?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Any platform authenticator your device exposes: Windows Hello, Touch ID, Face ID, Android biometrics, or a FIDO2 security key such as YubiKey."
+        "text": "On desktop via the KalderaShield browser extension (Chrome, Edge, Firefox, Safari) paired with the desktop app, and on Android 14+ via Android Credential Manager for mobile browsers and apps. You can also fall back to Windows Hello, Touch ID, or YubiKey on any prompt."
       }
     },
     {
       "@type": "Question",
-      "name": "What if I lose the device?",
+      "name": "What if I lose my device?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "That specific passkey is lost with its authenticator. Your vault, its passwords and its backups are unaffected, because those never depended on that device."
+        "text": "Passkeys created inside your KalderaShield vault are encrypted inside your vault backups, so restoring your encrypted backup on a new device restores your passkeys too. Any passkey you chose to store only on a hardware authenticator remains tied to that device."
       }
     }
   ]
@@ -114,7 +114,7 @@
         <div class="menu-panel">
           <ul>
         <li><a href="/en/urun/password-vault/"><span class="menu-t" data-i18n="menu-password-vault">Password vault</span><span class="menu-d" data-i18n="menu-d-password-vault">Every record encrypted on its own key</span></a></li>
-        <li><a href="/en/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Passkeys</span><span class="menu-d" data-i18n="menu-d-passkeys">WebAuthn bound to your own authenticator</span></a></li>
+        <li><a href="/en/urun/passkeys/"><span class="menu-t" data-i18n="menu-passkeys">Passkeys</span><span class="menu-d" data-i18n="menu-d-passkeys">Vault-backed WebAuthn passkey provider</span></a></li>
         <li><a href="/en/urun/vault-history/"><span class="menu-t" data-i18n="menu-vault-history">Vault history</span><span class="menu-d" data-i18n="menu-d-vault-history">Snapshots, trash and password history</span></a></li>
         <li><a href="/en/urun/security-audit/"><span class="menu-t" data-i18n="menu-security-audit">Security audit</span><span class="menu-d" data-i18n="menu-d-security-audit">Weak, reused and breached passwords</span></a></li>
         <li><a href="/en/urun/password-generator/"><span class="menu-t" data-i18n="menu-password-generator">Password generator</span><span class="menu-d" data-i18n="menu-d-password-generator">Random characters or Diceware phrases</span></a></li>
@@ -172,7 +172,7 @@
     <div class="wrap">
       <p class="eyebrow" data-i18n="p-passkeys-eyebrow">Product / Passkeys</p>
       <h1 data-i18n="p-passkeys-h1">Passkeys that never leave your vault</h1>
-      <p class="lead" data-i18n="p-passkeys-lead">Create WebAuthn credentials inside your own vault, bound to the authenticator your device already has. Nothing is registered with a third party.</p>
+      <p class="lead" data-i18n="p-passkeys-lead">Create and sign WebAuthn passkeys inside your encrypted local vault. Approve logins from the desktop modal, browser extension, or Android 14+ Credential Manager — with zero cloud dependency.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/en/download/" data-i18n="p-passkeys-primary">Download KalderaShield</a>
         <a class="btn btn-ghost" href="https://github.com/hafgit99/kalderashield" rel="noopener noreferrer" data-i18n="p-passkeys-secondary">View the source</a>
@@ -187,25 +187,25 @@
   <section>
     <div class="wrap">
       <span class="eyebrow" data-i18n="p-passkeys-what-label">What it does</span>
-      <h2 data-i18n="p-passkeys-what-title">Passwordless sign-in, stored locally</h2>
-      <div class="prose"><p data-i18n="p-passkeys-p1">A passkey is created through the WebAuthn API of your platform, so the private half of the credential never enters the vault in a usable form and never leaves your device. The vault stores the credential id and its metadata so you can recognise and revoke it later.</p>
-        <p data-i18n="p-passkeys-p2">The page reports which authenticator is available before you create anything, and lets you choose the relying party, display name, account and signature algorithm.</p>
-        <p data-i18n="p-passkeys-p3">Passkeys sit alongside the rest of the vault rather than in a separate system, so they are encrypted, searchable and restorable in exactly the same way as a password.</p></div>
+      <h2 data-i18n="p-passkeys-what-title">Passwordless sign-in, owned by your vault</h2>
+      <div class="prose"><p data-i18n="p-passkeys-p1">KalderaShield acts as a standards-compliant WebAuthn Passkey Provider. When a site asks to create or use a passkey, the browser extension or Android 14+ Credential Manager forwards the request to your local vault, where an ECDSA P-256 key pair is generated and signed after your explicit approval.</p>
+        <p data-i18n="p-passkeys-p2">Every passkey private key is wrapped inside the vault with AES-256-GCM and HKDF-SHA256 using your active vault key. Private keys never leave KalderaShield in plaintext and are never sent to the browser or any third-party cloud.</p>
+        <p data-i18n="p-passkeys-p3">If you prefer a hardware token for a specific account, every approval prompt includes a one-click fallback to Windows Hello, Touch ID, Android biometrics, or a FIDO2 security key such as YubiKey.</p></div>
 
       
-      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-steps-title">How a passkey is created</h3>
+      <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-steps-title">How a passkey sign-in works</h3>
       <div class="grid mt-sm">
         <article class="card">
-          <h3 data-i18n="p-passkeys-step1-title">Your device creates the key pair</h3>
-          <p data-i18n="p-passkeys-step1-desc">The private key is generated inside the platform authenticator — TPM 2.0, Secure Enclave or AndroidKeyStore — and is not exportable.</p>
+          <h3 data-i18n="p-passkeys-step1-title">A site requests a passkey</h3>
+          <p data-i18n="p-passkeys-step1-desc">The browser extension (Chrome, Edge, Firefox, Safari) or Android 14+ Credential Manager intercepts the WebAuthn call and validates the site's origin and relying party ID.</p>
         </article>
         <article class="card">
-          <h3 data-i18n="p-passkeys-step2-title">The vault records the credential</h3>
-          <p data-i18n="p-passkeys-step2-desc">Only the credential id and display metadata are saved, encrypted with the rest of the vault.</p>
+          <h3 data-i18n="p-passkeys-step2-title">You approve inside KalderaShield</h3>
+          <p data-i18n="p-passkeys-step2-desc">KalderaShield brings forward a trusted approval dialog showing the exact domain and account. Nothing is signed until the vault is unlocked and you confirm.</p>
         </article>
         <article class="card">
-          <h3 data-i18n="p-passkeys-step3-title">Signing happens in hardware</h3>
-          <p data-i18n="p-passkeys-step3-desc">Because the private key is non-exportable, a signature for a site cannot be produced by anything other than the authenticator itself.</p>
+          <h3 data-i18n="p-passkeys-step3-title">The vault signs and returns only the assertion</h3>
+          <p data-i18n="p-passkeys-step3-desc">KalderaShield signs the WebAuthn challenge with the vault-encrypted ES256 private key, increments the signature counter, and returns only the public assertion to the site.</p>
         </article>
       </div>
     </div>
@@ -218,7 +218,7 @@
         <img class="shot" src="/assets/images/app-security.webp?v=7.0.31" width="1800" height="893" loading="lazy" decoding="async" alt="KalderaShield — Hardware unlock sits next to it">
         <figcaption>
           <h3 data-i18n="p-passkeys-shot-title">Hardware unlock sits next to it</h3>
-          <p data-i18n="p-passkeys-shot-desc">The same settings panel holds the FIDO2 and biometric unlock options, so passkeys and hardware-bound unlocking live together rather than in separate products.</p>
+          <p data-i18n="p-passkeys-shot-desc">The same settings panel holds the FIDO2 and biometric unlock options, so vault-backed passkeys and hardware-bound vault unlocking live together in one local security model.</p>
         </figcaption>
       </figure>
     </div>
@@ -227,27 +227,27 @@
   <section id="security">
     <div class="wrap">
       <span class="eyebrow" data-i18n="sec-eyebrow">Security Architecture</span>
-      <h2 data-i18n="p-passkeys-sec-title">What passkeys do and do not remove</h2>
+      <h2 data-i18n="p-passkeys-sec-title">What passkeys do and do not replace</h2>
       <div class="notice">
-        <strong data-i18n="p-passkeys-sec-label">Passkeys are not a backup plan</strong>
-        <p data-i18n="p-passkeys-sec-body">A passkey replaces the password at a site; it does not replace your vault. If you lose the device holding your authenticator and have no passkey stored elsewhere, that credential is gone with it. Passkeys also only help at sites that support WebAuthn, which is most large services and a growing share of smaller ones.</p>
+        <strong data-i18n="p-passkeys-sec-label">Portable with your encrypted backups</strong>
+        <p data-i18n="p-passkeys-sec-body">Because vault-backed passkeys are stored encrypted inside your KalderaShield vault, they travel safely with your encrypted backups and survive losing a device — without relying on a vendor cloud. Hardware-bound passkeys created on a YubiKey or platform authenticator stay pinned to that device. In both cases, passkeys replace site passwords rather than your vault's master password and secret key.</p>
       </div>
       
       <div class="grid grid-3 mt-md">
         <article class="card">
-          <span class="eyebrow">WebAuthn</span>
-          <h3 data-i18n="p-passkeys-tech1-title">Standard, not a private format</h3>
-          <p data-i18n="p-passkeys-tech1-desc">Credentials are created through the WebAuthn API, so they are the same kind of object any compliant site expects.</p>
+          <span class="eyebrow">WebAuthn / ES256</span>
+          <h3 data-i18n="p-passkeys-tech1-title">Standards-compliant, not a private format</h3>
+          <p data-i18n="p-passkeys-tech1-desc">Credentials produce standard CBOR/COSE ECDSA P-256 attestations and signed assertions that work with any compliant WebAuthn relying party.</p>
         </article>
         <article class="card">
-          <span class="eyebrow">Dışa aktarılamaz</span>
-          <h3 data-i18n="p-passkeys-tech2-title">The private key stays put</h3>
-          <p data-i18n="p-passkeys-tech2-desc">Hardware-backed authenticators generate the key pair and never release the private half, so copying your vault does not copy the credential.</p>
+          <span class="eyebrow">AEAD Köprüsü</span>
+          <h3 data-i18n="p-passkeys-tech2-title">Private keys never touch the browser</h3>
+          <p data-i18n="p-passkeys-tech2-desc">Desktop browser extension requests cross an authenticated AEAD native messaging channel, and Android 14+ uses a non-exported Credential Manager relay with 128-bit tokens.</p>
         </article>
         <article class="card">
           <span class="eyebrow">AES-256-GCM</span>
-          <h3 data-i18n="p-passkeys-tech3-title">Stored like everything else</h3>
-          <p data-i18n="p-passkeys-tech3-desc">Credential records are encrypted by the same per-item key scheme as the rest of your vault.</p>
+          <h3 data-i18n="p-passkeys-tech3-title">Encrypted like every other vault item</h3>
+          <p data-i18n="p-passkeys-tech3-desc">Each passkey private key is wrapped with HKDF-SHA256 + AES-256-GCM, re-wrapped automatically on master password rotation, and backed up with your vault.</p>
         </article>
       </div>
     </div>
@@ -259,15 +259,15 @@
       <h2 data-i18n="p-passkeys-faq-title">About passkeys</h2>
       <div class="faq mt-md"><details>
         <summary data-i18n="p-passkeys-faq1-q">Do I still need my master password?</summary>
-        <p data-i18n="p-passkeys-faq1-a">Yes. The vault itself is unlocked by your master password and secret key. A passkey only replaces the password at the specific sites where you register one.</p>
+        <p data-i18n="p-passkeys-faq1-a">Yes. Your vault is still unlocked by your master password and secret key (or your configured biometric/FIDO2 unlock). A passkey replaces the password on the sites where you register one.</p>
       </details>
       <details>
-        <summary data-i18n="p-passkeys-faq2-q">Which authenticators work?</summary>
-        <p data-i18n="p-passkeys-faq2-a">Any platform authenticator your device exposes: Windows Hello, Touch ID, Face ID, Android biometrics, or a FIDO2 security key such as YubiKey.</p>
+        <summary data-i18n="p-passkeys-faq2-q">Where can I use KalderaShield passkeys?</summary>
+        <p data-i18n="p-passkeys-faq2-a">On desktop via the KalderaShield browser extension (Chrome, Edge, Firefox, Safari) paired with the desktop app, and on Android 14+ via Android Credential Manager for mobile browsers and apps. You can also fall back to Windows Hello, Touch ID, or YubiKey on any prompt.</p>
       </details>
       <details>
-        <summary data-i18n="p-passkeys-faq3-q">What if I lose the device?</summary>
-        <p data-i18n="p-passkeys-faq3-a">That specific passkey is lost with its authenticator. Your vault, its passwords and its backups are unaffected, because those never depended on that device.</p>
+        <summary data-i18n="p-passkeys-faq3-q">What if I lose my device?</summary>
+        <p data-i18n="p-passkeys-faq3-a">Passkeys created inside your KalderaShield vault are encrypted inside your vault backups, so restoring your encrypted backup on a new device restores your passkeys too. Any passkey you chose to store only on a hardware authenticator remains tied to that device.</p>
       </details></div>
       
       <h3 class="eyebrow mt-xl" data-i18n="p-passkeys-rel-title">Related pages</h3>

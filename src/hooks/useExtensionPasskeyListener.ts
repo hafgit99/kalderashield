@@ -18,10 +18,18 @@ import {
   signSoftwarePasskeyAssertion,
 } from '../lib/passkeyProvider';
 import { resolveExtensionPasskeyRequest } from '../lib/desktopStorage';
+import {
+  cancelAndroidPasskeyRequest,
+  completeAndroidPasskeyRequest,
+  getPendingAndroidPasskeyRequest,
+  subscribeAndroidPasskeyRequestCleared,
+  subscribeAndroidPasskeyRequests,
+} from '../lib/androidPasskey';
 
 export interface ExtensionPasskeyRequest {
   requestId: string;
   kind: 'create' | 'get';
+  source?: 'desktop-extension' | 'android-credential-provider';
   origin: string;
   rpId: string;
   rpName?: string;
@@ -46,13 +54,29 @@ export function useExtensionPasskeyListener({
   onSaveItem,
   onNotify,
 }: UseExtensionPasskeyListenerOptions) {
-  const [pendingRequest, setPendingRequest] = useState<ExtensionPasskeyRequest | null>(null);
+  const [pendingRequest, setPendingRequest] = useState<ExtensionPasskeyRequest | null>(() => {
+    const androidPending = getPendingAndroidPasskeyRequest();
+    return androidPending ? { ...androidPending, source: 'android-credential-provider' } : null;
+  });
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const unsubAndroid = subscribeAndroidPasskeyRequests((request) => {
+      setErrorMessage(null);
+      setPendingRequest({ ...request, source: 'android-credential-provider' });
+    });
+    const unsubAndroidCleared = subscribeAndroidPasskeyRequestCleared((clearedId) => {
+      setPendingRequest((current) =>
+        current && current.requestId === clearedId ? null : current,
+      );
+    });
+
     if (typeof window === 'undefined' || !window.__TAURI_INTERNALS__) {
-      return;
+      return () => {
+        unsubAndroid();
+        unsubAndroidCleared();
+      };
     }
 
     let cancelled = false;
@@ -67,7 +91,7 @@ export function useExtensionPasskeyListener({
         return;
       }
       setErrorMessage(null);
-      setPendingRequest(payload);
+      setPendingRequest({ ...payload, source: 'desktop-extension' });
     }).then((fn) => {
       if (cancelled) {
         fn();
@@ -80,6 +104,8 @@ export function useExtensionPasskeyListener({
 
     return () => {
       cancelled = true;
+      unsubAndroid();
+      unsubAndroidCleared();
       if (unlisten) unlisten();
     };
   }, []);
@@ -130,10 +156,14 @@ export function useExtensionPasskeyListener({
       };
 
       await onSaveItem(newItem);
-      await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
-        status: 'ok',
-        credential,
-      });
+      if (pendingRequest.source === 'android-credential-provider') {
+        completeAndroidPasskeyRequest(pendingRequest.requestId, JSON.stringify(credential));
+      } else {
+        await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
+          status: 'ok',
+          credential,
+        });
+      }
       onNotify?.({
         title: record.rpName || record.rpId,
         message: record.userName,
@@ -173,10 +203,14 @@ export function useExtensionPasskeyListener({
         });
       }
 
-      await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
-        status: 'ok',
-        credential,
-      });
+      if (pendingRequest.source === 'android-credential-provider') {
+        completeAndroidPasskeyRequest(pendingRequest.requestId, JSON.stringify(credential));
+      } else {
+        await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
+          status: 'ok',
+          credential,
+        });
+      }
       setPendingRequest(null);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'passkey.authenticate.failed';
@@ -190,10 +224,14 @@ export function useExtensionPasskeyListener({
     if (!pendingRequest) return;
     setBusy(true);
     try {
-      await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
-        status: 'fallback',
-        fallback: true,
-      });
+      if (pendingRequest.source === 'android-credential-provider') {
+        cancelAndroidPasskeyRequest(pendingRequest.requestId);
+      } else {
+        await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
+          status: 'fallback',
+          fallback: true,
+        });
+      }
     } finally {
       setBusy(false);
       setErrorMessage(null);
@@ -205,10 +243,14 @@ export function useExtensionPasskeyListener({
     if (!pendingRequest) return;
     setBusy(true);
     try {
-      await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
-        status: 'cancelled',
-        fallback: false,
-      });
+      if (pendingRequest.source === 'android-credential-provider') {
+        cancelAndroidPasskeyRequest(pendingRequest.requestId);
+      } else {
+        await resolveExtensionPasskeyRequest(pendingRequest.requestId, {
+          status: 'cancelled',
+          fallback: false,
+        });
+      }
     } finally {
       setBusy(false);
       setErrorMessage(null);

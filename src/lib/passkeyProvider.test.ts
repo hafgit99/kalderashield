@@ -96,6 +96,12 @@ describe('passkeyProvider — origin and RP ID validation', () => {
       rpId: 'localhost',
       hostname: 'localhost',
     });
+    const androidOrigin = 'android:apk-key-hash:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    expect(validateOriginAndRpId(androidOrigin, 'example.com')).toEqual({
+      origin: androidOrigin,
+      rpId: 'example.com',
+      hostname: 'example.com',
+    });
   });
 
   it.each([
@@ -105,6 +111,9 @@ describe('passkeyProvider — origin and RP ID validation', () => {
     ['https://127.0.0.1', '127.0.0.1'],
     ['javascript:alert(1)', 'github.com'],
     ['file:///etc/passwd', 'localhost'],
+    ['android:apk-key-hash:short', 'example.com'],
+    ['android:apk-key-hash:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', ''],
+    ['android:apk-key-hash:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', '127.0.0.1'],
   ])('rejects invalid or spoofed origin/rpId pair (%s, %s)', (origin, rpId) => {
     expect(() => validateOriginAndRpId(origin, rpId)).toThrowError(PasskeyError);
   });
@@ -289,5 +298,37 @@ describe('passkeyProvider — full W3C create + sign + verifyPasskeyAssertion ro
         challengeBase64Url: bytesToBase64Url(new Uint8Array(16).fill(9)),
       }),
     ).rejects.toMatchObject({ code: passkeyErrorCodes.unsupportedAlgorithm });
+  });
+
+  it('creates and signs verifiable assertions for Android native app apk-key-hash origins', async () => {
+    const androidOrigin = 'android:apk-key-hash:BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    const createChallenge = new Uint8Array(32).fill(0x21);
+    const created = await createSoftwarePasskey({
+      origin: androidOrigin,
+      rpId: 'bank.example.com',
+      rpName: 'Example Bank',
+      userName: 'mobile@example.com',
+      challengeBase64Url: bytesToBase64Url(createChallenge),
+    });
+
+    const getChallenge = new Uint8Array(32).fill(0x22);
+    const signed = await signSoftwarePasskeyAssertion(created.record, {
+      origin: androidOrigin,
+      rpId: 'bank.example.com',
+      challengeBase64Url: bytesToBase64Url(getChallenge),
+    });
+
+    const verified = await verifyPasskeyAssertion({
+      publicKeyBase64Url: created.record.publicKey,
+      rpId: 'bank.example.com',
+      expectedChallenge: getChallenge,
+      expectedOrigin: androidOrigin,
+      algorithm: 'ES256',
+      authenticatorData: base64UrlToBytes(signed.credential.response.authenticatorData),
+      clientDataJson: base64UrlToBytes(signed.credential.response.clientDataJSON),
+      signature: base64UrlToBytes(signed.credential.response.signature),
+      previousSignCount: 0,
+    });
+    expect(verified).toEqual({ verified: true, signCount: 1 });
   });
 });

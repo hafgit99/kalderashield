@@ -4,4 +4,8 @@
     <string name="main_activity_title">KalderaShield</string>
     <string name="autofill_service_label">KalderaShield Otomatik Doldurma</string>
     <string name="autofill_unlock_prompt">Bu girişi doldurmak için KalderaShield uygulamasını açın</string>
+    <string name="credential_provider_service_label">KalderaShield Passkey</string>
+    <string name="credential_provider_subtitle">Yerel şifreli passkey kasası</string>
+    <string name="credential_provider_create_title">KalderaShield\'de Passkey Kaydet</string>
+    <string name="credential_provider_get_title">KalderaShield Passkey ile Giriş Yap</string>
 </resources>
