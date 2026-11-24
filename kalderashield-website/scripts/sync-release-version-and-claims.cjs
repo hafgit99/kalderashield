@@ -50,7 +50,9 @@ const { countTests } = require('./sync-claims.cjs');
  * release workflow's tag check uses. */
 function currentVersion() {
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
-  return String(pkg.version).replace(/(\.0)+$/, '');
+  const parts = String(pkg.version).trim().split('.');
+  while (parts.length > 3 && parts[parts.length - 1] === '0') parts.pop();
+  return parts.join('.');
 }
 
 /* Only text files. A byte-level rewrite across the tree would also change the

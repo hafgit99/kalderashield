@@ -2,6 +2,21 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.0.0 - Vault-Backed WebAuthn Passkey Provider (Desktop, Extensions & Android 14+)
+
+### Added
+
+- **Vault-backed WebAuthn Passkey Provider (ECDSA P-256 / `ES256`).** Implemented full W3C WebAuthn credential creation and assertion signing (`passkeyCbor.ts`, `passkeyProvider.ts`) with private keys wrapped inside the vault via HKDF-SHA-256 + AES-256-GCM, automatic re-wrapping on master password rotation, and portable backup support.
+- **Desktop AEAD Native Messaging passkey bridge & trusted approval modal.** Added authenticated `passkey_create` and `passkey_get` IPC channels in Rust (`native_messaging.rs`, `lib.rs`) paired with a foreground desktop approval dialog (`ExtensionPasskeyModal`, `useExtensionPasskeyListener`) that lets users inspect the exact origin/RP ID and account or fall back to Windows Hello / Touch ID / YubiKey in one click.
+- **Browser extension WebAuthn interceptor (Chrome, Edge, Firefox, Safari).** Added strict-origin `MAIN`-world (`webauthn-inject.ts`) and `ISOLATED`-world (`webauthn-relay.ts`) WebAuthn interception with a popup toggle and instant native fallback.
+- **Android 14+ (API 34+) Credential Manager (`CredentialProviderService`).** Added a K-1 trust-boundary-compliant Android Credential Provider (`KalderaShieldCredentialProviderService`, non-exported `PasskeyProviderActivity` relay, synchronized/bounded `PasskeyRequestRegistry`, `PasskeyResultMailbox`, `AndroidPasskeyBridge`, and `android:apk-key-hash:` origin verification) wired into the shared approval modal and enforced by `security:android-autofill-boundary` (35 checks).
+- **Updated `/urun/passkeys/` website documentation & security hardening.** Refreshed English and Turkish Passkey product documentation to reflect the real Passkey Provider architecture, expanded test coverage to 2520 unit tests across 270 files (90.73% lines), and synchronized all 12 website locales.
+
+### Fixed
+
+- **Passkey vault UX & preservation bugs.** Fixed `VaultFormModal` preserving WebAuthn passkey fields on edit, fixed `PasskeyDetail` display, restored `authenticatorAttachment` fidelity, and prevented form data loss on validation errors.
+- **CodeQL & Rust security advisories.** Resolved CodeQL alerts #84/#85 (`escAttr` HTML attribute sanitization in `kalderashield-website/scripts/build-pages.cjs`), enforced strict `postMessage` origin verification in extension bridges, resolved `cookie` RustSec advisory, and enforced `.gitignore`/`.zcodeignore` parity.
+
 ## 7.0.31.0 - Design system refresh, Light Mode & Secret Key cold-start fix
 
 ### Added
