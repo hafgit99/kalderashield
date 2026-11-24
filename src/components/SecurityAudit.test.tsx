@@ -194,6 +194,15 @@ describe('SecurityAudit', () => {
     expect(screen.getByText('Forum Account')).toBeTruthy();
     expect(screen.getByText(/Görülme:/)).toBeTruthy();
     expect(screen.queryByText('PwnedPass123!')).toBeNull();
+    // A breached password must not be counted as "Strong / Secure" even when complex.
+    expect(screen.getByTestId('security-audit-secure-count').textContent).toBe('0');
+
+    // Manual rescan button re-runs the breach scan on demand
+    const callsBeforeRescan = vi.mocked(checkPasswordAgainstHibp).mock.calls.length;
+    fireEvent.click(screen.getByTestId('security-audit-hibp-rescan'));
+    await waitFor(() => {
+      expect(vi.mocked(checkPasswordAgainstHibp).mock.calls.length).toBeGreaterThan(callsBeforeRescan);
+    });
 
     fireEvent.click(screen.getByText('Forum Account'));
 

@@ -3,7 +3,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { assertNetworkUrlAllowed, isNetworkUrlAllowed } from './airgapNetworkPolicy';
+import { acquireHibpOriginLease, assertNetworkUrlAllowed, isNetworkUrlAllowed } from './airgapNetworkPolicy';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -12,22 +12,33 @@ afterEach(() => {
 });
 
 describe('air-gap network policy', () => {
-  it('allows same-origin assets, HIBP range lookups, and Tauri IPC protocols/hosts', () => {
+  it('allows same-origin assets and Tauri IPC protocols/hosts, while blocking HIBP without a lease', () => {
     expect(isNetworkUrlAllowed('/assets/app.js')).toBe(true);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/ABCDE')).toBe(true);
+    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/ABCDE')).toBe(false);
     expect(isNetworkUrlAllowed('ipc://localhost/invoke')).toBe(true);
     expect(isNetworkUrlAllowed('http://ipc.localhost/invoke')).toBe(true);
     expect(isNetworkUrlAllowed('https://tauri.localhost/index.html')).toBe(true);
   });
 
-  it('only allows exact HIBP five-character SHA-1 range lookups', () => {
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6')).toBe(true);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5baa6')).toBe(true);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA')).toBe(false);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA61')).toBe(false);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6/extra')).toBe(false);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6?mode=ntlm')).toBe(false);
-    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/ZZZZZ')).toBe(false);
+  it('only allows exact HIBP five-character SHA-1 range lookups while an HIBP lease is held', () => {
+    const release = acquireHibpOriginLease();
+    try {
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6')).toBe(true);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5baa6')).toBe(true);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA')).toBe(false);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA61')).toBe(false);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6/extra')).toBe(false);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6?mode=ntlm')).toBe(false);
+      expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/ZZZZZ')).toBe(false);
+      expect(
+        isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6', { allowHibpChannel: false }),
+      ).toBe(false);
+    } finally {
+      release();
+      // Idempotent double release
+      release();
+    }
+    expect(isNetworkUrlAllowed('https://api.pwnedpasswords.com/range/5BAA6')).toBe(false);
   });
 
   // The Android update channel used to read its manifest with `fetch()`, which
@@ -129,19 +140,27 @@ describe('air-gap network policy', () => {
     }));
   });
 
-  it('guards EventSource after policy installation', async () => {
+  it('guards EventSource after policy installation and blocks HIBP even with a lease', async () => {
     const nativeEventSource = vi.fn(function EventSourceMock(this: any, url: string | URL) {
       this.url = String(url);
     });
     vi.stubGlobal('EventSource', nativeEventSource);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { installAirgapNetworkPolicy } = await import('./airgapNetworkPolicy');
+    const { acquireHibpOriginLease: acquireFreshLease, installAirgapNetworkPolicy } = await import('./airgapNetworkPolicy');
 
     installAirgapNetworkPolicy();
 
-    const allowed = new EventSource('https://api.pwnedpasswords.com/range/ABCDE');
-    expect((allowed as unknown as { url: string }).url).toBe('https://api.pwnedpasswords.com/range/ABCDE');
+    const allowed = new EventSource('/local-events');
+    expect((allowed as unknown as { url: string }).url).toBe('/local-events');
     expect(nativeEventSource).toHaveBeenCalledTimes(1);
+
+    const release = acquireFreshLease();
+    try {
+      expect(() => new EventSource('https://api.pwnedpasswords.com/range/ABCDE')).toThrow('air-gap policy');
+    } finally {
+      release();
+    }
+
     expect(() => new EventSource('https://events.example.test/stream')).toThrow('air-gap policy');
     expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({
       code: 'network.blocked',

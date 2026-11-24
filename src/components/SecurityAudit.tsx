@@ -4,13 +4,13 @@
  */
 
 import React from 'react';
-import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp, RefreshCw } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatPercent } from '../lib/formatters';
 import type { VaultItem } from '../types';
 import { runVaultAudit, calculatePasswordScore, getPasswordAgeInDays, isUnsecureHttpUrl, supportsTwoFactor, getAuditScoreHistory } from '../lib/security';
-import { checkPasswordAgainstHibp, isHibpCheckEnabled, setHibpCheckEnabled } from '../lib/hibp';
+import { checkPasswordAgainstHibp, isHibpCheckEnabled, scanVaultItemsAgainstHibp, setHibpCheckEnabled } from '../lib/hibp';
 
 interface SecurityAuditProps {
   items: VaultItem[];
@@ -20,8 +20,14 @@ interface SecurityAuditProps {
 export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProps) {
   const { language, t } = useLanguage();
   const [hibpEnabled, setHibpEnabled] = React.useState<boolean>(() => isHibpCheckEnabled());
-  const [pwnedByPassword, setPwnedByPassword] = React.useState<Map<string, number>>(new Map());
+  const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(new Map());
   const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>('idle');
+  const [hibpProgress, setHibpProgress] = React.useState<{ done: number; total: number } | null>(null);
+  const [scanNonce, setScanNonce] = React.useState(0);
+  const itemsRef = React.useRef(items);
+  React.useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
   const audit = runVaultAudit(items);
 
   const handleToggleHibp = (e: React.MouseEvent) => {
@@ -30,53 +36,65 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     setHibpEnabled(next);
     setHibpCheckEnabled(next);
     if (!next) {
-      setPwnedByPassword(new Map());
+      setPwnedByItemId(new Map());
+      setHibpProgress(null);
       setHibpStatus('idle');
+    } else {
+      setScanNonce((n) => n + 1);
     }
+  };
+
+  const handleManualRescan = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!hibpEnabled || hibpStatus === 'checking') return;
+    setScanNonce((n) => n + 1);
   };
 
   React.useEffect(() => {
     if (!hibpEnabled) {
-      setPwnedByPassword(new Map());
+      setPwnedByItemId(new Map());
+      setHibpProgress(null);
       setHibpStatus('idle');
       return;
     }
 
-    let cancelled = false;
-    const uniquePasswords = [...new Set(items.map((item) => item.password || '').filter(Boolean))];
+    const scanItems = itemsRef.current
+      .filter((item) => Boolean(item.password))
+      .map((item) => ({ id: item.id, password: item.password || '' }));
 
-    if (uniquePasswords.length === 0) {
-      setPwnedByPassword(new Map());
+    if (scanItems.length === 0) {
+      setPwnedByItemId(new Map());
+      setHibpProgress(null);
       setHibpStatus('idle');
       return;
     }
 
+    const controller = new AbortController();
     setHibpStatus('checking');
+    setHibpProgress({ done: 0, total: new Set(scanItems.map((i) => i.password)).size });
 
     (async () => {
-      const results = new Map<string, number>();
-      let unavailable = false;
+      const scanResult = await scanVaultItemsAgainstHibp(scanItems, {
+        signal: controller.signal,
+        checkPassword: checkPasswordAgainstHibp,
+        onProgress: (done, total) => {
+          if (!controller.signal.aborted) {
+            setHibpProgress({ done, total });
+          }
+        },
+      });
 
-      for (const password of uniquePasswords) {
-        if (cancelled) return;
-        const result = await checkPasswordAgainstHibp(password);
-        if (result.status === 'pwned') {
-          results.set(password, result.count);
-        } else if (result.status === 'unavailable') {
-          unavailable = true;
-        }
-      }
-
-      if (!cancelled) {
-        setPwnedByPassword(results);
-        setHibpStatus(unavailable ? 'unavailable' : 'complete');
+      if (!controller.signal.aborted && scanResult.status !== 'aborted') {
+        setPwnedByItemId(scanResult.pwnedByItemId);
+        setHibpProgress(null);
+        setHibpStatus(scanResult.status === 'unavailable' ? 'unavailable' : 'complete');
       }
     })();
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
-  }, [items, hibpEnabled]);
+  }, [hibpEnabled, scanNonce]);
 
   // Group items by security status (only audit password-bearing / login records)
   const weakItems = items.filter((i) => {
@@ -98,14 +116,11 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     const pw = i.password || '';
     return pw && (passwordFreq[pw] ?? 0) > 1;
   });
-  const pwnedItems = items.filter((i) => {
-    const pw = i.password || '';
-    return pw && pwnedByPassword.has(pw);
-  });
+  const pwnedItems = items.filter((i) => pwnedByItemId.has(i.id));
 
   const secureItems = items.filter((i) => {
     const pw = i.password || '';
-    return pw.length >= 8 && calculatePasswordScore(pw) >= 80 && !reusedItems.includes(i);
+    return pw.length >= 8 && calculatePasswordScore(pw) >= 80 && !reusedItems.includes(i) && !pwnedByItemId.has(i.id);
   });
 
   const missingTotpItems = items.filter((item) => item.category === 'login' && supportsTwoFactor(item.url) && !item.totpSecret);
@@ -406,6 +421,19 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                   {hibpEnabled ? t('securityAudit.hibpStatusOn') : t('securityAudit.hibpStatusOffline')}
                 </button>
                 {hibpEnabled && (
+                  <button
+                    type="button"
+                    data-testid="security-audit-hibp-rescan"
+                    onClick={handleManualRescan}
+                    disabled={hibpStatus === 'checking'}
+                    title={t('passwordGenerator.refresh')}
+                    aria-label={t('passwordGenerator.refresh')}
+                    className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-outline-variant/15 disabled:opacity-40 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${hibpStatus === 'checking' ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+                {hibpEnabled && (
                   hibpStatus === 'unavailable' ? (
                     <WifiOff className="w-4 h-4 text-amber-300" />
                   ) : (
@@ -422,7 +450,9 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                 {!hibpEnabled
                   ? t('securityAudit.pwnedDisabled')
                   : hibpStatus === 'checking'
-                    ? t('securityAudit.pwnedChecking')
+                    ? (hibpProgress && hibpProgress.total > 0
+                      ? `${t('securityAudit.pwnedChecking')} (${hibpProgress.done}/${hibpProgress.total})`
+                      : t('securityAudit.pwnedChecking'))
                     : hibpStatus === 'unavailable'
                       ? t('securityAudit.pwnedUnavailable')
                       : t('securityAudit.pwnedDescription')}
@@ -522,7 +552,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
             <div className="space-y-2.5">
               {pwnedItems.map((item) => {
-                const count = pwnedByPassword.get(item.password || '') || 0;
+                const count = pwnedByItemId.get(item.id) || 0;
                 return (
                   <div
                     key={item.id}

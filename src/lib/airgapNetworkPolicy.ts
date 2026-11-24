@@ -128,6 +128,29 @@ export function getSyncAllowedOrigins(): ReadonlySet<string> {
   return syncAllowedOrigins;
 }
 
+/**
+ * Active lease count for web-mode HIBP k-anonymity range lookups.
+ *
+ * When HIBP is disabled (the default) or running on Tauri (where Rust executes
+ * the range fetch outside the WebView), this stays at 0 so the WebView has no
+ * open exfiltration channel to `api.pwnedpasswords.com`.
+ */
+let hibpOriginLeases = 0;
+
+/**
+ * Grants temporary permission for a single web-mode `fetch` request to the
+ * HIBP 5-hex k-anonymity range endpoint. Safe to release more than once.
+ */
+export function acquireHibpOriginLease(): () => void {
+  hibpOriginLeases += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    hibpOriginLeases = Math.max(0, hibpOriginLeases - 1);
+  };
+}
+
 let installed = false;
 
 function resolveUrl(input: string | URL): URL | null {
@@ -138,7 +161,10 @@ function resolveUrl(input: string | URL): URL | null {
   }
 }
 
-export function isNetworkUrlAllowed(input: string | URL): boolean {
+export function isNetworkUrlAllowed(
+  input: string | URL,
+  options?: { allowHibpChannel?: boolean },
+): boolean {
   const url = resolveUrl(input);
   if (!url) return false;
 
@@ -146,7 +172,15 @@ export function isNetworkUrlAllowed(input: string | URL): boolean {
   if (url.hostname === 'ipc.localhost' || url.hostname === 'tauri.localhost') return true;
   if (typeof location !== 'undefined' && url.origin === location.origin) return true;
 
-  if (url.origin === HIBP_RANGE_ORIGIN && HIBP_RANGE_PATH_PATTERN.test(url.pathname) && url.search === '') return true;
+  if (
+    hibpOriginLeases > 0
+    && (options?.allowHibpChannel ?? true)
+    && url.origin === HIBP_RANGE_ORIGIN
+    && HIBP_RANGE_PATH_PATTERN.test(url.pathname)
+    && url.search === ''
+  ) {
+    return true;
+  }
 
   // E2EE sync provider origins, user-approved at configuration time
   if (syncAllowedOrigins.has(url.origin)) return true;
@@ -154,8 +188,11 @@ export function isNetworkUrlAllowed(input: string | URL): boolean {
   return false;
 }
 
-export function assertNetworkUrlAllowed(input: string | URL): void {
-  if (isNetworkUrlAllowed(input)) return;
+export function assertNetworkUrlAllowed(
+  input: string | URL,
+  options?: { allowHibpChannel?: boolean },
+): void {
+  if (isNetworkUrlAllowed(input, options)) return;
 
   const normalized = resolveUrl(input)?.origin || String(input).slice(0, 120);
   logSecurityEvent(
@@ -179,7 +216,7 @@ export function installAirgapNetworkPolicy(): void {
   if (nativeFetch) {
     globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input;
-      assertNetworkUrlAllowed(url);
+      assertNetworkUrlAllowed(url, { allowHibpChannel: true });
       return nativeFetch(input, init);
     }) as typeof fetch;
   }
@@ -193,7 +230,7 @@ export function installAirgapNetworkPolicy(): void {
       username?: string | null,
       password?: string | null,
     ) {
-      assertNetworkUrlAllowed(url);
+      assertNetworkUrlAllowed(url, { allowHibpChannel: false });
       return nativeOpen.call(this, method, url, async ?? true, username ?? null, password ?? null);
     };
   }
@@ -205,7 +242,7 @@ export function installAirgapNetworkPolicy(): void {
       url: string | URL,
       protocols?: string | string[],
     ) {
-      assertNetworkUrlAllowed(url);
+      assertNetworkUrlAllowed(url, { allowHibpChannel: false });
       return new NativeWebSocket(url, protocols);
     } as unknown as typeof WebSocket;
 
@@ -220,7 +257,7 @@ export function installAirgapNetworkPolicy(): void {
   const nativeSendBeacon = navigatorWithBeacon?.sendBeacon?.bind(navigatorWithBeacon);
   if (nativeSendBeacon) {
     navigatorWithBeacon.sendBeacon = (url: string | URL, data?: BodyInit | null) => {
-      assertNetworkUrlAllowed(url);
+      assertNetworkUrlAllowed(url, { allowHibpChannel: false });
       return nativeSendBeacon(url, data);
     };
   }
@@ -232,7 +269,7 @@ export function installAirgapNetworkPolicy(): void {
       url: string | URL,
       eventSourceInitDict?: EventSourceInit,
     ) {
-      assertNetworkUrlAllowed(url);
+      assertNetworkUrlAllowed(url, { allowHibpChannel: false });
       return new NativeEventSource(url, eventSourceInitDict);
     } as unknown as typeof EventSource;
 
