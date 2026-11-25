@@ -638,6 +638,64 @@ describe('vault session storage', () => {
     expect(readSessionKey()).toEqual(expectedPromotedKey());
   });
 
+  it('re-encrypts attachments from the previous vault key to the promoted key on wa-sqlite promotion', async () => {
+    mockPromotedMigration();
+    sqliteOPFSInstance.deriveEncryptionKey.mockResolvedValueOnce(expectedPromotedKey());
+    reencryptAttachmentsForVaultKeyChange.mockClear();
+    openVaultSession('master-pass', 'master-pass', preMigrationVaultKey);
+
+    await migrateActiveVaultStorageToWaSqlite();
+
+    expect(reencryptAttachmentsForVaultKeyChange).toHaveBeenCalledTimes(1);
+    expect(reencryptAttachmentsForVaultKeyChange).toHaveBeenCalledWith(
+      expect.any(Uint8Array),
+      expect.any(Uint8Array),
+      'master-pass',
+    );
+  });
+
+  it('rolls back backend promotion and retains the pre-migration session key if attachment re-encryption fails', async () => {
+    const restorePreviousRepository = vi.fn();
+    runWaSqliteActiveBackendMigration.mockResolvedValueOnce({
+      status: 'promoted',
+      issues: [],
+      readinessReport: { status: 'ready', issues: [] },
+      smokeResult: {
+        status: 'passed',
+        databaseName: '/KalderaShield-wa-sqlite.desktop.db',
+        vfsName: 'KalderaShield-wa-sqlite-desktop-idb',
+      },
+      dryRunResult: null,
+      persistentMigrationCandidateResult: null,
+      promotionResult: {
+        restorePreviousRepository,
+      },
+    });
+    sqliteOPFSInstance.deriveEncryptionKey.mockResolvedValueOnce(expectedPromotedKey());
+    reencryptAttachmentsForVaultKeyChange.mockRejectedValueOnce(new Error('attachment-reencrypt-failed'));
+    clearPersistedActiveVaultStorageBackend.mockClear();
+    openVaultSession('master-pass', 'master-pass', preMigrationVaultKey);
+
+    await expect(migrateActiveVaultStorageToWaSqlite()).rejects.toThrow('attachment-reencrypt-failed');
+
+    expect(clearPersistedActiveVaultStorageBackend).toHaveBeenCalledTimes(1);
+    expect(restorePreviousRepository).toHaveBeenCalledTimes(1);
+    expect(readSessionKey()).toEqual(preMigrationVaultKey);
+  });
+
+  it('blocks wa-sqlite migration on desktop Tauri runtimes where native kalderashield.db is authoritative', async () => {
+    (window as { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__ = {};
+    try {
+      openVaultSession('master-pass', 'master-pass', preMigrationVaultKey);
+      await expect(migrateActiveVaultStorageToWaSqlite()).rejects.toThrow(
+        'wa-sqlite-desktop-native-storage-preferred',
+      );
+      expect(runWaSqliteActiveBackendMigration).not.toHaveBeenCalled();
+    } finally {
+      delete (window as { __TAURI_INTERNALS__?: Record<string, unknown> }).__TAURI_INTERNALS__;
+    }
+  });
+
   it('preserves secret-key combined credentials during wa-sqlite active backend migration', async () => {
     const combinedCredential = 'kalderashield:master-pass\0A3-ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567';
     runWaSqliteActiveBackendMigration.mockResolvedValueOnce({

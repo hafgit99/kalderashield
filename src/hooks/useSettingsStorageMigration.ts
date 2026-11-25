@@ -10,7 +10,7 @@ import { useState } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { migrateActiveVaultStorageToWaSqlite } from '../lib/storage';
-import { isAndroidRuntime } from '../lib/desktopStorage';
+import { isAndroidRuntime, isDesktopRuntime } from '../lib/desktopStorage';
 import type { AppNotification } from '../types';
 
 interface UseSettingsStorageMigrationOptions {
@@ -31,6 +31,11 @@ export function useSettingsStorageMigration({
     if (isAndroidRuntime()) {
       setStorageMigrationStatus('error');
       setStorageMigrationMessage(t('settings.storageMigration.androidUnsupported'));
+      return;
+    }
+    if (isDesktopRuntime()) {
+      setStorageMigrationStatus('error');
+      setStorageMigrationMessage(t('settings.storageMigration.desktopUnsupported'));
       return;
     }
 
@@ -60,9 +65,11 @@ export function useSettingsStorageMigration({
       const errMessage = err instanceof Error ? err.message : String(err || '');
       const message = errMessage === 'vault-storage-active-migration-session-required'
         ? t('settings.storageMigration.missingSession')
-        : errMessage === 'wa-sqlite-android-webview-wasm-memory-unsupported' || errMessage === 'wa-sqlite-webview-wasm-memory-unsupported'
-          ? t('settings.storageMigration.androidUnsupported')
-          : `${t('settings.storageMigration.error')}: ${errMessage || t('settings.biometric.genericError')}`;
+        : errMessage === 'wa-sqlite-desktop-native-storage-preferred'
+          ? t('settings.storageMigration.desktopUnsupported')
+          : errMessage === 'wa-sqlite-android-webview-wasm-memory-unsupported' || errMessage === 'wa-sqlite-webview-wasm-memory-unsupported'
+            ? t('settings.storageMigration.androidUnsupported')
+            : `${t('settings.storageMigration.error')}: ${errMessage || t('settings.biometric.genericError')}`;
       setStorageMigrationMessage(message);
     }
   };

@@ -80,7 +80,7 @@ describe('Settings Modular Cards', () => {
     expect(onChange).toHaveBeenCalledWith(300);
   });
 
-  it('renders SettingsStorageMigrationCard and triggers migration', () => {
+  it('renders SettingsStorageMigrationCard and triggers migration on legacy web OPFS', () => {
     const onMigrate = vi.fn();
     render(
       <SettingsStorageMigrationCard
@@ -93,6 +93,33 @@ describe('Settings Modular Cards', () => {
     const btn = screen.getByTestId('wa-sqlite-migration-button');
     fireEvent.click(btn);
     expect(onMigrate).toHaveBeenCalled();
+  });
+
+  it('renders read-only active badge without migration button on desktop-native and web-wa-sqlite modes', () => {
+    const onMigrate = vi.fn();
+    const { rerender } = render(
+      <SettingsStorageMigrationCard
+        storageMigrationStatus="idle"
+        storageMigrationMessage={null}
+        onMigrate={onMigrate}
+        storageMode="desktop-native"
+      />
+    );
+
+    expect(screen.queryByTestId('wa-sqlite-migration-button')).toBeNull();
+    expect(screen.getByTestId('storage-backend-active-badge').textContent).toContain('settings.storageMigration.activeNativeDesktop');
+
+    rerender(
+      <SettingsStorageMigrationCard
+        storageMigrationStatus="idle"
+        storageMigrationMessage={null}
+        onMigrate={onMigrate}
+        storageMode="web-wa-sqlite"
+      />
+    );
+
+    expect(screen.queryByTestId('wa-sqlite-migration-button')).toBeNull();
+    expect(screen.getByTestId('storage-backend-active-badge').textContent).toContain('settings.storageMigration.activeWaSqlite');
   });
 
   it('renders SettingsExtensionTokenCard and triggers rotation', () => {

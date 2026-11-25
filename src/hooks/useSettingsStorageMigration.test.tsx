@@ -15,12 +15,12 @@ vi.mock('../lib/storage', () => ({
 
 vi.mock('../lib/desktopStorage', () => ({
   isAndroidRuntime: vi.fn(() => false),
-  isDesktopRuntime: () => false,
+  isDesktopRuntime: vi.fn(() => false),
 }));
 
 import { useSettingsStorageMigration } from './useSettingsStorageMigration';
 import { migrateActiveVaultStorageToWaSqlite } from '../lib/storage';
-import { isAndroidRuntime } from '../lib/desktopStorage';
+import { isAndroidRuntime, isDesktopRuntime } from '../lib/desktopStorage';
 
 describe('useSettingsStorageMigration', () => {
   const onDatabaseChanged = vi.fn();
@@ -29,6 +29,7 @@ describe('useSettingsStorageMigration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(isAndroidRuntime).mockReturnValue(false);
+    vi.mocked(isDesktopRuntime).mockReturnValue(false);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
@@ -45,6 +46,22 @@ describe('useSettingsStorageMigration', () => {
 
     expect(result.current.storageMigrationStatus).toBe('error');
     expect(result.current.storageMigrationMessage).toContain('androidUnsupported');
+  });
+
+  it('blocks migration on Desktop runtime where native storage is authoritative', async () => {
+    vi.mocked(isDesktopRuntime).mockReturnValue(true);
+
+    const { result } = renderHook(() =>
+      useSettingsStorageMigration({ onDatabaseChanged, onNotify }),
+    );
+
+    await act(async () => {
+      await result.current.handleWaSqliteMigration();
+    });
+
+    expect(result.current.storageMigrationStatus).toBe('error');
+    expect(result.current.storageMigrationMessage).toContain('desktopUnsupported');
+    expect(migrateActiveVaultStorageToWaSqlite).not.toHaveBeenCalled();
   });
 
   it('does nothing when user cancels confirm dialog', async () => {
@@ -139,6 +156,16 @@ describe('useSettingsStorageMigration', () => {
     });
 
     expect(result.current.storageMigrationMessage).toContain('androidUnsupported');
+
+    vi.mocked(migrateActiveVaultStorageToWaSqlite).mockRejectedValueOnce(
+      new Error('wa-sqlite-desktop-native-storage-preferred'),
+    );
+
+    await act(async () => {
+      await result.current.handleWaSqliteMigration();
+    });
+
+    expect(result.current.storageMigrationMessage).toContain('desktopUnsupported');
   });
 
   it('shows generic error for unexpected failures', async () => {

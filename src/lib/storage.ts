@@ -821,51 +821,68 @@ export async function migrateActiveVaultStorageToWaSqlite(): Promise<WaSqliteAct
   if (isAndroidRuntime()) {
     throw new Error('wa-sqlite-android-webview-wasm-memory-unsupported');
   }
-
-  const result = await withActiveSessionSecrets(async (credentialBytes) => {
-    const credential = new TextDecoder().decode(credentialBytes);
-    let migrationResult: WaSqliteActiveBackendMigrationResult;
-    try {
-      migrationResult = await runWaSqliteActiveBackendMigration(credential);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error ?? '');
-      if (/memory access out of bounds|out of memory|wasm/i.test(message)) {
-        throw new Error('wa-sqlite-webview-wasm-memory-unsupported');
-      }
-      throw error;
-    }
-    if (migrationResult.status === 'promoted') {
-      setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
-      // Y-12: always re-derive from the newly promoted repository.
-      //
-      // `runVaultStorageMigration` calls `targetRepository.setupMaster(...)`,
-      // which mints a BRAND NEW random salt and then writes every migrated row
-      // under `Argon2id(credential, newSalt)`. The key already sitting in the
-      // session is `Argon2id(credential, oldOpfsSalt)` — a different key.
-      //
-      // The old `if (existingKey)` shortcut pushed that stale key straight into
-      // the session. The first `changeMasterPassword` after promotion then
-      // handed it to `changeMasterPasswordWithHash(..., oldVaultKey, ...)`, and
-      // every wa-sqlite row failed to decrypt: `WA_SQLITE_ROW_DECRYPT_ERROR` on
-      // the very first row. The user could not change their master password at
-      // all, and storage.ts:466-474 then tried an extra rotation with the
-      // mismatched pair, making it worse.
-      //
-      // The SEC-B3 justification on the shortcut was never real: the credential
-      // is already decoded in this scope by `withActiveSessionSecrets`, and the
-      // `else` branch performed exactly this derivation. The shortcut bought no
-      // security and produced a wrong key.
-      const promotedKey = await getVaultStorageRepository().deriveEncryptionKey(credential);
-      updateActiveVaultEncryptionKey(promotedKey);
-      promotedKey.fill(0);
-    }
-    return migrationResult;
-  });
-
-  if (!result) {
-    throw new Error('vault-storage-active-migration-session-required');
+  if (isDesktopRuntime()) {
+    throw new Error('wa-sqlite-desktop-native-storage-preferred');
   }
-  return result;
+
+  const previousVaultKey = await withActiveVaultEncryptionKey((key) => new Uint8Array(key));
+  try {
+    const result = await withActiveSessionSecrets(async (credentialBytes) => {
+      const credential = new TextDecoder().decode(credentialBytes);
+      let migrationResult: WaSqliteActiveBackendMigrationResult;
+      try {
+        migrationResult = await runWaSqliteActiveBackendMigration(credential);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error ?? '');
+        if (/memory access out of bounds|out of memory|wasm/i.test(message)) {
+          throw new Error('wa-sqlite-webview-wasm-memory-unsupported');
+        }
+        throw error;
+      }
+      if (migrationResult.status === 'promoted') {
+        // Y-12: always re-derive from the newly promoted repository.
+        //
+        // `runVaultStorageMigration` calls `targetRepository.setupMaster(...)`,
+        // which mints a BRAND NEW random salt and then writes every migrated row
+        // under `Argon2id(credential, newSalt)`. The key already sitting in the
+        // session is `Argon2id(credential, oldOpfsSalt)` — a different key.
+        //
+        // Re-encrypt vault-key-protected file attachments from `previousVaultKey`
+        // to `promotedKey` before committing the new session key, and roll back
+        // the backend switch if attachment re-encryption fails so vault items,
+        // attachments, and the session key never diverge.
+        const promotedKey = await getVaultStorageRepository().deriveEncryptionKey(credential);
+        try {
+          if (previousVaultKey) {
+            const oldKeyCopy = new Uint8Array(previousVaultKey);
+            const newKeyCopy = new Uint8Array(promotedKey);
+            try {
+              await reencryptAttachmentsForVaultKeyChange(oldKeyCopy, newKeyCopy, credential);
+            } catch (attachmentError) {
+              clearPersistedActiveVaultStorageBackend();
+              migrationResult.promotionResult?.restorePreviousRepository();
+              throw attachmentError;
+            } finally {
+              oldKeyCopy.fill(0);
+              newKeyCopy.fill(0);
+            }
+          }
+          setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
+          updateActiveVaultEncryptionKey(promotedKey);
+        } finally {
+          promotedKey.fill(0);
+        }
+      }
+      return migrationResult;
+    });
+
+    if (!result) {
+      throw new Error('vault-storage-active-migration-session-required');
+    }
+    return result;
+  } finally {
+    previousVaultKey?.fill(0);
+  }
 }
 
 async function withSessionVaultKey<T>(fallback: T, action: (vaultEncryptionKey: Uint8Array) => Promise<T>): Promise<T> {

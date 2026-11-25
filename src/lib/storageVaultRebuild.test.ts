@@ -62,6 +62,7 @@ vi.mock('./vaultSession', () => ({
   openVaultSession,
   closeVaultSession,
   openDerivedVaultSession,
+  registerOnCloseSession: vi.fn(),
   updateActiveVaultEncryptionKey: vi.fn(),
   withActiveAccountSecretKey: vi.fn(() => null),
   // These two invoke the callback synchronously, like the real implementations:

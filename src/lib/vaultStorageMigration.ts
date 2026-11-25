@@ -4,6 +4,7 @@
  */
 
 import type { VaultItem } from '../types';
+import { reWrapPasskeysInVaultItems } from './passkey';
 import type { VaultStorageBackendKind } from './vaultStorageBackend';
 import type { VaultStorageRepository } from './vaultStorageRepository';
 import {
@@ -77,12 +78,25 @@ export async function runVaultStorageMigration(
     await targetRepository.hydrate();
     await targetRepository.resetAll();
     await targetRepository.setupMaster(masterPasswordPlain);
+
+    const itemsToMigrate = cloneVaultItemsForMigration(sourceItems);
+    if (hasEmbeddedPasskeyBundles(itemsToMigrate)) {
+      const sourceKey = await sourceRepository.deriveEncryptionKey(masterPasswordPlain);
+      const targetKey = await targetRepository.deriveEncryptionKey(masterPasswordPlain);
+      try {
+        await reWrapPasskeysInVaultItems(itemsToMigrate, sourceKey, targetKey);
+      } finally {
+        sourceKey.fill(0);
+        targetKey.fill(0);
+      }
+    }
+
     const migratedItems = await targetRepository.saveVaultItems(
-      sourceItems.map((item) => ({ ...item })),
+      itemsToMigrate,
       masterPasswordPlain,
     );
     const targetItems = await targetRepository.getVaultItems(masterPasswordPlain);
-    validateMigratedItems(sourceItems, sourceIds, targetItems, issues);
+    validateMigratedItems(itemsToMigrate, sourceIds, targetItems, issues);
 
     if (issues.length === 0 && options.reopenTargetRepository) {
       if (typeof targetRepository.close === 'function') {
@@ -91,7 +105,7 @@ export async function runVaultStorageMigration(
       const reopenedTargetItems = await verifyReopenedTargetRepository(
         options.reopenTargetRepository,
         masterPasswordPlain,
-        sourceItems,
+        itemsToMigrate,
         sourceIds,
         issues,
       );
@@ -369,6 +383,37 @@ function migrationIssueFromError(error: unknown, fallback: string): string {
     .slice(0, 160);
 
   return sanitizedMessage || fallback;
+}
+
+function cloneVaultItemsForMigration(items: VaultItem[]): VaultItem[] {
+  return items.map((item) => {
+    const cloned: Record<string, unknown> = { ...item };
+    if (Array.isArray(cloned.customFields)) {
+      cloned.customFields = cloned.customFields.map((field: unknown) =>
+        field && typeof field === 'object' ? { ...(field as Record<string, unknown>) } : field,
+      );
+    }
+    return cloned as unknown as VaultItem;
+  });
+}
+
+function hasEmbeddedPasskeyBundles(items: VaultItem[]): boolean {
+  return items.some((item) => {
+    const raw = item as unknown as Record<string, unknown>;
+    if (raw.passkeyPrivateKeyBundle && typeof raw.passkeyPrivateKeyBundle === 'object') {
+      return true;
+    }
+    if (Array.isArray(raw.customFields)) {
+      return raw.customFields.some(
+        (field) =>
+          field
+          && typeof field === 'object'
+          && (field as Record<string, unknown>).name === 'passkeyPrivateKeyBundle'
+          && Boolean((field as Record<string, unknown>).value),
+      );
+    }
+    return false;
+  });
 }
 
 async function rollbackTarget(targetRepository: VaultStorageRepository, issues: string[]): Promise<void> {
