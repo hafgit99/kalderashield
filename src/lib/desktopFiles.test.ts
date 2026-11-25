@@ -190,6 +190,10 @@ describe('desktopFiles', () => {
       expect(await saveDesktopExportFile('backup.KalderaShield', '{}')).toBe(false);
       expect(await openDesktopImportFile()).toBeNull();
       expect(invoke).not.toHaveBeenCalled();
+
+      // jsdom on Linux CI uses "(linux) ... jsdom/..." and should keep default desktop dialog behavior
+      uaSpy.mockReturnValue('Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/26.0.0');
+      expect(isDesktopFileDialogSupported()).toBe(true);
     } finally {
       uaSpy.mockRestore();
     }

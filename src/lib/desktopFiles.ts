@@ -63,7 +63,7 @@ function isAndroidTauriRuntime(): boolean {
 function isNonWindowsDesktopUserAgent(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  if (/Android|iPhone|iPad|iPod|Windows/i.test(ua)) return false;
+  if (/Android|iPhone|iPad|iPod|Windows|jsdom/i.test(ua)) return false;
   return /\b(Macintosh|Mac OS X|X11|Linux)\b/i.test(ua);
 }
 
