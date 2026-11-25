@@ -578,6 +578,7 @@ export const fr = {
   'settings.import.stage.mapping': 'Champs de mappage...',
   'settings.import.stage.encrypting': 'Cryptage et sauvegarde...',
   'settings.import.stage.saving': 'Cryptage et sauvegarde...',
+  'settings.import.stage.attachments_saving': 'Enregistrement des pièces jointes...',
   'settings.import.stage.syncing': 'Synchronisation de la base de données...',
   'settings.import.stage.finalizing': 'Finalisation...',
   'settings.import.descriptionPrefix': 'Aux côtés de votre propre crypté',

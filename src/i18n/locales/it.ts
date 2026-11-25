@@ -576,6 +576,7 @@ export const it = {
   'settings.import.stage.mapping': 'Mappatura campi...',
   'settings.import.stage.encrypting': 'Crittografia e salvataggio...',
   'settings.import.stage.saving': 'Crittografia e salvataggio...',
+  'settings.import.stage.attachments_saving': 'Salvataggio allegati...',
   'settings.import.stage.syncing': 'Sincronizzazione del database...',
   'settings.import.stage.finalizing': 'Finalizzazione...',
   'settings.import.descriptionPrefix': 'Accanto al tuo crittografato',

@@ -578,6 +578,7 @@ export const en = {
     'settings.import.stage.mapping': 'Mapping fields...',
     'settings.import.stage.encrypting': 'Encrypting & saving...',
     'settings.import.stage.saving': 'Encrypting & saving...',
+    'settings.import.stage.attachments_saving': 'Saving attachments...',
     'settings.import.stage.syncing': 'Syncing database...',
     'settings.import.stage.finalizing': 'Finalizing...',
     'settings.import.descriptionPrefix': 'Alongside your own encrypted',

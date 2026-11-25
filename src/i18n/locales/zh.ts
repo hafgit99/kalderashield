@@ -578,6 +578,7 @@ export const zh = {
     'settings.import.stage.mapping': '正在映射字段...',
     'settings.import.stage.encrypting': '正在加密并保存...',
     'settings.import.stage.saving': '正在加密并保存...',
+    'settings.import.stage.attachments_saving': '正在保存附件...',
     'settings.import.stage.syncing': '正在同步数据库...',
     'settings.import.stage.finalizing': '正在完成...',
     'settings.import.descriptionPrefix': '除了您自己的加密',

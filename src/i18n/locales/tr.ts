@@ -508,6 +508,7 @@ export const tr = {
     'settings.import.stage.mapping': 'Alanlar eşleştiriliyor...',
     'settings.import.stage.encrypting': 'Şifreleniyor ve kaydediliyor...',
     'settings.import.stage.saving': 'Şifreleniyor ve kaydediliyor...',
+    'settings.import.stage.attachments_saving': 'Ek dosyalar kaydediliyor...',
     'settings.import.stage.syncing': 'Veritabanı senkronize ediliyor...',
     'settings.import.stage.finalizing': 'Sonlandırılıyor...',
     'settings.import.descriptionPrefix': 'Kendi şifreli',

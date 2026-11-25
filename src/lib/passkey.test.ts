@@ -643,4 +643,40 @@ describe('passkey module - vault field mapping', () => {
     expect(result[0]?.passkeyPrivateKeyBundle).toBeDefined();
     expect(result[0]!.passkeyPrivateKeyBundle!.iv).not.toBe(bundle.iv);
   });
+
+  it('exports and imports passkey private keys portably across distinct vault keys for encrypted backups', async () => {
+    const {
+      exportPasskeysForEncryptedBackup,
+      importPasskeysFromEncryptedBackup,
+      unwrapPrivateKeyJwk,
+    } = await import('./passkey');
+
+    const sourceVaultKey = new Uint8Array(32).fill(0x31);
+    const destinationVaultKey = new Uint8Array(32).fill(0x94);
+
+    openVaultSession('master-pass', 'master-pass', sourceVaultKey);
+    const regResult = await registerPasskey({
+      rpId: 'backup-portable.example',
+      rpName: 'Portable Example',
+      userName: 'portable@example.com',
+    });
+    const originalBundle = regResult.record.privateKeyBundle;
+    const expectedJwk = await unwrapPrivateKeyJwk(originalBundle, sourceVaultKey);
+
+    const exported = await exportPasskeysForEncryptedBackup(
+      [{ id: 'pk-1', passkeyPrivateKeyBundle: originalBundle }],
+      sourceVaultKey,
+    );
+    expect(exported[0]?.passkeyPrivateKeyJwk).toEqual(expectedJwk);
+
+    const imported = await importPasskeysFromEncryptedBackup(exported, destinationVaultKey);
+    // Plaintext JWK must never survive import into vault items
+    expect((imported[0] as Record<string, unknown>).passkeyPrivateKeyJwk).toBeUndefined();
+    const rewrappedBundle = imported[0]!.passkeyPrivateKeyBundle!;
+    expect(rewrappedBundle.iv).not.toBe(originalBundle.iv);
+
+    // Unwrap succeeds with destination vault key and fails with old source key
+    await expect(unwrapPrivateKeyJwk(rewrappedBundle, destinationVaultKey)).resolves.toEqual(expectedJwk);
+    await expect(unwrapPrivateKeyJwk(rewrappedBundle, sourceVaultKey)).rejects.toThrow();
+  });
 });

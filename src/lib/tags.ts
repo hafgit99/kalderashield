@@ -228,4 +228,37 @@ export function ensureTagsExist(names: string[]): TagDefinition[] {
   return library;
 }
 
+/**
+ * Merges validated tag definitions from a backup envelope into the local
+ * tag library without overwriting existing user tags (deduplicated by slug).
+ */
+export function mergeImportedTags(rawEntries: unknown[]): TagDefinition[] {
+  const library = readRaw();
+  if (!Array.isArray(rawEntries) || rawEntries.length === 0) {
+    return library;
+  }
+
+  const bySlug = new Map(library.map((entry) => [entry.slug, entry]));
+  const additions: TagDefinition[] = [];
+  for (const raw of rawEntries) {
+    const entry = parseEntry(raw);
+    if (!entry) continue;
+    const normalizedSlug = slugifyTagName(entry.name) || entry.slug;
+    if (!normalizedSlug || bySlug.has(normalizedSlug)) continue;
+    const cleanEntry: TagDefinition = {
+      ...entry,
+      slug: normalizedSlug,
+    };
+    bySlug.set(normalizedSlug, cleanEntry);
+    additions.push(cleanEntry);
+  }
+
+  if (additions.length === 0) {
+    return library;
+  }
+
+  const merged = [...library, ...additions].slice(0, MAX_TAG_LIBRARY_ENTRIES);
+  return tags.write(merged);
+}
+
 

@@ -576,6 +576,7 @@ export const ru = {
   'settings.import.stage.mapping': 'Сопоставление полей...',
   'settings.import.stage.encrypting': 'Шифрование и сохранение...',
   'settings.import.stage.saving': 'Шифрование и сохранение...',
+  'settings.import.stage.attachments_saving': 'Сохранение вложений...',
   'settings.import.stage.syncing': 'Синхронизация базы данных...',
   'settings.import.stage.finalizing': 'Завершение...',
   'settings.import.descriptionPrefix': 'Наряду с вашим собственным зашифрованным',

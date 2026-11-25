@@ -576,6 +576,7 @@ export const de = {
   'settings.import.stage.mapping': 'Felder zuordnen...',
   'settings.import.stage.encrypting': 'Verschlüsseln & Speichern...',
   'settings.import.stage.saving': 'Verschlüsseln & Speichern...',
+  'settings.import.stage.attachments_saving': 'Anhänge werden gespeichert...',
   'settings.import.stage.syncing': 'Datenbank wird synchronisiert...',
   'settings.import.stage.finalizing': 'Finalisierung...',
   'settings.import.descriptionPrefix': 'Neben Ihrem eigenen verschlüsselten',

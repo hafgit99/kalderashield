@@ -19,6 +19,7 @@ interface SettingsBackupSectionProps {
   setCustomBackupPassword: (val: string) => void;
   backupSuccess: string | null;
   backupError: string | null;
+  isExporting?: boolean;
   onExportEncrypted: (e: React.FormEvent) => void;
   onExportPlain: () => void;
   plainExportArmed: boolean;
@@ -56,6 +57,7 @@ export function SettingsBackupSection({
   setCustomBackupPassword,
   backupSuccess,
   backupError,
+  isExporting = false,
   onExportEncrypted,
   onExportPlain,
   plainExportArmed,
@@ -124,7 +126,7 @@ export function SettingsBackupSection({
                   data-form-type="other"
                   className="w-full bg-surface-lowest border border-outline-variant/30 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-tertiary text-on-surface"
                   placeholder={t('settings.export.passwordPlaceholder')}
-                  minLength={6}
+                  minLength={12}
                   required={!useMasterForBackup}
                 />
               </div>
@@ -147,7 +149,8 @@ export function SettingsBackupSection({
               <button
                 data-testid="encrypted-export-button"
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-brand-tertiary text-black font-extrabold py-3 rounded-lg text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-lg shadow-brand-tertiary/5"
+                disabled={isExporting}
+                className="w-full flex items-center justify-center gap-2 bg-brand-tertiary text-black font-extrabold py-3 rounded-lg text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-brand-tertiary/5"
               >
                 <Lock className="w-4 h-4" />
                 <span>{t('settings.export.encryptedButton')}</span>
@@ -296,7 +299,6 @@ export function SettingsBackupSection({
                 <button
                   data-testid="decrypt-import-submit-button"
                   type="submit"
-                  onClick={handleDecryptAndImport}
                   className="flex-1 py-2 bg-brand-primary text-brand-on-primary font-bold text-xs rounded-lg hover:brightness-110 active:scale-95 transition-all"
                 >
                   {t('settings.import.decryptSubmit')}

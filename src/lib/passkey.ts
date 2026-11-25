@@ -690,3 +690,58 @@ export async function reWrapPasskeysInVaultItems<T>(
   }
   return items;
 }
+
+/**
+ * Prepares vault items for an encrypted `.KalderaShield` backup by unwrapping
+ * vault-key-bound software passkey bundles into portable `passkeyPrivateKeyJwk`
+ * fields inside the already Argon2id + AES-256-GCM encrypted backup envelope.
+ *
+ * Never call this for unencrypted plaintext JSON exports.
+ */
+export async function exportPasskeysForEncryptedBackup<T extends object>(
+  items: T[],
+  vaultKey: Uint8Array,
+): Promise<Array<T & { passkeyPrivateKeyJwk?: JsonWebKey }>> {
+  const exported: Array<T & { passkeyPrivateKeyJwk?: JsonWebKey }> = [];
+  for (const item of items) {
+    const clone = { ...item } as T & {
+      passkeyPrivateKeyBundle?: WebCryptoAesGcmPayload;
+      passkeyPrivateKeyJwk?: JsonWebKey;
+    };
+    if (clone.passkeyPrivateKeyBundle && typeof clone.passkeyPrivateKeyBundle === 'object') {
+      try {
+        clone.passkeyPrivateKeyJwk = await unwrapPrivateKeyJwk(clone.passkeyPrivateKeyBundle, vaultKey);
+      } catch {
+        // Keep existing wrapped bundle if it cannot be unwrapped with the current key
+        // rather than failing the whole backup export.
+      }
+    }
+    exported.push(clone);
+  }
+  return exported;
+}
+
+/**
+ * Re-wraps portable `passkeyPrivateKeyJwk` fields carried inside an encrypted
+ * `.KalderaShield` backup under the destination vault's active encryption key,
+ * stripping the plaintext JWK before items are persisted to storage.
+ */
+export async function importPasskeysFromEncryptedBackup<T extends object>(
+  items: T[],
+  vaultKey: Uint8Array,
+): Promise<T[]> {
+  const imported: T[] = [];
+  for (const item of items) {
+    const clone = { ...item } as Record<string, unknown>;
+    const portableJwk = clone.passkeyPrivateKeyJwk;
+    if (portableJwk && typeof portableJwk === 'object' && !Array.isArray(portableJwk)) {
+      const candidate = portableJwk as JsonWebKey;
+      if (typeof candidate.kty === 'string' && candidate.kty.length > 0) {
+        clone.passkeyPrivateKeyBundle = await wrapPrivateKeyJwk(candidate, vaultKey);
+      }
+    }
+    delete clone.passkeyPrivateKeyJwk;
+    imported.push(clone as T);
+  }
+  return imported;
+}
