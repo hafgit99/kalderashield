@@ -73,6 +73,10 @@ export interface SyncUploadPreconditions {
  * renderer.
  */
 export const MAX_SYNC_PAYLOAD_BYTES = 32 * 1024 * 1024;
+/** Maximum allowed size for remote `metadata.json` descriptors (1 MiB). */
+export const MAX_SYNC_METADATA_BYTES = 1024 * 1024;
+/** Upper bound on vault items accepted from a decrypted remote sync snapshot. */
+export const MAX_SYNC_ITEMS = 50_000;
 
 /**
  * O-21: validates a remote `metadata.json`.
@@ -366,6 +370,10 @@ export interface SyncResult {
   conflictCopies?: VaultItem[];
   /** F-06: Monotonic sync generation counter persisted after a successful upload. */
   syncGeneration?: number;
+  /** Portable folder definitions merged from the encrypted remote sync payload. */
+  mergedFolders?: unknown[];
+  /** Portable tag definitions merged from the encrypted remote sync payload. */
+  mergedTags?: unknown[];
   error?: SyncError;
   /**
    * Y-11: the ETag of the remote vault this client successfully uploaded.

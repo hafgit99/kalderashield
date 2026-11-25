@@ -52,6 +52,7 @@ import {
   getLastSyncTime,
   hasSyncConfig,
   loadSyncConfig,
+  rotateSyncConfigPassword,
   saveLastSyncTime,
   saveSyncConfig,
   validateWebDavConfig,
@@ -271,5 +272,31 @@ describe('syncConfigStorage', () => {
     expect(validateS3Config({ endpoint: 'https://s3.example.com', bucket: 'b', accessKeyId: 'ak' })).toBe('Secret Access Key gereklidir.');
     expect(validateS3Config({ endpoint: 'http://127.0.0.1:9000', bucket: 'b', accessKeyId: 'ak', secretAccessKey: 'sk' })).toBeNull();
     expect(validateS3Config({ endpoint: 'https://s3.us-east-1.amazonaws.com', bucket: 'b', accessKeyId: 'ak', secretAccessKey: 'sk' })).toBeNull();
+  });
+
+  it('rotates stored sync config to a new master password, binds AAD, and clears generation/checksum on reset', async () => {
+    const config: SyncConfig = {
+      type: 'webdav',
+      url: 'https://cloud.example.com/dav',
+      username: 'alice',
+      password: 'app-token-xyz',
+    };
+    await saveSyncConfig(config, 'old-master-pass');
+    const stored = JSON.parse(localStorage.getItem('KalderaShield_sync_config_v1')!);
+    expect(stored.aadVersion).toBe(1);
+
+    await expect(rotateSyncConfigPassword('old-master-pass', 'new-master-pass')).resolves.toBe(true);
+    await expect(loadSyncConfig('old-master-pass')).rejects.toMatchObject({ code: syncErrorCodes.authFailed });
+    await expect(loadSyncConfig('new-master-pass')).resolves.toEqual(config);
+
+    localStorage.setItem('KalderaShield_sync_generation', '12');
+    localStorage.setItem('KalderaShield_sync_last_checksum', 'abc');
+    clearSyncConfig();
+    expect(localStorage.getItem('KalderaShield_sync_generation')).toBeNull();
+    expect(localStorage.getItem('KalderaShield_sync_last_checksum')).toBeNull();
+
+    // Localized validation keys work when translator is supplied
+    expect(validateWebDavConfig({}, (k) => k)).toBe('settings.sync.validation.urlRequired');
+    expect(validateS3Config({}, (k) => k)).toBe('settings.sync.validation.endpointRequired');
   });
 });

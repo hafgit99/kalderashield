@@ -509,4 +509,136 @@ describe('F-06 rollback-protected sync and conflict copies', () => {
     expect(conflictCopies[0]?.password).toBe('LocalPassword1!');
     expect(conflictCopies[0]?.title).toContain('(Conflict Copy)');
   });
+
+  it('uses getVaultETag (not metadata.json ETag) as If-Match precondition for uploadVault', async () => {
+    const remoteItem = makeItem('b', '2026-06-01T12:00:00Z');
+    const { encryptedBlob, metadata } = await buildSyncEnvelope([remoteItem], MASTER_PW);
+    const getVaultETag = vi.fn()
+      .mockResolvedValueOnce('"vault-etag-1"')
+      .mockResolvedValueOnce('"vault-etag-2"');
+    const provider = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({
+        kind: 'ok',
+        metadata,
+        etag: '"metadata-etag-different"',
+      } as SyncRemoteMetadata),
+      getVaultETag,
+      downloadVault: vi.fn().mockResolvedValue(encryptedBlob),
+    });
+
+    const result = await performSync(provider, [makeItem('a', '2026-01-01T00:00:00Z')], MASTER_PW, {
+      lastVerifiedGeneration: 0,
+    });
+
+    expect(result.status).toBe('success');
+    expect(provider.uploadVault).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      { ifMatch: '"vault-etag-1"' },
+    );
+    expect(result.uploadedETag).toBe('"vault-etag-2"');
+  });
+
+  it('includes conflictCopies in mergedItems so overwritten near-simultaneous edits are persisted locally and remotely', async () => {
+    const localItem = makeItem('c1', '2026-06-01T10:00:00.000Z', { title: 'Bank', password: 'LocalPassword1!' });
+    const remoteItem = makeItem('c1', '2026-06-01T10:00:02.000Z', { title: 'Bank', password: 'RemotePassword2!' });
+    const { encryptedBlob, metadata } = await buildSyncEnvelope([remoteItem], MASTER_PW);
+    const provider = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'ok', metadata } as SyncRemoteMetadata),
+      downloadVault: vi.fn().mockResolvedValue(encryptedBlob),
+    });
+
+    const result = await performSync(provider, [localItem], MASTER_PW, { lastVerifiedGeneration: 0 });
+
+    expect(result.status).toBe('conflict');
+    expect(result.conflictCopies).toHaveLength(1);
+    expect(result.mergedItems.some((i) => i.title.includes('(Conflict Copy)') && i.password === 'LocalPassword1!')).toBe(true);
+    expect(result.mergedItems.some((i) => i.id === 'c1' && i.password === 'RemotePassword2!')).toBe(true);
+  });
+
+  it('downloads and merges an unseen snapshot from another device even if its timestamp is slightly older (clock skew)', async () => {
+    const peerItem = makeItem('peer-1', '2026-06-01T10:02:00.000Z', { title: 'Peer Device Entry' });
+    const { encryptedBlob, metadata } = await buildSyncEnvelope([peerItem], MASTER_PW, 1);
+    const peerMetadata = { ...metadata, deviceId: 'different-peer-device' };
+    const provider = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'ok', metadata: peerMetadata } as SyncRemoteMetadata),
+      downloadVault: vi.fn().mockResolvedValue(encryptedBlob),
+    });
+
+    const localItems = [makeItem('local-1', '2026-06-01T10:05:00.000Z', { title: 'Local Newer Clock' })];
+    const result = await performSync(provider, localItems, MASTER_PW, { lastVerifiedGeneration: 1 });
+
+    expect(result.status).toBe('success');
+    expect(provider.downloadVault).toHaveBeenCalledOnce();
+    expect(result.mergedItems.map((i) => i.id).sort()).toEqual(['local-1', 'peer-1']);
+  });
+
+  it('portably syncs software passkey private keys and folders/tags across devices with different vault keys', async () => {
+    const { wrapPrivateKeyJwk, unwrapPrivateKeyJwk } = await import('../passkey');
+    const deviceAKey = new Uint8Array(32).fill(0x21);
+    const deviceBKey = new Uint8Array(32).fill(0x88);
+    const sampleJwk: JsonWebKey = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: 'f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU',
+      y: 'x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0',
+      d: 'jpsQnnGQmL-YBIffH1BSyvgTIYlWaLjoOBdeEJvGG6Q',
+    };
+    const bundleA = await wrapPrivateKeyJwk(sampleJwk, deviceAKey);
+
+    let uploadedBlob = '';
+    let uploadedMetadata: any = null;
+    const providerA = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'absent' } as SyncRemoteMetadata),
+      uploadVault: vi.fn(async (blob, meta) => {
+        uploadedBlob = blob;
+        uploadedMetadata = meta;
+      }),
+    });
+
+    const passkeyItem = makeItem('pk-sync-1', '2026-06-01T12:00:00Z', {
+      category: 'passkey',
+      passkeyProviderKind: 'software',
+      passkeyPrivateKeyBundle: bundleA,
+    });
+    const folder = { id: 'f-sync', name: 'Synced Folder', parentId: null, color: 'blue', icon: 'folder', createdAt: '2026-06-01T00:00:00Z' };
+    const tag = { id: 't-sync', name: 'Synced Tag', slug: 'synced-tag', color: 'emerald', createdAt: '2026-06-01T00:00:00Z' };
+
+    const resA = await performSync(providerA, [passkeyItem], MASTER_PW, {
+      lastVerifiedGeneration: 0,
+      vaultEncryptionKey: deviceAKey,
+      localFolders: [folder],
+      localTags: [tag],
+    });
+    expect(resA.status).toBe('success');
+
+    // Device B downloads with its own completely different vault encryption key
+    const providerB = makeProvider({
+      getRemoteMetadata: vi.fn().mockResolvedValue({ kind: 'ok', metadata: uploadedMetadata } as SyncRemoteMetadata),
+      downloadVault: vi.fn().mockResolvedValue(uploadedBlob),
+    });
+    const resB = await performSync(providerB, [], MASTER_PW, {
+      lastVerifiedGeneration: 0,
+      vaultEncryptionKey: deviceBKey,
+    });
+
+    expect(resB.status).toBe('success');
+    const syncedPk = resB.mergedItems.find((i) => i.id === 'pk-sync-1')!;
+    expect((syncedPk as unknown as Record<string, unknown>).passkeyPrivateKeyJwk).toBeUndefined();
+    await expect(unwrapPrivateKeyJwk(syncedPk.passkeyPrivateKeyBundle!, deviceBKey)).resolves.toEqual(sampleJwk);
+    await expect(unwrapPrivateKeyJwk(syncedPk.passkeyPrivateKeyBundle!, deviceAKey)).rejects.toThrow();
+    expect(resB.mergedFolders).toContainEqual(folder);
+    expect(resB.mergedTags).toContainEqual(tag);
+  });
+
+  it('rejects remote sync envelopes containing malformed items without ids', async () => {
+    const { encryptDataWithPasswordSecure } = await import('../encryption');
+    const malformedBlob = await encryptDataWithPasswordSecure(
+      JSON.stringify({ schema: 'kalderashield-sync-v2', syncGeneration: 1, deviceId: 'dev', items: [{ title: 'No ID' }] }),
+      MASTER_PW,
+    );
+    await expect(parseSyncEnvelope(malformedBlob, MASTER_PW)).rejects.toMatchObject({
+      code: syncErrorCodes.invalidEnvelope,
+    });
+  });
 });

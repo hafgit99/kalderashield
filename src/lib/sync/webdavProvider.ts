@@ -12,11 +12,13 @@ import type {
 } from './syncTypes';
 import { SyncError, syncErrorCodes } from './syncTypes';
 import {
+  MAX_SYNC_METADATA_BYTES,
   MAX_SYNC_PAYLOAD_BYTES,
   readResponseTextBounded,
   validateRemoteSyncMetadata,
 } from './syncTypes';
 import { bytesToBase64 } from '../common/bytes';
+import { syncFetch } from './syncTransport';
 
 const VAULT_FILE = 'vault.ks';
 const METADATA_FILE = 'metadata.json';
@@ -86,7 +88,7 @@ export class WebDavSyncProvider implements SyncProvider {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  private defaultHeaders(): HeadersInit {
+  private defaultHeaders(): Record<string, string> {
     return {
       Authorization: this.authHeader,
     };
@@ -94,9 +96,10 @@ export class WebDavSyncProvider implements SyncProvider {
 
   private async ensureDirectory(): Promise<void> {
     const dirUrl = `${this.baseUrl}${KALDERASHIELD_DIR}/`;
-    const res = await fetch(dirUrl, {
+    const res = await syncFetch(dirUrl, {
       method: 'MKCOL',
       headers: this.defaultHeaders(),
+      maxResponseBytes: MAX_SYNC_METADATA_BYTES,
     });
     // 201 Created or 405 Method Not Allowed (dir already exists) are both fine
     if (!res.ok && res.status !== 405 && res.status !== 301) {
@@ -112,12 +115,13 @@ export class WebDavSyncProvider implements SyncProvider {
   async testConnection(): Promise<void> {
     let res: Response;
     try {
-      res = await fetch(this.baseUrl, {
+      res = await syncFetch(this.baseUrl, {
         method: 'PROPFIND',
         headers: {
           ...this.defaultHeaders(),
           Depth: '0',
         },
+        maxResponseBytes: MAX_SYNC_METADATA_BYTES,
       });
     } catch (err) {
       throw new SyncError(syncErrorCodes.connectionFailed, `Cannot reach WebDAV server: ${String(err)}`);
@@ -140,10 +144,10 @@ export class WebDavSyncProvider implements SyncProvider {
 
     // 1. Upload the encrypted vault blob
     const vaultUrl = buildFileUrl(this.baseUrl, VAULT_FILE);
-    const vaultHeaders = {
+    const vaultHeaders: Record<string, string> = {
       ...this.defaultHeaders(),
       'Content-Type': 'application/octet-stream',
-    } as Record<string, string>;
+    };
     // Y-11: make the write conditional on the ETag we read. WebDAV servers
     // enforce `If-Match` atomically, so a concurrent write from another device
     // is rejected instead of being clobbered.
@@ -151,10 +155,11 @@ export class WebDavSyncProvider implements SyncProvider {
       vaultHeaders['If-Match'] = preconditions.ifMatch;
     }
 
-    const vaultRes = await fetch(vaultUrl, {
+    const vaultRes = await syncFetch(vaultUrl, {
       method: 'PUT',
       headers: vaultHeaders,
       body: encryptedBlob,
+      maxResponseBytes: MAX_SYNC_METADATA_BYTES,
     });
 
     if (vaultRes.status === 412 || vaultRes.status === 409) {
@@ -172,13 +177,14 @@ export class WebDavSyncProvider implements SyncProvider {
 
     // 2. Upload metadata only after a successful vault upload
     const metaUrl = buildFileUrl(this.baseUrl, METADATA_FILE);
-    const metaRes = await fetch(metaUrl, {
+    const metaRes = await syncFetch(metaUrl, {
       method: 'PUT',
       headers: {
         ...this.defaultHeaders(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(metadata, null, 2),
+      maxResponseBytes: MAX_SYNC_METADATA_BYTES,
     });
 
     if (!metaRes.ok) {
@@ -199,9 +205,10 @@ export class WebDavSyncProvider implements SyncProvider {
     const vaultUrl = buildFileUrl(this.baseUrl, VAULT_FILE);
     let res: Response;
     try {
-      res = await fetch(vaultUrl, {
+      res = await syncFetch(vaultUrl, {
         method: 'GET',
         headers: this.defaultHeaders(),
+        maxResponseBytes: MAX_SYNC_PAYLOAD_BYTES,
       });
     } catch (err) {
       throw new SyncError(syncErrorCodes.downloadFailed, `Network error downloading vault: ${String(err)}`);
@@ -221,9 +228,10 @@ export class WebDavSyncProvider implements SyncProvider {
     const metaUrl = buildFileUrl(this.baseUrl, METADATA_FILE);
     let res: Response;
     try {
-      res = await fetch(metaUrl, {
+      res = await syncFetch(metaUrl, {
         method: 'GET',
         headers: this.defaultHeaders(),
+        maxResponseBytes: MAX_SYNC_METADATA_BYTES,
       });
     } catch (err) {
       throw new SyncError(syncErrorCodes.downloadFailed, `Network error fetching metadata: ${String(err)}`);
@@ -237,14 +245,17 @@ export class WebDavSyncProvider implements SyncProvider {
     }
 
     try {
-      // O-21: the remote is untrusted, and `updatedAt` steers a destructive
-      // decision. An unparsable timestamp must never reach a comparison.
-      const validation = validateRemoteSyncMetadata(await res.json());
+      // O-20 + O-21: bound metadata.json to 1 MiB and validate schema before use.
+      const rawText = await readResponseTextBounded(res, MAX_SYNC_METADATA_BYTES, 'Remote sync metadata');
+      const validation = validateRemoteSyncMetadata(JSON.parse(rawText));
       if (!validation.ok) {
         return { kind: 'unreadable', detail: `metadata.json failed validation: ${validation.reason}` };
       }
       return { kind: 'ok', metadata: validation.metadata, etag: res.headers?.get?.('etag') ?? undefined };
     } catch (err) {
+      if (err instanceof SyncError && err.code === syncErrorCodes.remoteTooLarge) {
+        throw err;
+      }
       // Y-11: the metadata file EXISTS but could not be parsed. The vault
       // blob may be intact and newer than local, so this must be reported as
       // 'unreadable' — reporting it as absent is what caused the overwrite.
@@ -259,7 +270,11 @@ export class WebDavSyncProvider implements SyncProvider {
     const vaultUrl = buildFileUrl(this.baseUrl, VAULT_FILE);
     let res: Response;
     try {
-      res = await fetch(vaultUrl, { method: 'HEAD', headers: this.defaultHeaders() });
+      res = await syncFetch(vaultUrl, {
+        method: 'HEAD',
+        headers: this.defaultHeaders(),
+        maxResponseBytes: MAX_SYNC_METADATA_BYTES,
+      });
     } catch {
       return null;
     }

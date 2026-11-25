@@ -15,6 +15,7 @@ mod hibp;
 mod linux_security;
 mod native_messaging;
 mod secure_storage;
+mod sync_http;
 
 struct ExtensionState {
     credentials:
@@ -1100,6 +1101,7 @@ pub fn run() {
             hibp::select_hibp_local_file,
             hibp::validate_hibp_local_file,
             hibp::check_hibp_local_file,
+            sync_http::sync_http_request,
             get_asset_integrity_anchor,
             record_asset_integrity_result,
             read_vault_database,

@@ -14,10 +14,12 @@ import type {
 import { SyncError, syncErrorCodes } from './syncTypes';
 import { sha256Hex, sha256HexOfString } from '../common/sha256';
 import {
+  MAX_SYNC_METADATA_BYTES,
   MAX_SYNC_PAYLOAD_BYTES,
   readResponseTextBounded,
   validateRemoteSyncMetadata,
 } from './syncTypes';
+import { syncFetch } from './syncTransport';
 
 const VAULT_FILE = 'vault.KalderaShield';
 const METADATA_FILE = 'metadata.json';
@@ -59,6 +61,28 @@ async function getSignatureKey(
   const kService = await hmacSha256(kRegion, serviceName);
   const kSigning = await hmacSha256(kService, 'aws4_request');
   return kSigning;
+}
+
+function encodeS3PathSegment(segment: string): string {
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    // Keep original segment if it contains malformed percent-escapes
+  }
+  // AWS SigV4 RFC 3986 URI encoding (unreserved: A-Z a-z 0-9 - _ . ~)
+  return encodeURIComponent(decoded).replace(
+    /[!'()*]/g,
+    (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+function encodeS3CanonicalUri(pathname: string): string {
+  if (!pathname || pathname === '/') return '/';
+  return pathname
+    .split('/')
+    .map((segment) => encodeS3PathSegment(segment))
+    .join('/');
 }
 
 function getAmzTimestamps(now = new Date()): { amzDate: string; dateStamp: string } {
@@ -142,28 +166,25 @@ export class S3SyncProvider implements SyncProvider {
     const { amzDate, dateStamp } = getAmzTimestamps();
     const payloadHash = await hashForSigning(body);
 
-    const headers: Record<string, string> = {
+    const normalizedHeaders: Record<string, string> = {
       host: targetUrl.host,
       'x-amz-content-sha256': payloadHash,
       'x-amz-date': amzDate,
-      ...extraHeaders,
     };
+    for (const [key, value] of Object.entries(extraHeaders)) {
+      normalizedHeaders[key.toLowerCase()] = value;
+    }
 
-    const sortedHeaderNames = Object.keys(headers)
-      .map((h) => h.toLowerCase())
-      .sort();
+    const sortedHeaderNames = Object.keys(normalizedHeaders).sort();
     const signedHeadersStr = sortedHeaderNames.join(';');
 
     const canonicalHeadersStr = sortedHeaderNames
-      .map((h) => {
-        const val = headers[h];
-        return val !== undefined ? `${h}:${val.trim()}\n` : '';
-      })
+      .map((h) => `${h}:${normalizedHeaders[h]!.trim()}\n`)
       .join('');
 
     const canonicalRequest = [
       method.toUpperCase(),
-      encodeURI(targetUrl.pathname),
+      encodeS3CanonicalUri(targetUrl.pathname),
       targetUrl.search.substring(1), // canonical query string
       canonicalHeadersStr,
       signedHeadersStr,
@@ -182,6 +203,7 @@ export class S3SyncProvider implements SyncProvider {
 
     const signingKey = await getSignatureKey(this.secretAccessKey, dateStamp, this.region, 's3');
     const signatureBytes = await hmacSha256(signingKey, stringToSign);
+    signingKey.fill(0);
     const signatureHex = Array.from(signatureBytes)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
@@ -189,7 +211,7 @@ export class S3SyncProvider implements SyncProvider {
     const authorizationHeader = `AWS4-HMAC-SHA256 Credential=${this.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeadersStr}, Signature=${signatureHex}`;
 
     return {
-      ...headers,
+      ...normalizedHeaders,
       Authorization: authorizationHeader,
     };
   }
@@ -207,7 +229,7 @@ export class S3SyncProvider implements SyncProvider {
 
     let res: Response;
     try {
-      res = await fetch(testUrl, { method: 'HEAD', headers });
+      res = await syncFetch(testUrl, { method: 'HEAD', headers, maxResponseBytes: MAX_SYNC_METADATA_BYTES });
     } catch (err) {
       throw new SyncError(syncErrorCodes.connectionFailed, `Cannot reach S3 endpoint: ${String(err)}`);
     }
@@ -244,10 +266,11 @@ export class S3SyncProvider implements SyncProvider {
 
     let vaultRes: Response;
     try {
-      vaultRes = await fetch(vaultUrl, {
+      vaultRes = await syncFetch(vaultUrl, {
         method: 'PUT',
         headers: vaultHeaders,
         body: encryptedBlob,
+        maxResponseBytes: MAX_SYNC_METADATA_BYTES,
       });
     } catch (err) {
       throw new SyncError(syncErrorCodes.uploadFailed, `Network error uploading vault to S3: ${String(err)}`);
@@ -273,10 +296,11 @@ export class S3SyncProvider implements SyncProvider {
 
     let metaRes: Response;
     try {
-      metaRes = await fetch(metaUrl, {
+      metaRes = await syncFetch(metaUrl, {
         method: 'PUT',
         headers: metaHeaders,
         body: metaBody,
+        maxResponseBytes: MAX_SYNC_METADATA_BYTES,
       });
     } catch (err) {
       throw new SyncError(syncErrorCodes.uploadFailed, `Network error uploading metadata to S3: ${String(err)}`);
@@ -300,7 +324,7 @@ export class S3SyncProvider implements SyncProvider {
 
     let res: Response;
     try {
-      res = await fetch(vaultUrl, { method: 'GET', headers });
+      res = await syncFetch(vaultUrl, { method: 'GET', headers, maxResponseBytes: MAX_SYNC_PAYLOAD_BYTES });
     } catch (err) {
       throw new SyncError(syncErrorCodes.downloadFailed, `Network error downloading vault from S3: ${String(err)}`);
     }
@@ -322,7 +346,7 @@ export class S3SyncProvider implements SyncProvider {
 
     let res: Response;
     try {
-      res = await fetch(metaUrl, { method: 'GET', headers });
+      res = await syncFetch(metaUrl, { method: 'GET', headers, maxResponseBytes: MAX_SYNC_METADATA_BYTES });
     } catch (err) {
       throw new SyncError(syncErrorCodes.downloadFailed, `Network error fetching metadata from S3: ${String(err)}`);
     }
@@ -335,14 +359,17 @@ export class S3SyncProvider implements SyncProvider {
     }
 
     try {
-      // O-21: the remote is untrusted, and `updatedAt` steers a destructive
-      // decision. An unparsable timestamp must never reach a comparison.
-      const validation = validateRemoteSyncMetadata(await res.json());
+      // O-20 + O-21: bound metadata.json to 1 MiB and validate schema before use.
+      const rawText = await readResponseTextBounded(res, MAX_SYNC_METADATA_BYTES, 'Remote sync metadata');
+      const validation = validateRemoteSyncMetadata(JSON.parse(rawText));
       if (!validation.ok) {
         return { kind: 'unreadable', detail: `metadata.json failed validation: ${validation.reason}` };
       }
       return { kind: 'ok', metadata: validation.metadata, etag: res.headers?.get?.('etag') ?? undefined };
     } catch (err) {
+      if (err instanceof SyncError && err.code === syncErrorCodes.remoteTooLarge) {
+        throw err;
+      }
       return {
         kind: 'unreadable',
         detail: `metadata.json is present but not parsable: ${err instanceof Error ? err.message : String(err)}`,
@@ -359,7 +386,7 @@ export class S3SyncProvider implements SyncProvider {
       return null;
     }
     try {
-      const res = await fetch(vaultUrl, { method: 'HEAD', headers });
+      const res = await syncFetch(vaultUrl, { method: 'HEAD', headers, maxResponseBytes: MAX_SYNC_METADATA_BYTES });
       if (!res.ok) return null;
       return res.headers?.get?.('etag') ?? null;
     } catch {

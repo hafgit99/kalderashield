@@ -4,10 +4,15 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
 import { S3SyncProvider } from './s3Provider';
 import type { S3SyncConfig} from './syncTypes';
 import { SyncError } from './syncTypes';
 import { getSyncAllowedOrigins } from '../airgapNetworkPolicy';
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
 
 describe('S3SyncProvider', () => {
   const validConfig: S3SyncConfig = {
@@ -140,5 +145,30 @@ describe('S3SyncProvider', () => {
     await expect(provider.getRemoteMetadata()).rejects.toThrow(/Failed to fetch metadata/);
 
     provider.dispose();
+  });
+
+  it('routes sync requests through the Rust sync_http_request IPC bridge on Tauri desktop runtimes', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce({
+      status: 200,
+      etag: '"rust-etag"',
+      body: '',
+    });
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} });
+    const provider = new S3SyncProvider({ ...validConfig, prefix: 'My%20Vault/Sub' });
+    try {
+      await expect(provider.testConnection()).resolves.toBeUndefined();
+      expect(invoke).toHaveBeenCalledWith('sync_http_request', {
+        request: expect.objectContaining({
+          method: 'HEAD',
+          url: expect.stringContaining('My%20Vault/Sub/metadata.json'),
+          headers: expect.objectContaining({
+            Authorization: expect.stringContaining('AWS4-HMAC-SHA256'),
+          }),
+        }),
+      });
+    } finally {
+      provider.dispose();
+      vi.unstubAllGlobals();
+    }
   });
 });

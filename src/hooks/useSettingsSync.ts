@@ -28,7 +28,9 @@ import {
   saveLastSyncTime
 } from '../lib/sync';
 import { getVaultItems, saveVaultItems } from '../lib/storage';
-import { withActiveBackupPassword } from '../lib/vaultSession';
+import { mergeImportedFolders, readFolderLibrary } from '../lib/folders';
+import { mergeImportedTags, readTagLibrary } from '../lib/tags';
+import { withActiveBackupPassword, withActiveVaultEncryptionKey } from '../lib/vaultSession';
 
 interface UseSettingsSyncOptions {
   onDatabaseChanged: () => void | Promise<void>;
@@ -89,7 +91,7 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
     let provider: WebDavSyncProvider | S3SyncProvider | null = null;
     try {
       if (syncProvider === 'webdav') {
-        const err = validateWebDavConfig({ url: syncUrl, username: syncUsername, password: syncPassword });
+        const err = validateWebDavConfig({ url: syncUrl, username: syncUsername, password: syncPassword }, t);
         if (err) { setSyncTestResult(`❌ ${err}`); return; }
         setSyncTestLoading(true);
         setSyncTestResult(null);
@@ -103,7 +105,7 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
           bucket: s3Bucket,
           accessKeyId: s3AccessKeyId,
           secretAccessKey: s3SecretAccessKey,
-        });
+        }, t);
         if (err) { setSyncTestResult(`❌ ${err}`); return; }
         setSyncTestLoading(true);
         setSyncTestResult(null);
@@ -133,7 +135,7 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
 
   const handleSyncSave = useCallback(async () => {
     if (syncProvider === 'webdav') {
-      const err = validateWebDavConfig({ url: syncUrl, username: syncUsername, password: syncPassword });
+      const err = validateWebDavConfig({ url: syncUrl, username: syncUsername, password: syncPassword }, t);
       if (err) { setSyncMessage(`Error: ${err}`); return; }
       const saved = await withActiveBackupPassword(async (backupPassword) => {
         await saveSyncConfig({ type: 'webdav', url: syncUrl, username: syncUsername, password: syncPassword }, backupPassword);
@@ -148,7 +150,7 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
         bucket: s3Bucket,
         accessKeyId: s3AccessKeyId,
         secretAccessKey: s3SecretAccessKey,
-      });
+      }, t);
       if (err) { setSyncMessage(`Error: ${err}`); return; }
       const saved = await withActiveBackupPassword(async (backupPassword) => {
         await saveSyncConfig({
@@ -171,13 +173,17 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
   const handleSyncDisable = useCallback(async () => {
     clearSyncConfig();
     setSyncProvider('disabled');
-    setSyncUrl(''); setSyncUsername(''); setSyncPassword('');
-    setS3Endpoint(''); setS3Region(''); setS3Bucket(''); setS3AccessKeyId(''); setS3SecretAccessKey('');
-    setSyncMessage(null); setSyncStatus('idle');
-    clearSyncConfig();
-    setSyncProvider('disabled');
-    setSyncUrl(''); setSyncUsername(''); setSyncPassword('');
-    setSyncMessage(null); setSyncStatus('idle');
+    setSyncUrl('');
+    setSyncUsername('');
+    setSyncPassword('');
+    setS3Endpoint('');
+    setS3Region('');
+    setS3Bucket('');
+    setS3AccessKeyId('');
+    setS3SecretAccessKey('');
+    setSyncMessage(null);
+    setSyncTestResult(null);
+    setSyncStatus('idle');
   }, []);
 
   const handleSyncNow = useCallback(async () => {
@@ -188,12 +194,24 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
       // O-21: the provider holds an air-gap whitelist lease. Declared outside the
       // try so the early-return path releases it too.
       let provider: SyncProvider | null = null;
+      const vaultKeyCopy = await withActiveVaultEncryptionKey((key) => new Uint8Array(key));
       try {
         const config = await loadSyncConfig(backupPassword);
+        if (config && config.type === 'disabled') {
+          setSyncStatus('error');
+          setSyncMessage(t('settings.sync.error.notSaved'));
+          return;
+        }
         provider = createSyncProvider(config);
         if (!provider) { setSyncStatus('error'); setSyncMessage(t('settings.sync.error.connection')); return; }
         const localItems = await getVaultItems();
-        const result = await performSync(provider, localItems, backupPassword);
+        const localFolders = readFolderLibrary();
+        const localTags = readTagLibrary();
+        const result = await performSync(provider, localItems, backupPassword, {
+          vaultEncryptionKey: vaultKeyCopy ?? undefined,
+          ...(localFolders.length > 0 ? { localFolders } : {}),
+          ...(localTags.length > 0 ? { localTags } : {}),
+        });
         if (result.status === 'error') {
           setSyncStatus('error');
           const code = result.error?.code ?? '';
@@ -203,6 +221,12 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
           else if (code.includes('checksum')) setSyncMessage(t('settings.sync.error.checksum'));
           else setSyncMessage(result.error?.message ?? t('settings.sync.error.connection'));
         } else {
+          if (result.mergedFolders && result.mergedFolders.length > 0) {
+            mergeImportedFolders(result.mergedFolders);
+          }
+          if (result.mergedTags && result.mergedTags.length > 0) {
+            mergeImportedTags(result.mergedTags);
+          }
           if (result.mergedItems && result.mergedItems.length > 0) {
             await saveVaultItems(result.mergedItems);
             await onDatabaseChanged();
@@ -220,6 +244,7 @@ export function useSettingsSync({ onDatabaseChanged }: UseSettingsSyncOptions) {
         const msg = e instanceof Error ? e.message : String(e || '');
         setSyncMessage(msg || t('settings.sync.error.connection'));
       } finally {
+        vaultKeyCopy?.fill(0);
         // Without this, every "Sync now" left a permanent network exemption for
         // the configured origin.
         provider?.dispose?.();

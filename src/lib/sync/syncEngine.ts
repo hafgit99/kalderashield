@@ -5,6 +5,7 @@
 
 import type { VaultItem } from '../../types';
 import { encryptDataWithPasswordSecure, decryptDataWithPasswordSecure } from '../encryption';
+import { exportPasskeysForEncryptedBackup, importPasskeysFromEncryptedBackup } from '../passkey';
 import { secureRandomToken } from '../random';
 import type {
   SyncProvider,
@@ -13,29 +14,74 @@ import type {
   SyncRemoteMetadata,
   SyncConflictItem,
 } from './syncTypes';
-import { SyncError, syncErrorCodes } from './syncTypes';
-import { validateRemoteSyncMetadata } from './syncTypes';
+import { MAX_SYNC_ITEMS, SyncError, syncErrorCodes, validateRemoteSyncMetadata } from './syncTypes';
 import { sha256HexOfString } from '../common/sha256';
 
 const VAULT_VERSION = '7.0';
 const SYNC_PAYLOAD_SCHEMA_V2 = 'kalderashield-sync-v2';
 const SYNC_GENERATION_STORAGE_KEY = 'KalderaShield_sync_generation';
+const SYNC_LAST_CHECKSUM_STORAGE_KEY = 'KalderaShield_sync_last_checksum';
 
 interface AuthenticatedSyncPayloadV2 {
   schema: typeof SYNC_PAYLOAD_SCHEMA_V2;
   syncGeneration: number;
   deviceId: string;
   items: VaultItem[];
+  folders?: unknown[];
+  tags?: unknown[];
 }
 
 interface ParsedSyncEnvelopeMetadata {
   syncGeneration?: number;
   deviceId?: string;
+  folders?: unknown[];
+  tags?: unknown[];
 }
 
 export interface PerformSyncOptions {
   /** Override minimum accepted generation floor (defaults to locally persisted generation). */
   lastVerifiedGeneration?: number;
+  /** Active vault encryption key used to export/import software passkeys portably across devices. */
+  vaultEncryptionKey?: Uint8Array | null;
+  /** Local folder library to include in the encrypted sync envelope. */
+  localFolders?: unknown[];
+  /** Local tag library to include in the encrypted sync envelope. */
+  localTags?: unknown[];
+}
+
+function getLastSyncChecksum(): string | null {
+  const store = typeof localStorage !== 'undefined' ? localStorage : null;
+  return store?.getItem(SYNC_LAST_CHECKSUM_STORAGE_KEY) ?? null;
+}
+
+function setLastSyncChecksum(checksum: string): void {
+  const store = typeof localStorage !== 'undefined' ? localStorage : null;
+  try {
+    store?.setItem(SYNC_LAST_CHECKSUM_STORAGE_KEY, checksum);
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function sanitizeSyncedVaultItems(rawItems: unknown[]): VaultItem[] {
+  if (rawItems.length > MAX_SYNC_ITEMS) {
+    throw new SyncError(
+      syncErrorCodes.remoteTooLarge,
+      `Remote vault contains ${rawItems.length} items, exceeding the ${MAX_SYNC_ITEMS}-item limit.`,
+    );
+  }
+  const valid: VaultItem[] = [];
+  for (const candidate of rawItems) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      throw new SyncError(syncErrorCodes.invalidEnvelope, 'Remote vault contains a non-object item.');
+    }
+    const item = candidate as Partial<VaultItem>;
+    if (typeof item.id !== 'string' || item.id.trim().length === 0) {
+      throw new SyncError(syncErrorCodes.invalidEnvelope, 'Remote vault item is missing a valid id.');
+    }
+    valid.push(candidate as VaultItem);
+  }
+  return valid;
 }
 
 function getLastSyncGeneration(): number {
@@ -82,6 +128,7 @@ export async function buildSyncEnvelope(
   items: VaultItem[],
   masterPassword: string,
   syncGeneration = 1,
+  extras?: { folders?: unknown[]; tags?: unknown[] },
 ): Promise<{ encryptedBlob: string; metadata: SyncMetadata }> {
   const deviceId = getOrCreateDeviceId();
   const normalizedGen = Number.isInteger(syncGeneration) && syncGeneration >= 1 ? syncGeneration : 1;
@@ -90,6 +137,8 @@ export async function buildSyncEnvelope(
     syncGeneration: normalizedGen,
     deviceId,
     items,
+    ...(extras?.folders && extras.folders.length > 0 ? { folders: extras.folders } : {}),
+    ...(extras?.tags && extras.tags.length > 0 ? { tags: extras.tags } : {}),
   };
   const payload = JSON.stringify(v2Payload);
   const encryptedBlob = await encryptDataWithPasswordSecure(payload, masterPassword);
@@ -144,8 +193,9 @@ export async function parseSyncEnvelope(
   }
 
   if (Array.isArray(parsed)) {
+    const validated = sanitizeSyncedVaultItems(parsed);
     onMetadata?.({});
-    return parsed as VaultItem[];
+    return validated;
   }
 
   if (
@@ -155,14 +205,17 @@ export async function parseSyncEnvelope(
     && Array.isArray((parsed as Partial<AuthenticatedSyncPayloadV2>).items)
   ) {
     const envelope = parsed as AuthenticatedSyncPayloadV2;
+    const validated = sanitizeSyncedVaultItems(envelope.items);
     const gen = Number.isInteger(envelope.syncGeneration) && envelope.syncGeneration >= 1
       ? envelope.syncGeneration
       : undefined;
     onMetadata?.({
       syncGeneration: gen,
       deviceId: typeof envelope.deviceId === 'string' ? envelope.deviceId : undefined,
+      folders: Array.isArray(envelope.folders) ? envelope.folders : undefined,
+      tags: Array.isArray(envelope.tags) ? envelope.tags : undefined,
     });
-    return envelope.items;
+    return validated;
   }
 
   throw new SyncError(syncErrorCodes.invalidEnvelope, 'Remote vault contains unrecognized payload structure');
@@ -274,7 +327,11 @@ export async function performSync(
   let mergedCount = 0;
   let conflicts: SyncConflictItem[] = [];
   let conflictCopies: VaultItem[] = [];
+  let mergedFolders: unknown[] | undefined = options?.localFolders;
+  let mergedTags: unknown[] | undefined = options?.localTags;
   let observedRemoteGeneration = 0;
+  const localDeviceId = getOrCreateDeviceId();
+  const lastSyncedChecksum = getLastSyncChecksum();
 
   // Y-11: the remote exists but we cannot read its descriptor. Its vault blob
   // may be intact AND newer than local — a metadata write can fail while the
@@ -317,7 +374,18 @@ export async function performSync(
       };
     }
     const remoteMetadata = validation.metadata;
-    observedETag = remoteState.etag;
+    // Fetch the vault blob's own ETag when the provider supports HEAD on the
+    // vault object — using metadata.json's ETag on vault.ks PUT causes HTTP 412
+    // Precondition Failed on every second sync on real WebDAV/S3 servers.
+    if (typeof provider.getVaultETag === 'function') {
+      try {
+        observedETag = (await provider.getVaultETag()) ?? undefined;
+      } catch {
+        observedETag = undefined;
+      }
+    } else {
+      observedETag = remoteState.etag;
+    }
 
     // F-06 pre-download rollback check on remote metadata generation.
     if (
@@ -336,9 +404,10 @@ export async function performSync(
     }
 
     // Determine whether the remote snapshot is worth downloading.
-    // We always download when we have no local data yet, when the remote
-    // metadata timestamp is strictly newer than our newest local item, or when
-    // the remote carries a newer sync generation.
+    // Download when we have no local data yet, when the remote timestamp is
+    // strictly newer, when the remote carries a newer sync generation, OR when
+    // another device uploaded a snapshot whose checksum we have not merged yet
+    // (protects against cross-device clock skew overwriting peer additions).
     const latestLocalTs = localItems.reduce((max, i) => {
       const ts = new Date(i.updatedAt ?? i.createdAt).getTime();
       return ts > max ? ts : max;
@@ -347,8 +416,11 @@ export async function performSync(
     const remoteHasNewerGeneration =
       typeof remoteMetadata.syncGeneration === 'number'
       && remoteMetadata.syncGeneration > minAllowedGeneration;
+    const remoteFromOtherDeviceUnseen =
+      remoteMetadata.deviceId !== localDeviceId
+      && remoteMetadata.checksum !== lastSyncedChecksum;
 
-    if (remoteTs > latestLocalTs || localItems.length === 0 || remoteHasNewerGeneration) {
+    if (remoteTs > latestLocalTs || localItems.length === 0 || remoteHasNewerGeneration || remoteFromOtherDeviceUnseen) {
       let remoteBlob: string | null;
       try {
         remoteBlob = await provider.downloadVault();
@@ -406,12 +478,29 @@ export async function performSync(
           };
         }
 
+        // Re-wrap portable software passkeys from the remote device under THIS
+        // device's active vault encryption key before merging into local storage.
+        if (options?.vaultEncryptionKey) {
+          remoteItems = await importPasskeysFromEncryptedBackup(remoteItems, options.vaultEncryptionKey);
+        }
+
         observedRemoteGeneration = authenticatedMeta.syncGeneration ?? remoteMetadata.syncGeneration ?? 0;
 
+        if (authenticatedMeta.folders && authenticatedMeta.folders.length > 0) {
+          mergedFolders = [...(options?.localFolders ?? []), ...authenticatedMeta.folders];
+        }
+        if (authenticatedMeta.tags && authenticatedMeta.tags.length > 0) {
+          mergedTags = [...(options?.localTags ?? []), ...authenticatedMeta.tags];
+        }
+
         const resolved = resolveLWWConflicts(localItems, remoteItems);
-        mergedItems = resolved.merged;
         conflicts = resolved.conflicts;
         conflictCopies = resolved.conflictCopies;
+        // Include non-destructive conflict copies in mergedItems so they are
+        // persisted locally AND uploaded to remote instead of being discarded.
+        mergedItems = conflictCopies.length > 0
+          ? [...resolved.merged, ...conflictCopies]
+          : resolved.merged;
         mergedCount = mergedItems.length - localItems.length;
       }
     } else if (typeof remoteMetadata.syncGeneration === 'number') {
@@ -421,11 +510,19 @@ export async function performSync(
 
   const nextGeneration = Math.max(minAllowedGeneration, observedRemoteGeneration) + 1;
 
-  // Upload the merged state
+  // Upload the merged state (with portable passkey JWKs inside the AEAD ciphertext when vault key is provided)
   let encryptedBlob: string;
   let metadata: SyncMetadata;
   try {
-    ({ encryptedBlob, metadata } = await buildSyncEnvelope(mergedItems, masterPassword, nextGeneration));
+    const itemsForUpload = options?.vaultEncryptionKey
+      ? await exportPasskeysForEncryptedBackup(mergedItems, options.vaultEncryptionKey)
+      : mergedItems;
+    ({ encryptedBlob, metadata } = await buildSyncEnvelope(
+      itemsForUpload,
+      masterPassword,
+      nextGeneration,
+      { folders: mergedFolders, tags: mergedTags },
+    ));
   } catch (err) {
     return {
       status: 'error',
@@ -444,6 +541,7 @@ export async function performSync(
   }
 
   setLastSyncGeneration(nextGeneration);
+  setLastSyncChecksum(metadata.checksum);
 
   // Y-11: the ETag of the object we just wrote, so the next sync can tell
   // "still my snapshot" from "another device replaced it". Best effort — a
@@ -463,6 +561,8 @@ export async function performSync(
     mergedCount,
     conflicts,
     ...(conflictCopies.length > 0 ? { conflictCopies } : {}),
+    ...(mergedFolders && mergedFolders.length > 0 ? { mergedFolders } : {}),
+    ...(mergedTags && mergedTags.length > 0 ? { mergedTags } : {}),
     syncGeneration: nextGeneration,
     mergedItems,
     uploadedETag,
