@@ -32,6 +32,7 @@ import { validateBackupPayload } from './backupValidation';
 import { importAttachments, type AttachmentBackupRecord } from './attachments';
 import { disableBiometric, hydrateBiometric } from './biometric';
 import { disableRecoveryKey } from './recoveryKey';
+import { rotateSyncConfigPassword } from './sync/syncConfigStorage';
 import { createDemoItems } from './storageDemoItems';
 import {
   getSecureStorageItem,
@@ -638,6 +639,14 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
     // compromised 24-word phrase still unlocks the vault while the UI
     // claims recovery is active.
     disableRecoveryKey();
+    await rotateSyncConfigPassword(oldPassword, newPassword).catch((syncRotateErr) => {
+      logSecurityEvent(
+        securityEventCodes.securityLegacyCryptoWarning,
+        'Cloud sync configuration could not be re-encrypted during master password rotation.',
+        'warning',
+        { error: syncRotateErr instanceof Error ? syncRotateErr.message : String(syncRotateErr) },
+      );
+    });
     setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
   } else {
     const oldCredential = await resolveCurrentVaultCredential(oldPassword);
@@ -692,6 +701,14 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
     disableBiometric();
     // Y-3: see desktop branch — rotate-out stale recovery bundles.
     disableRecoveryKey();
+    await rotateSyncConfigPassword(oldPassword, newPassword).catch((syncRotateErr) => {
+      logSecurityEvent(
+        securityEventCodes.securityLegacyCryptoWarning,
+        'Cloud sync configuration could not be re-encrypted during master password rotation.',
+        'warning',
+        { error: syncRotateErr instanceof Error ? syncRotateErr.message : String(syncRotateErr) },
+      );
+    });
     setIndexedDbItemSync(STORAGE_KEYS.IS_SET_UP, 'true');
   }
 }

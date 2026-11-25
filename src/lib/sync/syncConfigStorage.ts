@@ -52,11 +52,25 @@ interface StoredSyncConfigEnvelopeV1 {
 
 interface StoredSyncConfigEnvelopeV2 {
   version: 2;
+  aadVersion?: 1;
   payload: WebCryptoAesGcmPayload;
   kdf: SyncConfigKdfParams;
 }
 
 type StoredSyncConfigEnvelope = StoredSyncConfigEnvelopeV1 | StoredSyncConfigEnvelopeV2;
+
+function buildSyncConfigAad(kdf: SyncConfigKdfParams): Uint8Array {
+  const canonical = [
+    'kalderashield-sync-config-aad-v1',
+    'version=2',
+    `salt=${kdf.salt}`,
+    `mem=${kdf.memoryKiB}`,
+    `iter=${kdf.iterations}`,
+    `par=${kdf.parallelism}`,
+    `len=${kdf.hashLength}`,
+  ].join('|');
+  return new TextEncoder().encode(canonical);
+}
 
 async function deriveConfigKey(masterPassword: string, kdf: SyncConfigKdfParams): Promise<Uint8Array> {
   return deriveArgon2idKey(masterPassword, kdf.salt, {
@@ -124,9 +138,19 @@ export async function saveSyncConfig(config: SyncConfig, masterPassword: string)
 
   const kdf = createKdfParams();
   const key = await deriveConfigKey(masterPassword, kdf);
-  const payload = await webCryptoAesGcmEncrypt(JSON.stringify(config), key, generateSafeIv());
+  let payload: WebCryptoAesGcmPayload;
+  try {
+    payload = await webCryptoAesGcmEncrypt(
+      JSON.stringify(config),
+      key,
+      generateSafeIv(),
+      buildSyncConfigAad(kdf),
+    );
+  } finally {
+    key.fill(0);
+  }
 
-  const envelope: StoredSyncConfigEnvelopeV2 = { version: 2, payload, kdf };
+  const envelope: StoredSyncConfigEnvelopeV2 = { version: 2, aadVersion: 1, payload, kdf };
   localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(envelope));
 }
 
@@ -148,12 +172,15 @@ export async function loadSyncConfig(masterPassword: string): Promise<SyncConfig
   }
 
   if (envelope.version === 2) {
-    const kdf = sanitizeKdfParams((envelope as StoredSyncConfigEnvelopeV2).kdf);
-    if (!kdf || !envelope.payload) return { type: 'disabled' };
+    const v2 = envelope as StoredSyncConfigEnvelopeV2;
+    const kdf = sanitizeKdfParams(v2.kdf);
+    if (!kdf || !v2.payload) return { type: 'disabled' };
 
+    let key: Uint8Array | null = null;
     try {
-      const key = await deriveConfigKey(masterPassword, kdf);
-      const decrypted = await webCryptoAesGcmDecrypt(envelope.payload, key);
+      key = await deriveConfigKey(masterPassword, kdf);
+      const aad = v2.aadVersion === 1 ? buildSyncConfigAad(kdf) : undefined;
+      const decrypted = await webCryptoAesGcmDecrypt(v2.payload, key, aad);
       return JSON.parse(decrypted) as SyncConfig;
     } catch {
       // Wrong password, tampered KDF parameters, or corrupt data
@@ -161,13 +188,16 @@ export async function loadSyncConfig(masterPassword: string): Promise<SyncConfig
         syncErrorCodes.authFailed,
         'Failed to decrypt sync configuration — wrong master password or corrupt data.',
       );
+    } finally {
+      key?.fill(0);
     }
   }
 
   if (envelope.version === 1 && envelope.payload) {
     let decrypted: string;
+    let legacyKey: Uint8Array | null = null;
     try {
-      const legacyKey = await deriveConfigKey(masterPassword, {
+      legacyKey = await deriveConfigKey(masterPassword, {
         salt: LEGACY_V1_SALT_HEX,
         memoryKiB: LEGACY_V1_KDF.memoryKiB ?? 16 * 1024,
         iterations: LEGACY_V1_KDF.iterations ?? 2,
@@ -180,17 +210,27 @@ export async function loadSyncConfig(masterPassword: string): Promise<SyncConfig
         syncErrorCodes.authFailed,
         'Failed to decrypt sync configuration — wrong master password or corrupt data.',
       );
+    } finally {
+      legacyKey?.fill(0);
     }
 
-    // Transparent upgrade: re-encrypt with a random salt and the full KDF profile.
+    // Transparent upgrade: re-encrypt with a random salt, AAD, and the full KDF profile.
+    let upgradedKey: Uint8Array | null = null;
     try {
       const kdf = createKdfParams();
-      const key = await deriveConfigKey(masterPassword, kdf);
-      const payload = await webCryptoAesGcmEncrypt(decrypted, key, generateSafeIv());
-      const upgraded: StoredSyncConfigEnvelopeV2 = { version: 2, payload, kdf };
+      upgradedKey = await deriveConfigKey(masterPassword, kdf);
+      const payload = await webCryptoAesGcmEncrypt(
+        decrypted,
+        upgradedKey,
+        generateSafeIv(),
+        buildSyncConfigAad(kdf),
+      );
+      const upgraded: StoredSyncConfigEnvelopeV2 = { version: 2, aadVersion: 1, payload, kdf };
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(upgraded));
     } catch {
       // Upgrade is best-effort; the legacy envelope stays readable.
+    } finally {
+      upgradedKey?.fill(0);
     }
 
     return JSON.parse(decrypted) as SyncConfig;
@@ -199,10 +239,29 @@ export async function loadSyncConfig(masterPassword: string): Promise<SyncConfig
   return { type: 'disabled' };
 }
 
-/** Remove all sync configuration from local storage. */
+/**
+ * Re-encrypts stored cloud sync configuration under a new master password
+ * during master-password rotation so WebDAV/S3 credentials remain accessible.
+ *
+ * Returns `true` if a saved sync config was rotated, `false` if none was stored.
+ */
+export async function rotateSyncConfigPassword(
+  oldMasterPassword: string,
+  newMasterPassword: string,
+): Promise<boolean> {
+  if (!hasSyncConfig()) return false;
+  const config = await loadSyncConfig(oldMasterPassword);
+  if (config.type === 'disabled') return false;
+  await saveSyncConfig(config, newMasterPassword);
+  return true;
+}
+
+/** Remove all sync configuration and persisted generation/checksum state from local storage. */
 export function clearSyncConfig(): void {
   localStorage.removeItem(CONFIG_STORAGE_KEY);
   localStorage.removeItem('KalderaShield_sync_last_at');
+  localStorage.removeItem('KalderaShield_sync_generation');
+  localStorage.removeItem('KalderaShield_sync_last_checksum');
 }
 
 /** Persist the timestamp of the last successful sync run. */
@@ -220,37 +279,55 @@ export function hasSyncConfig(): boolean {
   return localStorage.getItem(CONFIG_STORAGE_KEY) !== null;
 }
 
+type SyncValidationKey =
+  | 'settings.sync.validation.urlRequired'
+  | 'settings.sync.validation.httpsRequired'
+  | 'settings.sync.validation.invalidUrl'
+  | 'settings.sync.validation.usernameRequired'
+  | 'settings.sync.validation.passwordRequired'
+  | 'settings.sync.validation.endpointRequired'
+  | 'settings.sync.validation.invalidEndpoint'
+  | 'settings.sync.validation.bucketRequired'
+  | 'settings.sync.validation.accessKeyRequired'
+  | 'settings.sync.validation.secretKeyRequired';
+
+type SyncTranslate = (key: SyncValidationKey) => string;
+
 /** Validates a WebDAV config object for completeness before saving. */
-export function validateWebDavConfig(cfg: Partial<WebDavSyncConfig>): string | null {
-  if (!cfg.url || !cfg.url.trim()) return 'URL gereklidir.';
+export function validateWebDavConfig(cfg: Partial<WebDavSyncConfig>, t?: SyncTranslate): string | null {
+  if (!cfg.url || !cfg.url.trim()) return t ? t('settings.sync.validation.urlRequired') : 'URL gereklidir.';
   try {
     const parsed = new URL(cfg.url);
     const isLocal = isPrivateOrLoopbackHostname(parsed.hostname);
     if (parsed.protocol !== 'https:' && !isLocal) {
-      return 'Güvenlik için HTTPS gereklidir (yerel ağ adresleri muaf tutulur).';
+      return t
+        ? t('settings.sync.validation.httpsRequired')
+        : 'Güvenlik için HTTPS gereklidir (yerel ağ adresleri muaf tutulur).';
     }
   } catch {
-    return 'Geçersiz URL formatı.';
+    return t ? t('settings.sync.validation.invalidUrl') : 'Geçersiz URL formatı.';
   }
-  if (!cfg.username || !cfg.username.trim()) return 'Kullanıcı adı gereklidir.';
-  if (!cfg.password || !cfg.password.trim()) return 'Şifre veya uygulama token gereklidir.';
+  if (!cfg.username || !cfg.username.trim()) return t ? t('settings.sync.validation.usernameRequired') : 'Kullanıcı adı gereklidir.';
+  if (!cfg.password || !cfg.password.trim()) return t ? t('settings.sync.validation.passwordRequired') : 'Şifre veya uygulama token gereklidir.';
   return null;
 }
 
 /** Validates an S3 config object for completeness before saving. */
-export function validateS3Config(cfg: Partial<S3SyncConfig>): string | null {
-  if (!cfg.endpoint || !cfg.endpoint.trim()) return 'S3 Endpoint URL gereklidir.';
+export function validateS3Config(cfg: Partial<S3SyncConfig>, t?: SyncTranslate): string | null {
+  if (!cfg.endpoint || !cfg.endpoint.trim()) return t ? t('settings.sync.validation.endpointRequired') : 'S3 Endpoint URL gereklidir.';
   try {
     const parsed = new URL(cfg.endpoint);
     const isLocal = isPrivateOrLoopbackHostname(parsed.hostname);
     if (parsed.protocol !== 'https:' && !isLocal) {
-      return 'Güvenlik için HTTPS gereklidir (yerel ağ adresleri muaf tutulur).';
+      return t
+        ? t('settings.sync.validation.httpsRequired')
+        : 'Güvenlik için HTTPS gereklidir (yerel ağ adresleri muaf tutulur).';
     }
   } catch {
-    return 'Geçersiz Endpoint URL formatı.';
+    return t ? t('settings.sync.validation.invalidEndpoint') : 'Geçersiz Endpoint URL formatı.';
   }
-  if (!cfg.bucket || !cfg.bucket.trim()) return 'Bucket adı gereklidir.';
-  if (!cfg.accessKeyId || !cfg.accessKeyId.trim()) return 'Access Key ID gereklidir.';
-  if (!cfg.secretAccessKey || !cfg.secretAccessKey.trim()) return 'Secret Access Key gereklidir.';
+  if (!cfg.bucket || !cfg.bucket.trim()) return t ? t('settings.sync.validation.bucketRequired') : 'Bucket adı gereklidir.';
+  if (!cfg.accessKeyId || !cfg.accessKeyId.trim()) return t ? t('settings.sync.validation.accessKeyRequired') : 'Access Key ID gereklidir.';
+  if (!cfg.secretAccessKey || !cfg.secretAccessKey.trim()) return t ? t('settings.sync.validation.secretKeyRequired') : 'Secret Access Key gereklidir.';
   return null;
 }
