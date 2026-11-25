@@ -2,6 +2,15 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.2.0 - Hardened Storage Migration Rekeying & Native Desktop/Android Storage Protection
+
+### Fixed & Hardened
+
+- **Prevented native-to-IndexedDB storage downgrade on Desktop and Android.** Blocked `migrateActiveVaultStorageToWaSqlite` and `useSettingsStorageMigration` on Tauri desktop runtimes (`wa-sqlite-desktop-native-storage-preferred`) alongside the existing Android guard so desktop vaults remain safely stored in the Rust-managed native `kalderashield.db` file with 64 MiB Argon2id instead of moving to WebView IndexedDB.
+- **Passkey re-wrapping across the migration salt boundary.** Updated `runVaultStorageMigration` to re-wrap embedded `passkeyPrivateKeyBundle` entries (`reWrapPasskeysInVaultItems`) from the source key to the newly minted target key before writing and verifying the migrated target repository, zeroizing both keys in `finally`.
+- **Atomic file attachment re-encryption during migration.** Updated `migrateActiveVaultStorageToWaSqlite` to re-encrypt vault-key-protected AES-GCM attachments from the pre-migration key to the promoted key via `reencryptAttachmentsForVaultKeyChange`, automatically rolling back the active backend marker and repository if attachment re-encryption fails.
+- **Dynamic Settings storage engine status card & 12-locale i18n polish.** Replaced static `"Current: OPFS" / "Target: wa-sqlite"` badges in `SettingsStorageMigrationCard` with live runtime/backend detection (read-only status badges on Desktop, Android, and browsers already using `wa-sqlite`; migration button shown only on legacy web OPFS vaults), corrected Turkish diacritics in `src/i18n/locales/tr.ts`, and synchronized all 12 locales and 2,533 unit tests.
+
 ## 7.1.1.0 - Hardened HIBP Rust IPC Bridge, Zero-External-Network WebView CSP & Offline Local HIBP DB
 
 ### Added
