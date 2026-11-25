@@ -51,7 +51,7 @@ export function validateBackupPayload(
   parsed: unknown,
   fileSizeBytes?: number,
   options: { fromUniversalImport?: boolean } = {},
-): { items: unknown[]; attachments: unknown[] } {
+): { items: unknown[]; attachments: unknown[]; folders: unknown[]; tags: unknown[] } {
   // 1. File size checks
   if (fileSizeBytes !== undefined && fileSizeBytes > MAX_BACKUP_FILE_SIZE) {
     throw new BackupValidationError(
@@ -67,6 +67,8 @@ export function validateBackupPayload(
   // 2. Normalize based on format: Array vs Envelope Object
   let items: unknown[] = [];
   let attachments: unknown[] = [];
+  let folders: unknown[] = [];
+  let tags: unknown[] = [];
 
   if (Array.isArray(parsed)) {
     // Legacy format: raw items array
@@ -83,6 +85,18 @@ export function validateBackupPayload(
         throw new BackupValidationError(validationErrorCodes.invalidBackupFormat, 'Backup attachments must be an array.');
       }
       attachments = envelope.attachments;
+    }
+    if (envelope.folders !== undefined) {
+      if (!Array.isArray(envelope.folders)) {
+        throw new BackupValidationError(validationErrorCodes.invalidBackupFormat, 'Backup folders must be an array.');
+      }
+      folders = envelope.folders;
+    }
+    if (envelope.tags !== undefined) {
+      if (!Array.isArray(envelope.tags)) {
+        throw new BackupValidationError(validationErrorCodes.invalidBackupFormat, 'Backup tags must be an array.');
+      }
+      tags = envelope.tags;
     }
   }
 
@@ -162,5 +176,5 @@ export function validateBackupPayload(
     }
   }
 
-  return { items, attachments };
+  return { items, attachments, folders, tags };
 }

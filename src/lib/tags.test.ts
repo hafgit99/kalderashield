@@ -19,6 +19,7 @@ import {
   TAG_LIBRARY_STORAGE_KEY,
   writeTagLibrary,
   readTagLibrary,
+  mergeImportedTags,
 } from './tags';
 import type { TagColorKey, TagDefinition } from '../types';
 
@@ -233,5 +234,18 @@ describe('Tags Library', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it('merges imported tags without overwriting existing slugs and skips invalid entries', () => {
+    const existing = createTag({ name: 'Finance', color: 'emerald' })!;
+    const merged = mergeImportedTags([
+      { id: 't-dup', name: 'Finance', slug: 'finance', color: 'rose', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 't-new', name: 'Travel', slug: 'travel', color: 'sky', createdAt: '2026-01-01T00:00:00.000Z' },
+      { invalid: true },
+    ]);
+
+    expect(merged.find((t) => t.slug === 'finance')?.color).toBe(existing.color);
+    expect(merged.find((t) => t.slug === 'travel')?.color).toBe('sky');
+    expect(merged).toHaveLength(2);
   });
 });

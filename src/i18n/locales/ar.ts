@@ -576,6 +576,7 @@ export const ar = {
   'settings.import.stage.mapping': 'تعيين الحقول...',
   'settings.import.stage.encrypting': 'التشفير والحفظ...',
   'settings.import.stage.saving': 'التشفير والحفظ...',
+  'settings.import.stage.attachments_saving': 'جارٍ حفظ المرفقات...',
   'settings.import.stage.syncing': 'جارٍ مزامنة قاعدة البيانات...',
   'settings.import.stage.finalizing': 'جارٍ الانتهاء...',
   'settings.import.descriptionPrefix': 'جنبا إلى جنب مع المشفرة الخاصة بك',

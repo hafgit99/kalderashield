@@ -576,6 +576,7 @@ export const ja = {
   'settings.import.stage.mapping': 'フィールドをマッピングしています...',
   'settings.import.stage.encrypting': '暗号化して保存しています...',
   'settings.import.stage.saving': '暗号化して保存しています...',
+  'settings.import.stage.attachments_saving': '添付ファイルを保存しています...',
   'settings.import.stage.syncing': 'データベースを同期しています...',
   'settings.import.stage.finalizing': '仕上げ中...',
   'settings.import.descriptionPrefix': 'あなた自身の暗号化されたものと一緒に',

@@ -5,6 +5,8 @@ import { bytesToBase64 } from './common/bytes';
 export interface DesktopImportFile {
   name: string;
   contents: string;
+  /** Optional base64 raw file bytes returned when the selected file is not valid UTF-8 (e.g. Windows-1254 or UTF-16 CSV). */
+  contentsBase64?: string | null;
 }
 
 declare global {
@@ -58,8 +60,24 @@ function isAndroidTauriRuntime(): boolean {
   return isDesktopRuntime() && isAndroidUserAgent();
 }
 
+function isNonWindowsDesktopUserAgent(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod|Windows|jsdom/i.test(ua)) return false;
+  return /\b(Macintosh|Mac OS X|X11|Linux)\b/i.test(ua);
+}
+
+function isWindowsOnlyNativeDialogError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return /only implemented for Windows desktop builds/i.test(message);
+}
+
 export function isDesktopFileDialogSupported(): boolean {
-  return isDesktopRuntime() && !isMobileUserAgent();
+  // Rust native_save_file_path / native_open_file_path currently wrap Win32
+  // GetSaveFileNameW / GetOpenFileNameW. On macOS and Linux desktop builds,
+  // fall back to WebView Blob downloads and <input type="file"> pickers
+  // instead of surfacing an unsupported-platform error.
+  return isDesktopRuntime() && !isMobileUserAgent() && !isNonWindowsDesktopUserAgent();
 }
 
 function isAndroidFileDialogSupported(): boolean {
@@ -233,7 +251,12 @@ export async function saveDesktopExportFile(defaultFilename: string, contents: s
     return saveAndroidTextFile(defaultFilename, contents);
   }
   if (!isDesktopFileDialogSupported()) return false;
-  return invoke<boolean>('save_export_file', { defaultFilename, contents });
+  try {
+    return await invoke<boolean>('save_export_file', { defaultFilename, contents });
+  } catch (error) {
+    if (isWindowsOnlyNativeDialogError(error)) return false;
+    throw error;
+  }
 }
 
 
@@ -244,10 +267,15 @@ export async function saveDesktopBinaryFile(defaultFilename: string, bytes: Uint
     return saveAndroidBase64File(defaultFilename, bytesToBase64(bytes));
   }
   if (!isDesktopFileDialogSupported()) return false;
-  return invoke<boolean>('save_binary_file', {
-    defaultFilename,
-    contentsBase64: bytesToBase64(bytes),
-  });
+  try {
+    return await invoke<boolean>('save_binary_file', {
+      defaultFilename,
+      contentsBase64: bytesToBase64(bytes),
+    });
+  } catch (error) {
+    if (isWindowsOnlyNativeDialogError(error)) return false;
+    throw error;
+  }
 }
 
 export async function openDesktopImportFile(): Promise<DesktopImportFile | null> {
@@ -261,5 +289,10 @@ export async function openDesktopImportFile(): Promise<DesktopImportFile | null>
     return openAndroidTextFile();
   }
   if (!isDesktopFileDialogSupported()) return null;
-  return invoke<DesktopImportFile | null>('open_import_file');
+  try {
+    return await invoke<DesktopImportFile | null>('open_import_file');
+  } catch (error) {
+    if (isWindowsOnlyNativeDialogError(error)) return null;
+    throw error;
+  }
 }

@@ -576,6 +576,7 @@ export const es = {
   'settings.import.stage.mapping': 'Campos de mapeo...',
   'settings.import.stage.encrypting': 'Cifrando y guardando...',
   'settings.import.stage.saving': 'Cifrando y guardando...',
+  'settings.import.stage.attachments_saving': 'Guardando archivos adjuntos...',
   'settings.import.stage.syncing': 'Sincronizando base de datos...',
   'settings.import.stage.finalizing': 'Finalizando...',
   'settings.import.descriptionPrefix': 'Junto a tu propio cifrado',

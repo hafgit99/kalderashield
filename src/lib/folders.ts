@@ -324,4 +324,57 @@ export function deleteFolder(id: string): VaultFolder[] {
   return next;
 }
 
+/**
+ * Merges validated folders from a backup envelope into the local folder
+ * library without overwriting existing user folders or introducing cycles.
+ */
+export function mergeImportedFolders(rawEntries: unknown[]): VaultFolder[] {
+  const existing = readRaw();
+  if (!Array.isArray(rawEntries) || rawEntries.length === 0) {
+    return existing;
+  }
+
+  const byId = new Map(existing.map((entry) => [entry.id, entry]));
+  const parsed: VaultFolder[] = [];
+  for (const raw of rawEntries) {
+    const entry = parseEntry(raw);
+    if (!entry || entry.id === ROOT_FOLDER_ID || byId.has(entry.id)) continue;
+    byId.set(entry.id, entry);
+    parsed.push(entry);
+  }
+
+  if (parsed.length === 0) {
+    return existing;
+  }
+
+  const combined = [...existing, ...parsed];
+  const validIds = new Set(combined.map((entry) => entry.id));
+  const sanitized: VaultFolder[] = [];
+  for (const entry of combined) {
+    const safeParentId =
+      entry.parentId && entry.parentId !== entry.id && validIds.has(entry.parentId)
+        ? entry.parentId
+        : null;
+    sanitized.push({ ...entry, parentId: safeParentId });
+  }
+
+  // Break any cycle introduced by imported data by promoting offending nodes to root.
+  const finalList = sanitized.map((entry) => {
+    const seen = new Set<string>([entry.id]);
+    let cursor = entry.parentId;
+    let depth = 0;
+    while (cursor) {
+      depth += 1;
+      if (seen.has(cursor) || depth >= MAX_FOLDER_DEPTH) {
+        return { ...entry, parentId: null };
+      }
+      seen.add(cursor);
+      cursor = sanitized.find((f) => f.id === cursor)?.parentId ?? null;
+    }
+    return entry;
+  }).slice(0, MAX_FOLDER_ENTRIES);
+
+  return folders.write(finalList);
+}
+
 

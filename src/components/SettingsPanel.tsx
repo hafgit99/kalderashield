@@ -152,6 +152,7 @@ export default function SettingsPanel({
     setCustomBackupPassword,
     backupSuccess,
     backupError,
+    isExporting,
     onExportEncrypted,
     onExportPlain,
     plainExportArmed,
@@ -358,6 +359,7 @@ export default function SettingsPanel({
             setCustomBackupPassword={setCustomBackupPassword}
             backupSuccess={backupSuccess}
             backupError={backupError}
+            isExporting={isExporting}
             onExportEncrypted={onExportEncrypted}
             onExportPlain={onExportPlain}
             plainExportArmed={plainExportArmed}

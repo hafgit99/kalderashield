@@ -297,5 +297,24 @@ describe('backupValidation', () => {
       const result = validateBackupPayload(payload);
       expect(result.attachments).toHaveLength(1);
     });
+
+    it('extracts optional folders and tags arrays and rejects non-array folders/tags', () => {
+      const valid = validateBackupPayload({
+        version: 7,
+        items: [{ id: '1', title: 'Item' }],
+        attachments: [],
+        folders: [{ id: 'f1', name: 'Work', parentId: null, color: 'blue', icon: 'folder', createdAt: '2026-01-01T00:00:00.000Z' }],
+        tags: [{ id: 't1', name: 'Finance', slug: 'finance', color: 'emerald', createdAt: '2026-01-01T00:00:00.000Z' }],
+      });
+      expect(valid.folders).toHaveLength(1);
+      expect(valid.tags).toHaveLength(1);
+
+      expect(() =>
+        validateBackupPayload({ version: 7, items: [{ id: '1', title: 'Item' }], folders: 'not-an-array' }),
+      ).toThrowError(/folders must be an array/);
+      expect(() =>
+        validateBackupPayload({ version: 7, items: [{ id: '1', title: 'Item' }], tags: { bad: true } }),
+      ).toThrowError(/tags must be an array/);
+    });
   });
 });

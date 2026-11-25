@@ -17,8 +17,12 @@ import { parseUniversalImport, decodeFileBuffer } from '../lib/importer';
 import type { AttachmentBackupRecord } from '../lib/attachments';
 import { exportAllAttachments, importAttachments, deleteAttachments } from '../lib/attachments';
 import { validateBackupPayload } from '../lib/backupValidation';
+import { base64ToBytes } from '../lib/common/bytes';
+import { mergeImportedFolders, readFolderLibrary } from '../lib/folders';
+import { exportPasskeysForEncryptedBackup, importPasskeysFromEncryptedBackup } from '../lib/passkey';
 import { secureRandomToken } from '../lib/random';
-import { withActiveBackupPassword } from '../lib/vaultSession';
+import { mergeImportedTags, readTagLibrary } from '../lib/tags';
+import { withActiveBackupPassword, withActiveVaultEncryptionKey } from '../lib/vaultSession';
 import { isNativeFileDialogSupported, openDesktopImportFile, saveDesktopExportFile } from '../lib/desktopFiles';
 import { deleteVaultItem, getVaultItems, saveVaultItems } from '../lib/storage';
 import { logSecurityEvent, securityEventCodes } from '../lib/securityEvents';
@@ -107,6 +111,9 @@ export function useSettingsBackupImport({
   const [customBackupPassword, setCustomBackupPassword] = useState('');
   const [backupSuccess, setBackupSuccess] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportInFlightRef = useRef(false);
+  const decryptInFlightRef = useRef(false);
   const [plainExportArmed, setPlainExportArmed] = useState(false);
   const [plainExportConfirmation, setPlainExportConfirmation] = useState('');
   const [holdProgress, setHoldProgress] = useState(0);
@@ -122,8 +129,28 @@ export function useSettingsBackupImport({
   const currentDateSlug = () => new Date().toISOString().split('T')[0];
 
   const downloadTextFile = (filename: string, contents: string) => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(contents);
     const downloadAnchor = document.createElement('a');
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      const mimeType = filename.toLowerCase().endsWith('.json')
+        ? 'application/json;charset=utf-8'
+        : 'application/octet-stream';
+      const blob = new Blob([contents], { type: mimeType });
+      const objectUrl = URL.createObjectURL(blob);
+      try {
+        downloadAnchor.setAttribute('href', objectUrl);
+        downloadAnchor.setAttribute('download', filename);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      } finally {
+        if (typeof URL.revokeObjectURL === 'function') {
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        }
+      }
+      return;
+    }
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(contents);
     downloadAnchor.setAttribute('href', dataStr);
     downloadAnchor.setAttribute('download', filename);
     document.body.appendChild(downloadAnchor);
@@ -198,6 +225,9 @@ export function useSettingsBackupImport({
   };
 
   const executePlainExport = async () => {
+    if (exportInFlightRef.current) return;
+    exportInFlightRef.current = true;
+    setIsExporting(true);
     try {
       logSecurityEvent(
         securityEventCodes.securityLegacyCryptoWarning,
@@ -207,10 +237,14 @@ export function useSettingsBackupImport({
       const latestItems = await getVaultItems();
       setItems(latestItems);
       const attachments = await exportAllAttachments();
+      const folders = readFolderLibrary();
+      const tags = readTagLibrary();
       const envelope = {
         version: 7,
         items: latestItems,
         attachments,
+        ...(folders.length > 0 ? { folders } : {}),
+        ...(tags.length > 0 ? { tags } : {}),
       };
       const filename = `KalderaShield_acik_yedek_${currentDateSlug()}.json`;
       const contents = JSON.stringify(envelope, null, 2);
@@ -227,6 +261,9 @@ export function useSettingsBackupImport({
       const errorMsg = err instanceof Error ? err.message : t('settings.export.defaultSaveError');
       setBackupError(`${t('settings.export.plainErrorPrefix')}: ${errorMsg}`);
       return;
+    } finally {
+      exportInFlightRef.current = false;
+      setIsExporting(false);
     }
     setPlainExportArmed(false);
     setPlainExportConfirmation('');
@@ -237,6 +274,7 @@ export function useSettingsBackupImport({
   // Generate an ENCRYPTED secure export download
   const handleExportEncrypted = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (exportInFlightRef.current) return;
     setBackupSuccess(null);
     setBackupError(null);
 
@@ -244,11 +282,18 @@ export function useSettingsBackupImport({
       try {
         const latestItems = await getVaultItems();
         setItems(latestItems);
+        const portableItems = await withActiveVaultEncryptionKey(async (vaultKey) =>
+          exportPasskeysForEncryptedBackup(latestItems, vaultKey),
+        ) ?? latestItems;
         const attachments = await exportAllAttachments();
+        const folders = readFolderLibrary();
+        const tags = readTagLibrary();
         const envelope = {
           version: 7,
-          items: latestItems,
+          items: portableItems,
           attachments,
+          ...(folders.length > 0 ? { folders } : {}),
+          ...(tags.length > 0 ? { tags } : {}),
         };
         const encryptedJsonString = await encryptDataWithPasswordSecure(JSON.stringify(envelope), passwordToUse);
         const filename = `KalderaShield_guvenli_yedek_${currentDateSlug()}.KalderaShield`;
@@ -270,6 +315,8 @@ export function useSettingsBackupImport({
       }
     };
 
+    exportInFlightRef.current = true;
+    setIsExporting(true);
     try {
       if (useMasterForBackup) {
         const exported = await withActiveBackupPassword(async (masterPassword) => {
@@ -294,6 +341,9 @@ export function useSettingsBackupImport({
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : t('settings.export.defaultSaveError');
       setBackupError(`${t('settings.export.encryptErrorPrefix')}: ${errorMsg}`);
+    } finally {
+      exportInFlightRef.current = false;
+      setIsExporting(false);
     }
   };
 
@@ -301,21 +351,23 @@ export function useSettingsBackupImport({
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error || new Error('Dosya okunamadÄ±.'));
+      reader.onerror = () => reject(reader.error || new Error('Dosya okunamadı.'));
       reader.readAsArrayBuffer(file);
     });
   };
 
-  const handleImportedItems = async (itemsList: Array<Partial<VaultItem>>, attachmentsList: AttachmentBackupRecord[] = []) => {
+  const handleImportedItems = async (
+    itemsList: Array<Partial<VaultItem>>,
+    attachmentsList: AttachmentBackupRecord[] = [],
+    foldersList: unknown[] = [],
+    tagsList: unknown[] = [],
+  ) => {
     const mappedItems: VaultItem[] = [];
     const nowStr = new Date().toISOString();
 
     // Snapshot of current SQLite items state to support transactional rollback
     const originalItems = await getVaultItems();
     const originalItemIds = new Set(originalItems.map(item => item.id));
-    const importedItemIds = itemsList.map(x => x.id).filter(Boolean) as string[];
-    const newlyInsertedIds = importedItemIds.filter(id => !originalItemIds.has(id));
-    const updatedOriginalItems = originalItems.filter(item => importedItemIds.includes(item.id));
 
     setImportState(prev => ({
       ...prev,
@@ -373,6 +425,7 @@ export function useSettingsBackupImport({
           passkeyTransports: x.passkeyTransports,
           passkeyCreatedAt: x.passkeyCreatedAt,
           passkeyLastUsedAt: x.passkeyLastUsedAt,
+          passkeyProviderKind: x.passkeyProviderKind,
           passkeyPrivateKeyBundle: x.passkeyPrivateKeyBundle,
 
           // Attachment fields
@@ -385,12 +438,23 @@ export function useSettingsBackupImport({
           tags: x.tags,
           folderId: x.folderId,
 
+          // Password History
+          passwordHistory: Array.isArray(x.passwordHistory) ? x.passwordHistory : undefined,
+
           // Trash / Deletion
           deleted: x.deleted,
           deletedAt: x.deletedAt,
         });
       }
     }
+
+    // Compute rollback sets AFTER IDs are assigned so ID-less imports (CSV / legacy JSON)
+    // are also cleanly removed if a subsequent step fails.
+    const mappedItemIds = new Set(mappedItems.map(item => item.id));
+    const newlyInsertedIds = mappedItems
+      .map(item => item.id)
+      .filter(id => !originalItemIds.has(id));
+    const updatedOriginalItems = originalItems.filter(item => mappedItemIds.has(item.id));
 
     let sqliteSuccess = false;
     let importedAttachmentIds: string[] = [];
@@ -425,10 +489,18 @@ export function useSettingsBackupImport({
           ...prev,
           status: 'attachments_saving',
           percent: 85,
-          message: 'Saving attachments...',
+          message: t('settings.import.stage.attachments_saving'),
         }));
         await maybeDelay(50);
         importedAttachmentIds = await importAttachments(attachmentsList);
+      }
+
+      // Merge portable folder and tag libraries after vault & attachment persistence succeed
+      if (foldersList.length > 0) {
+        mergeImportedFolders(foldersList);
+      }
+      if (tagsList.length > 0) {
+        mergeImportedTags(tagsList);
       }
 
     } catch (err: unknown) {
@@ -477,6 +549,7 @@ export function useSettingsBackupImport({
     if (e) {
       e.preventDefault();
     }
+    if (decryptInFlightRef.current) return;
 
     if (!decryptPasswordInput) {
       setImportState(prev => ({
@@ -487,6 +560,7 @@ export function useSettingsBackupImport({
     }
 
     const envelope = importState.pendingEnvelope;
+    decryptInFlightRef.current = true;
 
     setImportState({
       status: 'decrypting',
@@ -502,10 +576,20 @@ export function useSettingsBackupImport({
       const decryptedDataStr = await decryptDataWithPasswordSecure(JSON.stringify(envelope), decryptPasswordInput);
       const parsedEnvelope = JSON.parse(decryptedDataStr);
 
-      // Validate the backup schema (items and attachments)
-      const { items, attachments } = validateBackupPayload(parsedEnvelope);
+      // Validate the backup schema (items, attachments, folders, tags)
+      const { items, attachments, folders, tags } = validateBackupPayload(parsedEnvelope);
 
-      const importedNum = await handleImportedItems(items as Partial<VaultItem>[], attachments as AttachmentBackupRecord[]);
+      // Re-wrap any portable passkey private JWKs under this vault's active encryption key
+      const rewrappedItems = await withActiveVaultEncryptionKey(async (vaultKey) =>
+        importPasskeysFromEncryptedBackup(items as Partial<VaultItem>[], vaultKey),
+      ) ?? (items as Partial<VaultItem>[]);
+
+      const importedNum = await handleImportedItems(
+        rewrappedItems,
+        attachments as AttachmentBackupRecord[],
+        folders,
+        tags,
+      );
 
       setImportState(prev => ({
         ...prev,
@@ -539,6 +623,8 @@ export function useSettingsBackupImport({
         successMsg: null,
         pendingEnvelope: envelope,
       });
+    } finally {
+      decryptInFlightRef.current = false;
     }
   };
 
@@ -595,8 +681,13 @@ export function useSettingsBackupImport({
 
       if (parsedJson && parsedJson.version === 7 && parsedJson.items) {
         // Strict Validation
-        const { items, attachments } = validateBackupPayload(parsedJson, file.size);
-        const count = await handleImportedItems(items as Partial<VaultItem>[], attachments as AttachmentBackupRecord[]);
+        const { items, attachments, folders, tags } = validateBackupPayload(parsedJson, file.size);
+        const count = await handleImportedItems(
+          items as Partial<VaultItem>[],
+          attachments as AttachmentBackupRecord[],
+          folders,
+          tags,
+        );
 
         setImportState(prev => ({
           ...prev,
@@ -690,7 +781,10 @@ export function useSettingsBackupImport({
         try {
           const selectedFile = await openDesktopImportFile();
           if (selectedFile) {
-            executeImportPipeline(new File([selectedFile.contents], selectedFile.name));
+            const payloadPart: BlobPart = selectedFile.contentsBase64
+              ? (base64ToBytes(selectedFile.contentsBase64).buffer as ArrayBuffer)
+              : selectedFile.contents;
+            executeImportPipeline(new File([payloadPart], selectedFile.name));
           }
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : t('settings.import.fileSelectError');
@@ -744,8 +838,11 @@ export function useSettingsBackupImport({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      executeImportPipeline(e.target.files[0]);
+    const file = e.target.files?.[0];
+    // Reset input value so selecting the same file again after an error or cancel still triggers onChange
+    e.target.value = '';
+    if (file) {
+      executeImportPipeline(file);
     }
   };
 
@@ -756,6 +853,7 @@ export function useSettingsBackupImport({
     setCustomBackupPassword,
     backupSuccess,
     backupError,
+    isExporting,
     onExportEncrypted: handleExportEncrypted,
     onExportPlain: handleExportPlain,
     plainExportArmed,

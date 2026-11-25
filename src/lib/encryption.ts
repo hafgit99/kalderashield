@@ -95,16 +95,21 @@ export async function encryptDataWithPasswordSecure(rawData: string, password: s
   const kdf = 'Argon2id';
 
   const aesKey = await deriveArgon2idKey(password, saltHex, kdfParams);
-  const aad = buildBackupEnvelopeAad({
-    version,
-    kdf,
-    memoryKiB: kdfParams.memoryKiB,
-    iterations: kdfParams.iterations,
-    parallelism: kdfParams.parallelism,
-    hashLength: kdfParams.hashLength,
-    salt: saltHex,
-  });
-  const bundle = await webCryptoAesGcmEncrypt(rawData, aesKey, generateSafeIv(), aad);
+  let bundle: Awaited<ReturnType<typeof webCryptoAesGcmEncrypt>>;
+  try {
+    const aad = buildBackupEnvelopeAad({
+      version,
+      kdf,
+      memoryKiB: kdfParams.memoryKiB,
+      iterations: kdfParams.iterations,
+      parallelism: kdfParams.parallelism,
+      hashLength: kdfParams.hashLength,
+      salt: saltHex,
+    });
+    bundle = await webCryptoAesGcmEncrypt(rawData, aesKey, generateSafeIv(), aad);
+  } finally {
+    aesKey.fill(0);
+  }
 
   const encoder = new TextEncoder();
   const cipherBytes = encoder.encode(bundle.ciphertext);
@@ -186,27 +191,31 @@ export async function decryptDataWithPasswordSecure(envelopeJsonStr: string, pas
       throw error;
     }
 
-    const aad = parsed.aadVersion === 1
-      ? buildBackupEnvelopeAad({
-          version: String(parsed.version || ''),
-          kdf: String(parsed.kdf || ''),
-          memoryKiB: Number(params.memoryKiB),
-          iterations: Number(params.iterations),
-          parallelism: Number(params.parallelism ?? 1),
-          hashLength: Number(params.hashLength ?? 32),
-          salt,
-        })
-      : undefined;
+    try {
+      const aad = parsed.aadVersion === 1
+        ? buildBackupEnvelopeAad({
+            version: String(parsed.version || ''),
+            kdf: String(parsed.kdf || ''),
+            memoryKiB: Number(params.memoryKiB),
+            iterations: Number(params.iterations),
+            parallelism: Number(params.parallelism ?? 1),
+            hashLength: Number(params.hashLength ?? 32),
+            salt,
+          })
+        : undefined;
 
-    return webCryptoAesGcmDecrypt(
-      {
-        iv,
-        tag,
-        ciphertext: payload,
-      },
-      aesKey,
-      aad,
-    );
+      return await webCryptoAesGcmDecrypt(
+        {
+          iv,
+          tag,
+          ciphertext: payload,
+        },
+        aesKey,
+        aad,
+      );
+    } finally {
+      aesKey.fill(0);
+    }
   };
 
   try {

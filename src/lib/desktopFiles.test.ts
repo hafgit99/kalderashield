@@ -171,4 +171,40 @@ describe('desktopFiles', () => {
     await expect(saveDesktopBinaryFile('test.bin', new Uint8Array([1]))).rejects.toThrow('Bridge broken');
     await expect(openDesktopImportFile()).rejects.toThrow('Open bridge broken');
   });
+
+  it('falls back to browser download/input on macOS and Linux desktop builds where Win32 dialogs are absent', async () => {
+    (window as any).__TAURI_INTERNALS__ = {};
+
+    const uaSpy = vi.spyOn(navigator, 'userAgent', 'get');
+    try {
+      uaSpy.mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15');
+      expect(isDesktopFileDialogSupported()).toBe(false);
+      expect(isNativeFileDialogSupported()).toBe(false);
+      expect(await saveDesktopExportFile('backup.KalderaShield', '{}')).toBe(false);
+      expect(await openDesktopImportFile()).toBeNull();
+      expect(invoke).not.toHaveBeenCalled();
+
+      uaSpy.mockReturnValue('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15');
+      expect(isDesktopFileDialogSupported()).toBe(false);
+      expect(isNativeFileDialogSupported()).toBe(false);
+      expect(await saveDesktopExportFile('backup.KalderaShield', '{}')).toBe(false);
+      expect(await openDesktopImportFile()).toBeNull();
+      expect(invoke).not.toHaveBeenCalled();
+
+      // jsdom on Linux CI uses "(linux) ... jsdom/..." and should keep default desktop dialog behavior
+      uaSpy.mockReturnValue('Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/26.0.0');
+      expect(isDesktopFileDialogSupported()).toBe(true);
+    } finally {
+      uaSpy.mockRestore();
+    }
+  });
+
+  it('gracefully falls back if Rust reports Windows-only native dialog error', async () => {
+    (window as any).__TAURI_INTERNALS__ = {};
+    vi.mocked(invoke).mockRejectedValueOnce(new Error('native file dialogs are only implemented for Windows desktop builds'));
+    expect(await saveDesktopExportFile('backup.KalderaShield', '{}')).toBe(false);
+
+    vi.mocked(invoke).mockRejectedValueOnce(new Error('native file dialogs are only implemented for Windows desktop builds'));
+    expect(await openDesktopImportFile()).toBeNull();
+  });
 });

@@ -576,6 +576,7 @@ export const ko = {
   'settings.import.stage.mapping': '필드 매핑 중...',
   'settings.import.stage.encrypting': '암호화 및 저장 중...',
   'settings.import.stage.saving': '암호화 및 저장 중...',
+  'settings.import.stage.attachments_saving': '첨부 파일 저장 중...',
   'settings.import.stage.syncing': '데이터베이스 동기화 중...',
   'settings.import.stage.finalizing': '마무리 중...',
   'settings.import.descriptionPrefix': '자신의 암호화된 것과 함께',

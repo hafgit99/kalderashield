@@ -23,6 +23,7 @@ import {
   FolderLimitError,
   ROOT_FOLDER_ID,
   writeFolderLibrary,
+  mergeImportedFolders,
   readFolderLibrary,
 } from './folders';
 
@@ -183,5 +184,22 @@ describe('Folders Library', () => {
     expect(children[1]!.id).toBe('f-1');
 
     expect(deleteFolder(ROOT_FOLDER_ID)).toEqual([]);
+  });
+
+  it('merges imported folders while preserving existing entries and breaking cycles', () => {
+    const existing = createFolder({ name: 'Existing', parentId: null });
+    const merged = mergeImportedFolders([
+      { id: existing.id, name: 'Should Not Overwrite', parentId: null, color: 'rose', icon: 'folder', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'imp-1', name: 'Work', parentId: null, color: 'blue', icon: 'briefcase', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'imp-cycle-a', name: 'Cycle A', parentId: 'imp-cycle-b', color: 'rose', icon: 'folder', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'imp-cycle-b', name: 'Cycle B', parentId: 'imp-cycle-a', color: 'rose', icon: 'folder', createdAt: '2026-01-01T00:00:00.000Z' },
+      { bad: 'ignored' },
+    ]);
+
+    expect(merged.find((f) => f.id === existing.id)?.name).toBe('Existing');
+    expect(merged.find((f) => f.id === 'imp-1')?.name).toBe('Work');
+    // Cycle nodes must be promoted to root (parentId: null)
+    expect(merged.find((f) => f.id === 'imp-cycle-a')?.parentId).toBeNull();
+    expect(merged.find((f) => f.id === 'imp-cycle-b')?.parentId).toBeNull();
   });
 });

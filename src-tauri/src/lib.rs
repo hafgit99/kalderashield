@@ -28,9 +28,12 @@ struct ExtensionState {
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ImportFilePayload {
     name: String,
     contents: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    contents_base64: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -722,6 +725,36 @@ fn native_open_file_path() -> Result<Option<PathBuf>, String> {
     Err("native file dialogs are only implemented for Windows desktop builds".to_string())
 }
 
+fn write_export_file_atomic(path: &std::path::Path, contents: &[u8]) -> Result<(), String> {
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("export");
+    let tmp_path = path.with_file_name(format!(".{file_name}.tmp-{}", std::process::id()));
+
+    {
+        use std::io::Write;
+
+        let mut tmp_file = fs::File::create(&tmp_path)
+            .map_err(|error| format!("failed to create temporary export file: {error}"))?;
+        if let Err(error) = tmp_file.write_all(contents) {
+            let _ = fs::remove_file(&tmp_path);
+            return Err(format!("failed to write export file: {error}"));
+        }
+        if let Err(error) = tmp_file.sync_all() {
+            let _ = fs::remove_file(&tmp_path);
+            return Err(format!("failed to sync export file: {error}"));
+        }
+    }
+
+    if let Err(error) = replace_file_atomically(&tmp_path, path) {
+        let _ = fs::remove_file(&tmp_path);
+        return Err(format!("failed to finalize export file: {error}"));
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 fn save_export_file(default_filename: String, contents: String) -> Result<bool, String> {
     let Some(path) = native_save_file_path(
@@ -737,7 +770,7 @@ fn save_export_file(default_filename: String, contents: String) -> Result<bool, 
         return Ok(false);
     };
 
-    fs::write(path, contents).map_err(|error| format!("failed to save export file: {error}"))?;
+    write_export_file_atomic(&path, contents.as_bytes())?;
     Ok(true)
 }
 
@@ -756,7 +789,7 @@ fn save_binary_file(default_filename: String, contents_base64: String) -> Result
         .decode(contents_base64)
         .map_err(|error| format!("failed to decode binary file payload: {error}"))?;
 
-    fs::write(path, bytes).map_err(|error| format!("failed to save binary file: {error}"))?;
+    write_export_file_atomic(&path, &bytes)?;
     Ok(true)
 }
 
@@ -773,6 +806,7 @@ const MAX_IMPORT_FILE_BYTES: u64 = 25 * 1024 * 1024; // 25 MB
 /// `stat`-based pre-check rejects an oversized file first, so removing this
 /// bound leaves every file-based test green. A synthetic reader that yields
 /// more than the cap is the only way to exercise it.
+#[cfg(test)]
 fn read_stream_bounded(
     reader: &mut impl std::io::Read,
     max_bytes: u64,
@@ -803,6 +837,7 @@ fn read_stream_bounded(
 /// grows between the `stat` and the read — or a special file that reports a
 /// small length — still cannot exhaust memory. A `stat`-only check would be a
 /// TOCTOU hole.
+#[cfg(test)]
 fn read_text_file_bounded(
     path: &std::path::Path,
     max_bytes: u64,
@@ -823,20 +858,85 @@ fn read_text_file_bounded(
     read_stream_bounded(&mut file, max_bytes, label)
 }
 
+fn read_bytes_stream_bounded(
+    reader: &mut impl std::io::Read,
+    max_bytes: u64,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+
+    let mut limited = reader.take(max_bytes + 1);
+    let mut buffer = Vec::new();
+    limited
+        .read_to_end(&mut buffer)
+        .map_err(|error| format!("failed to read {label}: {error}"))?;
+
+    if buffer.len() as u64 > max_bytes {
+        return Err(format!(
+            "{label} exceeds the maximum allowed size of {} MB",
+            max_bytes / (1024 * 1024)
+        ));
+    }
+
+    Ok(buffer)
+}
+
+fn read_bytes_file_bounded(
+    path: &std::path::Path,
+    max_bytes: u64,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    if let Ok(metadata) = fs::metadata(path) {
+        if metadata.len() > max_bytes {
+            return Err(format!(
+                "{label} ({} MB) exceeds the maximum allowed size of {} MB",
+                metadata.len() / (1024 * 1024),
+                max_bytes / (1024 * 1024)
+            ));
+        }
+    }
+
+    let mut file =
+        fs::File::open(path).map_err(|error| format!("failed to open {label}: {error}"))?;
+    read_bytes_stream_bounded(&mut file, max_bytes, label)
+}
+
+fn read_import_file_payload(
+    path: &std::path::Path,
+    max_bytes: u64,
+) -> Result<ImportFilePayload, String> {
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("selected-import")
+        .to_string();
+    let bytes = read_bytes_file_bounded(path, max_bytes, "import file")?;
+
+    match String::from_utf8(bytes) {
+        Ok(contents) => Ok(ImportFilePayload {
+            name,
+            contents,
+            contents_base64: None,
+        }),
+        Err(utf8_err) => {
+            let raw_bytes = utf8_err.into_bytes();
+            let encoded = base64::engine::general_purpose::STANDARD.encode(&raw_bytes);
+            Ok(ImportFilePayload {
+                name,
+                contents: String::new(),
+                contents_base64: Some(encoded),
+            })
+        }
+    }
+}
+
 #[tauri::command]
 fn open_import_file() -> Result<Option<ImportFilePayload>, String> {
     let Some(path) = native_open_file_path()? else {
         return Ok(None);
     };
 
-    let name = path
-        .file_name()
-        .and_then(|value| value.to_str())
-        .unwrap_or("selected-import")
-        .to_string();
-    let contents = read_text_file_bounded(&path, MAX_IMPORT_FILE_BYTES, "import file")?;
-
-    Ok(Some(ImportFilePayload { name, contents }))
+    read_import_file_payload(&path, MAX_IMPORT_FILE_BYTES).map(Some)
 }
 
 use credential_handler::{get_params, CredentialSession, RustArgon2idOptions};
@@ -1404,5 +1504,64 @@ mod tests {
             .as_deref(),
             Some("asset-size-mismatch-1139398-vs-1140471-assets-wa-sqlite-async-dy3-ptqa-wasm")
         );
+    }
+
+    #[test]
+    fn write_export_file_atomic_replaces_existing_backup_without_leaving_temp_file() {
+        let dir = unique_test_dir("export-atomic");
+        fs::create_dir_all(&dir).expect("test directory should be created");
+        let export_path = dir.join("backup.KalderaShield");
+        fs::write(&export_path, "previous backup").expect("seed backup should be written");
+
+        write_export_file_atomic(&export_path, b"new encrypted backup")
+            .expect("atomic export write should succeed");
+
+        assert_eq!(
+            fs::read_to_string(&export_path).expect("export should be readable"),
+            "new encrypted backup"
+        );
+        let tmp_path = dir.join(format!(".backup.KalderaShield.tmp-{}", std::process::id()));
+        assert!(!tmp_path.exists(), "temp export file must be cleaned up");
+
+        fs::remove_dir_all(&dir).expect("test directory should be removed");
+    }
+
+    #[test]
+    fn read_import_file_payload_supports_utf8_and_non_utf8_windows_1254_csv() {
+        let dir = unique_test_dir("import-payload");
+        fs::create_dir_all(&dir).expect("test directory should be created");
+
+        let utf8_path = dir.join("utf8.json");
+        fs::write(&utf8_path, r#"{"items":[]}"#).expect("utf8 file should be written");
+        let utf8_payload =
+            read_import_file_payload(&utf8_path, 4096).expect("utf8 import should succeed");
+        assert_eq!(utf8_payload.name, "utf8.json");
+        assert_eq!(utf8_payload.contents, r#"{"items":[]}"#);
+        assert!(utf8_payload.contents_base64.is_none());
+
+        // Windows-1254 encoded Turkish bytes ("şifre" -> 0xFE, 'i', 'f', 'r', 'e')
+        let win1254_path = dir.join("turkish.csv");
+        let raw_bytes = vec![b'n', b'a', b'm', b'e', b',', 0xFE, b'i', b'f', b'r', b'e'];
+        fs::write(&win1254_path, &raw_bytes).expect("win1254 file should be written");
+        let bin_payload =
+            read_import_file_payload(&win1254_path, 4096).expect("non-utf8 import should succeed");
+        assert_eq!(bin_payload.name, "turkish.csv");
+        assert_eq!(bin_payload.contents, "");
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(
+                bin_payload
+                    .contents_base64
+                    .expect("non-utf8 payload must populate contents_base64"),
+            )
+            .expect("base64 should decode cleanly");
+        assert_eq!(decoded, raw_bytes);
+
+        // Size ceiling still enforced on raw byte reads
+        let err = read_import_file_payload(&win1254_path, 4)
+            .err()
+            .expect("oversized raw import must fail");
+        assert!(err.contains("exceeds the maximum allowed size"), "got: {err}");
+
+        fs::remove_dir_all(&dir).expect("test directory should be removed");
     }
 }

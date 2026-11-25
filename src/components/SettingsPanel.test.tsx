@@ -1335,5 +1335,154 @@ describe('SettingsPanel import interaction states', () => {
       expect(deleteVaultItem).toHaveBeenCalledWith('new-github');
     });
   });
+
+  it('invokes encrypted backup decryption only once when clicking the submit button (no onClick+onSubmit double fire)', async () => {
+    vi.mocked(decryptDataWithPasswordSecure).mockResolvedValueOnce(
+      JSON.stringify({
+        version: 7,
+        items: [
+          {
+            id: 'pk-import-1',
+            title: 'GitHub Passkey',
+            username: 'octocat',
+            category: 'passkey',
+            passkeyProviderKind: 'software',
+            passwordHistory: [{ password: 'OldPassword#1', changedAt: '2026-01-01T00:00:00.000Z' }],
+          },
+        ],
+        attachments: [],
+        folders: [
+          { id: 'folder-work', name: 'Work', parentId: null, color: 'blue', icon: 'folder', createdAt: '2026-01-01T00:00:00.000Z' },
+        ],
+        tags: [
+          { id: 'tag-sec', name: 'Critical', slug: 'critical', color: 'rose', createdAt: '2026-01-01T00:00:00.000Z' },
+        ],
+      }),
+    );
+
+    const { container } = renderSettings();
+    const file = new File(
+      [
+        JSON.stringify({
+          version: '1.2',
+          kdf: 'Argon2id',
+          salt: 'salt',
+          payload: 'ciphertext',
+          iv: 'iv',
+          tag: 'tag',
+        }),
+      ],
+      'secure.KalderaShield',
+      { type: 'application/json' },
+    );
+
+    fireEvent.change(fileInput(container), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('decrypt-import-password-input')).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByTestId('decrypt-import-password-input'), {
+      target: { value: 'backup-pass' },
+    });
+    fireEvent.click(screen.getByTestId('decrypt-import-submit-button'));
+
+    await waitFor(() => {
+      expect(saveVaultItems).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'pk-import-1',
+            passkeyProviderKind: 'software',
+            passwordHistory: [{ password: 'OldPassword#1', changedAt: '2026-01-01T00:00:00.000Z' }],
+          }),
+        ]),
+      );
+    });
+
+    expect(decryptDataWithPasswordSecure).toHaveBeenCalledTimes(1);
+    localStorage.removeItem('kalderashield-folder-library-v1');
+    localStorage.removeItem('kalderashield-tag-library-v1');
+  });
+
+  it('rolls back ID-less imported items when attachment import fails', async () => {
+    vi.mocked(saveVaultItems).mockResolvedValueOnce(vaultItems);
+    const { importAttachments } = await import('../lib/attachments');
+    vi.mocked(importAttachments).mockRejectedValueOnce(new Error('Disk quota'));
+
+    vi.mocked(decryptDataWithPasswordSecure).mockResolvedValueOnce(
+      JSON.stringify({
+        version: 7,
+        items: [{ title: 'No-ID Record', username: 'noid@example.com' }],
+        attachments: [
+          { id: 'att-1', name: 'f.txt', type: 'text/plain', size: 12, dataBase64: 'SGVsbG8gV29ybGQ=' },
+        ],
+      }),
+    );
+
+    const { container } = renderSettings();
+    const file = new File(
+      [
+        JSON.stringify({
+          version: '1.2',
+          kdf: 'Argon2id',
+          salt: 'salt',
+          payload: 'ciphertext',
+          iv: 'iv',
+          tag: 'tag',
+        }),
+      ],
+      'secure.KalderaShield',
+      { type: 'application/json' },
+    );
+
+    fireEvent.change(fileInput(container), { target: { files: [file] } });
+    await waitFor(() => {
+      expect(screen.getByTestId('decrypt-import-password-input')).toBeTruthy();
+    });
+    fireEvent.change(screen.getByTestId('decrypt-import-password-input'), {
+      target: { value: 'backup-pass' },
+    });
+    fireEvent.submit(container.querySelector('#universal-import-card form') as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(deleteVaultItem).toHaveBeenCalledWith('imported-id');
+    });
+  });
+
+  it('decodes base64 non-UTF-8 Windows-1254 CSV files returned by native desktop import dialog', async () => {
+    window.__TAURI_INTERNALS__ = {};
+    vi.mocked(isNativeFileDialogSupported).mockReturnValue(true);
+    // Windows-1254 CSV: "name,url,username,password\nŞirket,https://sirket.tr,ali,Sifre123"
+    // 'Ş' in Windows-1254 is 0xDE
+    const bytes = new Uint8Array([
+      ...Array.from('name,url,username,password\n').map((c) => c.charCodeAt(0)),
+      0xde,
+      ...Array.from('irket,https://sirket.tr,ali,Sifre123').map((c) => c.charCodeAt(0)),
+    ]);
+    let bin = '';
+    bytes.forEach((b) => { bin += String.fromCharCode(b); });
+    const base64 = btoa(bin);
+
+    vi.mocked(openDesktopImportFile).mockResolvedValueOnce({
+      name: 'turkish-chrome.csv',
+      contents: '',
+      contentsBase64: base64,
+    });
+
+    const { container } = renderSettings();
+    fireEvent.click(container.querySelector('#drop-zone-select') as HTMLElement);
+
+    await waitFor(() => {
+      expect(saveVaultItems).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Şirket',
+            username: 'ali',
+            password: 'Sifre123',
+          }),
+        ]),
+      );
+    });
+  });
 });
 

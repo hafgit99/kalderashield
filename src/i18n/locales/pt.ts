@@ -576,6 +576,7 @@ export const pt = {
   'settings.import.stage.mapping': 'Mapeando campos...',
   'settings.import.stage.encrypting': 'Criptografando e salvando...',
   'settings.import.stage.saving': 'Criptografando e salvando...',
+  'settings.import.stage.attachments_saving': 'Salvando anexos...',
   'settings.import.stage.syncing': 'Sincronizando banco de dados...',
   'settings.import.stage.finalizing': 'Finalizando...',
   'settings.import.descriptionPrefix': 'Juntamente com o seu próprio criptografado',
