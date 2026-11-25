@@ -2,6 +2,19 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.3.0 - Hardened Encrypted Backup/Import & Rust E2EE Cloud Sync Bridge
+
+### Added
+
+- **Air-gap-safe Rust E2EE Cloud Sync HTTP IPC bridge (`sync_http_request`).** Routed desktop and Android WebDAV/S3 sync requests through Rust (`src-tauri/src/sync_http.rs`, `src/lib/sync/syncTransport.ts`) using `reqwest` + `rustls` + `webpki-roots` while keeping Tauri's strict `connect-src 'self' ipc: http://ipc.localhost` WebView CSP intact, with disabled redirects (`Policy::none()`), a 30 s timeout, a 32 MiB body cap, strict method/header allowlists, and HTTPS enforcement (exempting loopback and RFC 1918 LAN endpoints).
+- **Portable Passkey, folder, and tag continuity across encrypted backups and E2EE cloud sync.** Software WebAuthn passkeys are unwrapped to portable JWK inside the encrypted envelope (`exportPasskeysForEncryptedBackup`) and re-wrapped under the target vault's key on import/sync (`importPasskeysFromEncryptedBackup`), while folders, tags, `passkeyProviderKind`, and `passwordHistory` are preserved end-to-end (`kalderashield-sync-v2` and encrypted backups).
+
+### Fixed & Hardened
+
+- **Cloud Sync ETag `If-Match` lockout, conflict preservation & clock-skew protection.** Fixed `syncEngine.ts` to send the actual `vault` object ETag (`getVaultETag()`) rather than the `metadata.json` ETag on `If-Match` uploads, included generated `conflictCopies` in `mergedItems` so overwritten near-simultaneous edits are preserved locally and remotely, added checksum-based cross-device download detection against clock skew, and bounded `metadata.json` reads (1 MiB) and remote item validation (50,000 items max).
+- **S3 SigV4 normalization, RFC 3986 encoding & config AAD/rotation.** Normalized S3 SigV4 extra header keys to lowercase, prevented `%20` double-encoding in canonical URIs, zeroized `signingKey` and sync config keys in `finally`, bound KDF parameters with `aadVersion: 1` canonical AAD, added automatic `rotateSyncConfigPassword` during `changeMasterPassword`, cleared sync generation/checksum state on disable, and localized all sync validation messages across all 12 locales.
+- **Encrypted backup export/import hardening.** Added atomic Rust backup export and raw-byte non-UTF-8 CSV import, Blob-based downloads, macOS/Linux native save-dialog fallback, double-submit protection, `aesKey` zeroization, and ID-less import rollback, expanding the verified suite to 2,549 unit tests across 270 files plus 102 Rust tests.
+
 ## 7.1.2.0 - Hardened Storage Migration Rekeying & Native Desktop/Android Storage Protection
 
 ### Fixed & Hardened
