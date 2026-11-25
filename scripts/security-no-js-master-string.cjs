@@ -81,9 +81,9 @@ const baseline = {
   'src/lib/vaultStorageMigration.ts': {
     'withActiveMasterPassword': 0,
     'getActiveMasterPassword': 0,
-    'masterPasswordPlain': 15,
+    'masterPasswordPlain': 17, // +2 for source/target key derivation when re-wrapping passkeys across salt boundary
     'passwordPlain': 0,
-    'deriveEncryptionKey': 0,
+    'deriveEncryptionKey': 2, // sourceKey + targetKey for reWrapPasskeysInVaultItems during OPFS -> wa-sqlite migration
     'activeCredentialBytes': 0,
     'activeBackupPasswordBytes': 0,
     'activeAccountSecretKeyBytes': 0

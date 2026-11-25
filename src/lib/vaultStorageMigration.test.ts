@@ -5,6 +5,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import type { VaultItem } from '../types';
+import { unwrapPrivateKeyJwk, wrapPrivateKeyJwk } from './passkey';
 import { runVaultStorageMigration } from './vaultStorageMigration';
 import type { VaultStorageRepository } from './vaultStorageRepository';
 
@@ -361,5 +362,63 @@ describe('vault storage migration', () => {
       status: 'rolled-back',
       issues: ['target failed &lt;script_alert("secret")_/script_'],
     });
+  });
+
+  it('re-wraps embedded passkey private key bundles from the source key to the target key during migration', async () => {
+    const sourceKey = new Uint8Array(32).fill(0x22);
+    const targetKey = new Uint8Array(32).fill(0x77);
+    const sampleJwk: JsonWebKey = {
+      kty: 'EC',
+      crv: 'P-256',
+      x: 'f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU',
+      y: 'x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0',
+      d: 'jpsQnnGQmL-YBIffH1BSyvgTIYlWaLjoOBdeEJvGG6Q',
+    };
+    const wrappedUnderSource = await wrapPrivateKeyJwk(sampleJwk, sourceKey);
+    const originalBundleSnapshot = JSON.stringify(wrappedUnderSource);
+    const passkeyItem = {
+      ...item({
+        id: 'passkey-1',
+        category: 'passkey',
+        passkeyPrivateKeyBundle: wrappedUnderSource,
+      }),
+      customFields: [
+        { name: 'passkeyPrivateKeyBundle', value: JSON.stringify(wrappedUnderSource) },
+      ],
+    } as VaultItem & { customFields: Array<{ name: string; value: string }> };
+
+    const sourceRepository = repositoryStub([passkeyItem]);
+    const targetRepository = repositoryStub([]);
+    vi.mocked(sourceRepository.deriveEncryptionKey).mockResolvedValueOnce(new Uint8Array(sourceKey));
+    vi.mocked(targetRepository.deriveEncryptionKey).mockResolvedValueOnce(new Uint8Array(targetKey));
+
+    await expect(runVaultStorageMigration(sourceRepository, targetRepository, 'master-pass', 'opfs', 'wa-sqlite', {
+      verifyPersistentTarget: passingSmoke(),
+    })).resolves.toEqual({
+      status: 'migrated',
+      sourceBackend: 'opfs',
+      targetBackend: 'wa-sqlite',
+      itemCount: 1,
+      targetItemCount: 1,
+      issues: [],
+    });
+
+    const migratedItems = await targetRepository.getVaultItems('master-pass');
+    expect(migratedItems).toHaveLength(1);
+    const migratedItem = migratedItems[0] as VaultItem & { customFields?: Array<{ name: string; value: string }> };
+    const migratedBundle = migratedItem.passkeyPrivateKeyBundle!;
+    expect(JSON.stringify(migratedBundle)).not.toBe(originalBundleSnapshot);
+
+    // Must decrypt cleanly under the NEW target key
+    await expect(unwrapPrivateKeyJwk(migratedBundle, targetKey)).resolves.toEqual(sampleJwk);
+    // Must fail under the OLD source key
+    await expect(unwrapPrivateKeyJwk(migratedBundle, sourceKey)).rejects.toThrow();
+
+    // Embedded customField bundle must also be re-wrapped under targetKey
+    const customFieldBundle = JSON.parse(migratedItem.customFields![0]!.value);
+    await expect(unwrapPrivateKeyJwk(customFieldBundle, targetKey)).resolves.toEqual(sampleJwk);
+
+    // Source item in memory must remain untouched
+    expect(JSON.stringify(passkeyItem.passkeyPrivateKeyBundle)).toBe(originalBundleSnapshot);
   });
 });

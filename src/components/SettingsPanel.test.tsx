@@ -612,7 +612,7 @@ describe('SettingsPanel account and safety controls', () => {
   });
 
 
-  it('blocks wa-sqlite migration on Android before invoking the WASM engine', async () => {
+  it('hides wa-sqlite migration controls on Android and displays native app-private storage status', () => {
     window.__TAURI_INTERNALS__ = {};
     Object.defineProperty(window.navigator, 'userAgent', {
       configurable: true,
@@ -620,11 +620,22 @@ describe('SettingsPanel account and safety controls', () => {
     });
     renderSettingsWithLanguage('en');
 
-    fireEvent.click(screen.getByTestId('wa-sqlite-migration-button'));
+    expect(screen.queryByTestId('wa-sqlite-migration-button')).toBeNull();
+    expect(screen.getByTestId('storage-backend-active-badge').textContent).toContain('Active: App Private Storage (kalderashield.db)');
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(migrateActiveVaultStorageToWaSqlite).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('wa-sqlite-migration-message').textContent).toContain('Android WebView on this device does not provide enough WASM memory for wa-sqlite migration.');
+  it('hides wa-sqlite migration controls on Desktop and displays native disk storage status', () => {
+    window.__TAURI_INTERNALS__ = {};
+    Object.defineProperty(window.navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) KalderaShield',
     });
+    renderSettingsWithLanguage('en');
+
+    expect(screen.queryByTestId('wa-sqlite-migration-button')).toBeNull();
+    expect(screen.getByTestId('storage-backend-active-badge').textContent).toContain('Active: Native Disk (kalderashield.db)');
     expect(window.confirm).not.toHaveBeenCalled();
     expect(migrateActiveVaultStorageToWaSqlite).not.toHaveBeenCalled();
   });
