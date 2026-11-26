@@ -173,6 +173,7 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
   const hasAutoTriggeredRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   /**
@@ -213,8 +214,23 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
 
   const triggerShake = () => {
     setIsShaking(true);
-    setTimeout(() => setIsShaking(false), 500);
+    if (shakeTimerRef.current !== null) {
+      clearTimeout(shakeTimerRef.current);
+    }
+    shakeTimerRef.current = setTimeout(() => {
+      shakeTimerRef.current = null;
+      setIsShaking(false);
+    }, 500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (shakeTimerRef.current !== null) {
+        clearTimeout(shakeTimerRef.current);
+        shakeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLockedOut) return;
