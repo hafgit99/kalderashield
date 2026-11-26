@@ -53,9 +53,7 @@ fn is_private_or_loopback_host(host: &str) -> bool {
 
     if let Ok(ip) = trimmed.parse::<IpAddr>() {
         return match ip {
-            IpAddr::V4(v4) => {
-                v4.is_loopback() || v4.is_private()
-            }
+            IpAddr::V4(v4) => v4.is_loopback() || v4.is_private(),
             IpAddr::V6(v6) => {
                 if v6.is_loopback() {
                     return true;
@@ -72,8 +70,8 @@ fn is_private_or_loopback_host(host: &str) -> bool {
 }
 
 fn validate_sync_url(raw_url: &str) -> Result<reqwest::Url, String> {
-    let parsed = reqwest::Url::parse(raw_url.trim())
-        .map_err(|_| "Sync URL is invalid.".to_string())?;
+    let parsed =
+        reqwest::Url::parse(raw_url.trim()).map_err(|_| "Sync URL is invalid.".to_string())?;
 
     if !parsed.username().is_empty() || parsed.password().is_some() {
         return Err("Sync URL must not embed credentials in the URL.".to_string());
@@ -224,7 +222,9 @@ mod tests {
 
     #[test]
     fn validates_https_and_private_lan_http_urls() {
-        assert!(validate_sync_url("https://nextcloud.example.com/remote.php/dav/files/alice/").is_ok());
+        assert!(
+            validate_sync_url("https://nextcloud.example.com/remote.php/dav/files/alice/").is_ok()
+        );
         assert!(validate_sync_url("http://localhost:9000/bucket/vault.ks").is_ok());
         assert!(validate_sync_url("http://127.0.0.1:8080/dav").is_ok());
         assert!(validate_sync_url("http://192.168.1.50:5005/KalderaShield/vault.ks").is_ok());
@@ -244,10 +244,16 @@ mod tests {
     #[test]
     fn enforces_method_and_header_allowlists() {
         for m in ["GET", "PUT", "HEAD", "MKCOL", "PROPFIND", "get"] {
-            assert!(parse_allowed_method(m).is_ok(), "method {m} should be allowed");
+            assert!(
+                parse_allowed_method(m).is_ok(),
+                "method {m} should be allowed"
+            );
         }
         for m in ["POST", "DELETE", "PATCH", "CONNECT", "TRACE"] {
-            assert!(parse_allowed_method(m).is_err(), "method {m} must be rejected");
+            assert!(
+                parse_allowed_method(m).is_err(),
+                "method {m} must be rejected"
+            );
         }
 
         assert!(is_allowed_header_name("Authorization"));

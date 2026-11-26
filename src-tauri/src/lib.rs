@@ -1562,7 +1562,10 @@ mod tests {
         let err = read_import_file_payload(&win1254_path, 4)
             .err()
             .expect("oversized raw import must fail");
-        assert!(err.contains("exceeds the maximum allowed size"), "got: {err}");
+        assert!(
+            err.contains("exceeds the maximum allowed size"),
+            "got: {err}"
+        );
 
         fs::remove_dir_all(&dir).expect("test directory should be removed");
     }
