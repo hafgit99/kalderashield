@@ -90,8 +90,31 @@ describe('DashboardSecurityScoreCard', () => {
     );
 
     expect(screen.getByText('虚拟保护评分')).toBeTruthy();
+    expect(screen.getByText('91%')).toBeTruthy();
     expect(screen.getByText('您的保险库完全安全')).toBeTruthy();
     expect(screen.getByText('已保存项目')).toBeTruthy();
+  });
+
+  it('formats percentage according to English locale instead of hardcoded Turkish prefix', () => {
+    window.localStorage.setItem(languageStorageKey, 'en');
+
+    render(
+      <LanguageProvider>
+        <DashboardSecurityScoreCard
+          activeItemCount={4}
+          auditReport={{
+            score: 88,
+            weakCount: 0,
+            reusedCount: 0,
+            secureCount: 4,
+            totalCount: 4,
+          }}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText('88%')).toBeTruthy();
+    expect(screen.queryByText('%88')).toBeNull();
   });
 
   it('renders old passwords and missing 2FA counts in the metric grid', () => {

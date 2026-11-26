@@ -4,12 +4,41 @@
  */
 
 import React from 'react';
-import { ShieldCheck, AlertTriangle, AlertCircle, Sparkles, ArrowRight, User, WifiOff, Clock, Link, TrendingUp, RefreshCw, HardDrive, X } from 'lucide-react';
+import {
+  ShieldCheck,
+  AlertTriangle,
+  AlertCircle,
+  Sparkles,
+  ArrowRight,
+  User,
+  WifiOff,
+  Clock,
+  Link,
+  TrendingUp,
+  RefreshCw,
+  HardDrive,
+  X,
+  Copy,
+  KeyRound,
+} from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatPercent } from '../lib/formatters';
 import type { VaultItem } from '../types';
-import { runVaultAudit, calculatePasswordScore, getPasswordAgeInDays, isUnsecureHttpUrl, supportsTwoFactor, getAuditScoreHistory } from '../lib/security';
+import {
+  AUDIT_CRITICAL_THRESHOLD,
+  AUDIT_EXCELLENT_THRESHOLD,
+  PASSWORD_OLD_AGE_DAYS,
+  PASSWORD_SECURE_SCORE_THRESHOLD,
+  PASSWORD_WEAK_SCORE_THRESHOLD,
+  calculatePasswordScore,
+  getAuditScoreHistory,
+  getItemPasswordAgeInDays,
+  isUnsecureHttpUrl,
+  itemNeedsTwoFactor,
+  runVaultAudit,
+  saveAuditScoreToHistory,
+} from '../lib/security';
 import {
   checkPasswordAgainstHibp,
   getLocalHibpFilePath,
@@ -27,22 +56,65 @@ interface SecurityAuditProps {
   onSelectItem: (item: VaultItem) => void;
 }
 
+type AuditFilterKey = 'all' | 'pwned' | 'weak' | 'reused' | 'totp' | 'old' | 'http';
+
+const EMPTY_PWNED_MAP = new Map<string, number>();
+
+function computeItemsPasswordFingerprint(items: VaultItem[]): string {
+  let h1 = 0x811c9dc5 >>> 0;
+  let count = 0;
+  for (const item of items) {
+    const pw = item.password || '';
+    if (!pw) continue;
+    count++;
+    const combined = `${item.id}:${pw.length}:${pw}`;
+    for (let i = 0; i < combined.length; i++) {
+      h1 = Math.imul(h1 ^ combined.charCodeAt(i), 0x01000193) >>> 0;
+    }
+  }
+  return `${count}_${h1.toString(36)}`;
+}
+
 export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProps) {
   const { language, t } = useLanguage();
   const [hibpEnabled, setHibpEnabled] = React.useState<boolean>(() => isHibpCheckEnabled());
   const [localHibpPath, setLocalHibpPath] = React.useState<string | null>(() => getLocalHibpFilePath());
   const [localHibpError, setLocalHibpError] = React.useState<string | null>(null);
-  const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(new Map());
+  const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(EMPTY_PWNED_MAP);
   const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>('idle');
   const [hibpProgress, setHibpProgress] = React.useState<{ done: number; total: number } | null>(null);
   const [scanNonce, setScanNonce] = React.useState(0);
+  const [activeFilter, setActiveFilter] = React.useState<AuditFilterKey>('all');
+
   const itemsRef = React.useRef(items);
   React.useEffect(() => {
     itemsRef.current = items;
   }, [items]);
-  const audit = runVaultAudit(items);
+
   const localHibpSupported = isLocalHibpSupported();
   const isBreachCheckActive = Boolean(localHibpPath) || hibpEnabled;
+  const itemsPasswordFingerprint = React.useMemo(() => computeItemsPasswordFingerprint(items), [items]);
+
+  const effectivePwnedByItemId = isBreachCheckActive ? pwnedByItemId : EMPTY_PWNED_MAP;
+  const effectiveHibpStatus = isBreachCheckActive ? hibpStatus : 'idle';
+  const effectiveHibpProgress = isBreachCheckActive ? hibpProgress : null;
+
+  const pwnedItemIds = React.useMemo(
+    () => new Set(effectivePwnedByItemId.keys()),
+    [effectivePwnedByItemId],
+  );
+
+  // Pure memoized audit calculation (no localStorage write during render)
+  const audit = React.useMemo(
+    () => runVaultAudit(items, { pwnedItemIds, persistHistory: false }),
+    [items, pwnedItemIds],
+  );
+
+  React.useEffect(() => {
+    if (items.length > 0) {
+      saveAuditScoreToHistory(audit.score);
+    }
+  }, [audit.score, items.length]);
 
   const handleToggleHibp = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,9 +123,10 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     setHibpCheckEnabled(next);
     setLocalHibpError(null);
     if (!next && !localHibpPath) {
-      setPwnedByItemId(new Map());
+      setPwnedByItemId(EMPTY_PWNED_MAP);
       setHibpProgress(null);
       setHibpStatus('idle');
+      if (activeFilter === 'pwned') setActiveFilter('all');
     } else if (next) {
       setScanNonce((n) => n + 1);
     }
@@ -79,9 +152,10 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     setLocalHibpPath(null);
     setLocalHibpError(null);
     if (!hibpEnabled) {
-      setPwnedByItemId(new Map());
+      setPwnedByItemId(EMPTY_PWNED_MAP);
       setHibpProgress(null);
       setHibpStatus('idle');
+      if (activeFilter === 'pwned') setActiveFilter('all');
     } else {
       setScanNonce((n) => n + 1);
     }
@@ -89,35 +163,35 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
   const handleManualRescan = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isBreachCheckActive || hibpStatus === 'checking') return;
+    if (!isBreachCheckActive || effectiveHibpStatus === 'checking') return;
     setLocalHibpError(null);
     setScanNonce((n) => n + 1);
   };
 
   React.useEffect(() => {
-    if (!isBreachCheckActive) {
-      setPwnedByItemId(new Map());
-      setHibpProgress(null);
-      setHibpStatus('idle');
-      return;
-    }
+    if (!isBreachCheckActive) return undefined;
 
     const scanItems = itemsRef.current
       .filter((item) => Boolean(item.password))
       .map((item) => ({ id: item.id, password: item.password || '' }));
 
-    if (scanItems.length === 0) {
-      setPwnedByItemId(new Map());
-      setHibpProgress(null);
-      setHibpStatus('idle');
-      return;
-    }
-
     const controller = new AbortController();
-    setHibpStatus('checking');
-    setHibpProgress({ done: 0, total: new Set(scanItems.map((i) => i.password)).size });
 
     (async () => {
+      if (scanItems.length === 0) {
+        if (!controller.signal.aborted) {
+          setPwnedByItemId(EMPTY_PWNED_MAP);
+          setHibpProgress(null);
+          setHibpStatus('idle');
+        }
+        return;
+      }
+
+      if (!controller.signal.aborted) {
+        setHibpStatus('checking');
+        setHibpProgress({ done: 0, total: new Set(scanItems.map((i) => i.password)).size });
+      }
+
       const scanResult = localHibpPath
         ? await scanVaultItemsAgainstLocalHibp(localHibpPath, scanItems, { signal: controller.signal })
         : await scanVaultItemsAgainstHibp(scanItems, {
@@ -140,49 +214,114 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     return () => {
       controller.abort();
     };
-  }, [isBreachCheckActive, localHibpPath, scanNonce]);
+  }, [isBreachCheckActive, localHibpPath, scanNonce, itemsPasswordFingerprint]);
 
-  // Group items by security status (only audit password-bearing / login records)
-  const weakItems = items.filter((i) => {
-    const pw = i.password || '';
-    const isPasswordItem = i.category === 'login' || pw.length > 0;
-    if (!isPasswordItem) return false;
-    return pw.length < 8 || calculatePasswordScore(pw) < 40;
-  });
-
-  // Calculate reused items
-  const passwordFreq: Record<string, number> = {};
-  items.forEach((item) => {
-    const pw = item.password || '';
-    if (pw) {
-      passwordFreq[pw] = (passwordFreq[pw] || 0) + 1;
+  // Single memoized O(N) classification using Map/Set (prototype-safe)
+  const {
+    weakItems,
+    weakScoreById,
+    reusedItems,
+    reusedGroups,
+    pwnedItems,
+    secureItems,
+    missingTotpItems,
+    oldPasswordItems,
+    unsecureHttpItems,
+  } = React.useMemo(() => {
+    const passwordGroups = new Map<string, VaultItem[]>();
+    for (const item of items) {
+      const pw = item.password || '';
+      if (!pw) continue;
+      const group = passwordGroups.get(pw);
+      if (group) {
+        group.push(item);
+      } else {
+        passwordGroups.set(pw, [item]);
+      }
     }
-  });
-  const reusedItems = items.filter((i) => {
-    const pw = i.password || '';
-    return pw && (passwordFreq[pw] ?? 0) > 1;
-  });
-  const pwnedItems = items.filter((i) => pwnedByItemId.has(i.id));
 
-  const secureItems = items.filter((i) => {
-    const pw = i.password || '';
-    return pw.length >= 8 && calculatePasswordScore(pw) >= 80 && !reusedItems.includes(i) && !pwnedByItemId.has(i.id);
-  });
+    const reusedGroupList: VaultItem[][] = [];
+    const reusedIds = new Set<string>();
+    for (const group of passwordGroups.values()) {
+      if (group.length > 1) {
+        reusedGroupList.push(group);
+        for (const item of group) {
+          reusedIds.add(item.id);
+        }
+      }
+    }
 
-  const missingTotpItems = items.filter((item) => item.category === 'login' && supportsTwoFactor(item.url) && !item.totpSecret);
-  const oldPasswordItems = items.filter((item) => item.category === 'login' && getPasswordAgeInDays(item.updatedAt || item.createdAt) >= 90);
-  const unsecureHttpItems = items.filter((item) => isUnsecureHttpUrl(item.url));
+    const weak: VaultItem[] = [];
+    const weakScores = new Map<string, number>();
+    const reused: VaultItem[] = [];
+    const pwned: VaultItem[] = [];
+    const secure: VaultItem[] = [];
+    const missingTotp: VaultItem[] = [];
+    const oldPw: VaultItem[] = [];
+    const httpOnly: VaultItem[] = [];
+
+    for (const item of items) {
+      const pw = item.password || '';
+      const isPasswordItem = item.category === 'login' || pw.length > 0;
+      const isReused = reusedIds.has(item.id);
+      const isPwned = pwnedItemIds.has(item.id);
+
+      if (isReused) reused.push(item);
+      if (isPwned) pwned.push(item);
+
+      if (isPasswordItem) {
+        const pwScore = pw ? calculatePasswordScore(pw) : 0;
+        if (pw.length < 8 || pwScore < PASSWORD_WEAK_SCORE_THRESHOLD) {
+          weak.push(item);
+          weakScores.set(item.id, pwScore);
+        } else if (pwScore >= PASSWORD_SECURE_SCORE_THRESHOLD && !isReused && !isPwned) {
+          secure.push(item);
+        }
+      }
+
+      if (itemNeedsTwoFactor(item)) {
+        missingTotp.push(item);
+      }
+      if (item.category === 'login' && getItemPasswordAgeInDays(item) >= PASSWORD_OLD_AGE_DAYS) {
+        oldPw.push(item);
+      }
+      if (isUnsecureHttpUrl(item.url)) {
+        httpOnly.push(item);
+      }
+    }
+
+    return {
+      weakItems: weak,
+      weakScoreById: weakScores,
+      reusedItems: reused,
+      reusedGroups: reusedGroupList,
+      pwnedItems: pwned,
+      secureItems: secure,
+      missingTotpItems: missingTotp,
+      oldPasswordItems: oldPw,
+      unsecureHttpItems: httpOnly,
+    };
+  }, [items, pwnedItemIds]);
 
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
   const tooltipRef = React.useRef<HTMLDivElement>(null);
-  const rawHistory = getAuditScoreHistory();
 
-  // Use strictly authentic recorded history; if none exists yet, display current audit score
+  // Merge authentic stored history with current score without mutating storage during render
   const history = React.useMemo(() => {
-    if (rawHistory.length > 0) return rawHistory;
-    const today = new Date().toISOString().split('T')[0];
-    return [{ date: today, score: audit.score }];
-  }, [rawHistory, audit.score]);
+    const stored = getAuditScoreHistory();
+    const today = new Date().toISOString().split('T')[0] ?? '';
+    if (stored.length === 0) {
+      return [{ date: today, score: audit.score }];
+    }
+    const merged = stored.map((entry) =>
+      entry.date === today ? { ...entry, score: audit.score } : entry,
+    );
+    if (!merged.some((entry) => entry.date === today) && today) {
+      merged.push({ date: today, score: audit.score });
+      if (merged.length > 10) merged.shift();
+    }
+    return merged;
+  }, [audit.score]);
 
   // Map history values to SVG viewBox coordinates (400 width x 100 height)
   const points = React.useMemo(() => {
@@ -203,7 +342,16 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     }
   }, [hoveredIndex, points]);
 
-  // Bezier curve path generator (for a single recorded point, render a clean baseline across the chart)
+  const tooltipAlignClass =
+    hoveredIndex === null || points.length <= 1
+      ? '-translate-x-1/2'
+      : hoveredIndex === 0
+        ? 'translate-x-0'
+        : hoveredIndex === points.length - 1
+          ? '-translate-x-full'
+          : '-translate-x-1/2';
+
+  // Bezier curve path generator
   const bezierPath = React.useMemo(() => {
     if (points.length === 0) return '';
     if (points.length === 1) {
@@ -216,7 +364,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
       const p1 = points[i + 1]!;
       const cpX1 = p0.x + (p1.x - p0.x) / 3;
       const cpY1 = p0.y;
-      const cpX2 = p0.x + 2 * (p1.x - p0.x) / 3;
+      const cpX2 = p0.x + (2 * (p1.x - p0.x)) / 3;
       const cpY2 = p1.y;
       d += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
     }
@@ -231,7 +379,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     return `${bezierPath} L ${points[points.length - 1]!.x} 95 L ${points[0]!.x} 95 Z`;
   }, [points, bezierPath]);
 
-  // Custom feedback text based on vault score
+  // Unified score thresholds matching DashboardSecurityScoreCard and VaultItemSecurityAssessment
   let scoreFeedback = {
     title: t('securityAudit.excellentTitle'),
     desc: t('securityAudit.excellentDescription'),
@@ -239,14 +387,14 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     textColor: 'text-brand-tertiary',
   };
 
-  if (audit.score < 50) {
+  if (audit.score < AUDIT_CRITICAL_THRESHOLD) {
     scoreFeedback = {
       title: t('securityAudit.criticalTitle'),
       desc: t('securityAudit.criticalDescription'),
       colorBorder: 'border-l-brand-error',
       textColor: 'text-brand-error',
     };
-  } else if (audit.score < 80) {
+  } else if (audit.score < AUDIT_EXCELLENT_THRESHOLD || pwnedItems.length > 0) {
     scoreFeedback = {
       title: t('securityAudit.improvementTitle'),
       desc: t('securityAudit.improvementDescription'),
@@ -255,16 +403,42 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     };
   }
 
+  const toggleFilter = (filter: AuditFilterKey) => {
+    setActiveFilter((prev) => (prev === filter ? 'all' : filter));
+  };
+
+  const showSection = (key: Exclude<AuditFilterKey, 'all'>) =>
+    activeFilter === 'all' || activeFilter === key;
+
+  const filterOptions: Array<{ key: AuditFilterKey; label: string; count?: number }> = [
+    { key: 'all', label: t('securityAudit.filterAll') },
+    ...(pwnedItems.length > 0
+      ? [{ key: 'pwned' as const, label: t('securityAudit.filterPwned'), count: pwnedItems.length }]
+      : []),
+    { key: 'weak', label: t('securityAudit.filterWeak'), count: weakItems.length },
+    { key: 'reused', label: t('securityAudit.filterReused'), count: reusedItems.length },
+    { key: 'totp', label: t('securityAudit.filterTotp'), count: missingTotpItems.length },
+    { key: 'old', label: t('securityAudit.filterOld'), count: oldPasswordItems.length },
+    { key: 'http', label: t('securityAudit.filterHttp'), count: unsecureHttpItems.length },
+  ];
+
   return (
     <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto pb-6">
-      <div className="flex items-center gap-3 mb-1 sm:mb-2">
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-tertiary/10 flex items-center justify-center border border-brand-tertiary/20 animate-pulse">
-          <ShieldCheck className="w-5 h-5 text-brand-tertiary" />
+      <div className="flex items-center justify-between gap-3 mb-1 sm:mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-tertiary/10 flex items-center justify-center border border-brand-tertiary/20">
+            <ShieldCheck className="w-5 h-5 text-brand-tertiary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold font-display text-on-surface">{t('securityAudit.title')}</h2>
+            <p className="hidden sm:block text-xs text-on-surface-variant">{t('securityAudit.subtitle')}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold font-display text-on-surface">{t('securityAudit.title')}</h2>
-          <p className="hidden sm:block text-xs text-on-surface-variant">{t('securityAudit.subtitle')}</p>
-        </div>
+        {items.length > 0 && (
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono text-on-surface-variant bg-surface-low border border-outline-variant/15 px-3 py-1 rounded-full">
+            {t('securityAudit.audited')}: {items.length} {t('securityAudit.item')}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -273,23 +447,26 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 w-full">
             {/* Circular SVG dial */}
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
                 <path
                   className="text-surface-high stroke-current"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
                   strokeWidth="3.2"
-                ></path>
+                />
                 <path
-                  className={`${scoreFeedback.textColor} stroke-current transition-all duration-1000`}
+                  className={`${scoreFeedback.textColor} stroke-current transition-all duration-700`}
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
                   strokeDasharray={`${audit.score}, 100`}
                   strokeLinecap="round"
                   strokeWidth="3.2"
-                ></path>
+                />
               </svg>
-              <div className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-lg sm:text-xl whitespace-nowrap tabular-nums ${scoreFeedback.textColor}`}>
+              <div
+                data-testid="security-audit-score"
+                className={`absolute inset-0 flex items-center justify-center font-mono font-bold text-lg sm:text-xl whitespace-nowrap tabular-nums ${scoreFeedback.textColor}`}
+              >
                 {formatPercent(audit.score, language)}
               </div>
             </div>
@@ -301,7 +478,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
         </div>
 
         {/* Security Score Trend line chart */}
-        <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-outline-variant/10 flex flex-col justify-between relative group/chart overflow-visible">
+        <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-outline-variant/15 flex flex-col justify-between relative group/chart overflow-visible">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-brand-tertiary" />
@@ -330,16 +507,15 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
               {/* Vertical hover alignment line */}
               {hoveredIndex !== null && (
-                <line 
-                  x1={points[hoveredIndex]!.x} 
-                  y1="10" 
-                  x2={points[hoveredIndex]!.x} 
-                  y2="90" 
-                  stroke="var(--brand-tertiary)" 
-                  strokeWidth="1.2" 
-                  strokeDasharray="2,2" 
-                  opacity="0.5" 
-                  className="transition-all duration-150" 
+                <line
+                  x1={points[hoveredIndex]!.x}
+                  y1="10"
+                  x2={points[hoveredIndex]!.x}
+                  y2="90"
+                  stroke="var(--brand-tertiary)"
+                  strokeWidth="1.2"
+                  strokeDasharray="2,2"
+                  opacity="0.5"
                 />
               )}
 
@@ -362,20 +538,19 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
               {points.map((p, idx) => (
                 <g key={idx}>
                   {hoveredIndex === idx && (
-                    <circle cx={p.x} cy={p.y} r="8" fill="var(--brand-tertiary)" opacity="0.25" className="transition-all duration-300 animate-ping" />
+                    <circle cx={p.x} cy={p.y} r="7" fill="var(--brand-tertiary)" opacity="0.2" />
                   )}
-                  <circle 
-                    cx={p.x} 
-                    cy={p.y} 
-                    r={hoveredIndex === idx ? "5.5" : "3.5"} 
-                    fill={hoveredIndex === idx ? "var(--brand-tertiary)" : "var(--surface-container)"} 
-                    stroke="var(--brand-tertiary)" 
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={hoveredIndex === idx ? '5.5' : '3.5'}
+                    fill={hoveredIndex === idx ? 'var(--brand-tertiary)' : 'var(--surface-container)'}
+                    stroke="var(--brand-tertiary)"
                     strokeWidth="2"
                     className="transition-all duration-150 cursor-pointer"
                     onMouseEnter={() => setHoveredIndex(idx)}
                     onMouseLeave={() => setHoveredIndex(null)}
                   />
-                  {/* Invisible larger hover zone */}
                   <circle
                     cx={p.x}
                     cy={p.y}
@@ -389,24 +564,24 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
               ))}
             </svg>
 
-            {/* Rich absolute-positioned HTML Tooltip */}
+            {/* Clamped HTML Tooltip */}
             {hoveredIndex !== null && (
-              <div 
+              <div
                 ref={tooltipRef}
-                className="absolute pointer-events-none bg-surface-container/95 border border-brand-tertiary/20 backdrop-blur-md rounded-lg p-2 text-left shadow-xl animate-in fade-in zoom-in-95 duration-150 z-20 -translate-x-1/2 -translate-y-[125%]"
+                className={`absolute pointer-events-none bg-surface-container/95 border border-brand-tertiary/25 backdrop-blur-md rounded-lg p-2 text-left shadow-xl z-20 ${tooltipAlignClass} -translate-y-[125%]`}
               >
-                <div className="text-[10px] text-on-surface-variant/80 font-mono font-bold whitespace-nowrap">
+                <div className="text-[10px] text-on-surface-variant font-mono font-bold whitespace-nowrap">
                   {points[hoveredIndex]!.date}
                 </div>
                 <div className="text-xs font-bold text-brand-tertiary flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-tertiary animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-tertiary" />
                   {t('securityAudit.securityLabel')}: {formatPercent(points[hoveredIndex]!.score, language)}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex justify-between text-[9px] text-on-surface-variant/40 font-mono mt-1 pt-1 border-t border-outline-variant/5">
+          <div className="flex justify-between text-[9px] text-on-surface-variant/60 font-mono mt-1 pt-1 border-t border-outline-variant/10">
             <span>{history[0]?.date}</span>
             <span>{history[history.length - 1]?.date}</span>
           </div>
@@ -415,49 +590,73 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
 
       {/* Metric quick stats dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="glass-panel p-4 sm:p-5 rounded-xl bg-brand-error/5 border border-brand-error/10">
+        <button
+          type="button"
+          onClick={() => toggleFilter('weak')}
+          aria-pressed={activeFilter === 'weak'}
+          className={`text-left glass-panel p-4 sm:p-5 rounded-xl bg-brand-error/5 border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-error/40 ${
+            activeFilter === 'weak'
+              ? 'border-brand-error/50 ring-1 ring-brand-error/25'
+              : 'border-brand-error/15 hover:border-brand-error/35'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold tracking-wider text-on-surface-variant uppercase">{t('securityAudit.weakPasswords')}</span>
             <AlertCircle className="w-5 h-5 text-brand-error" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span data-testid="security-audit-weak-count" className="text-3xl font-bold font-sans text-brand-error">{weakItems.length}</span>
+            <span data-testid="security-audit-weak-count" className="text-3xl font-bold font-sans text-brand-error tabular-nums">{weakItems.length}</span>
             <span className="text-xs text-on-surface-variant">{t('securityAudit.insufficientCharacters')}</span>
           </div>
-        </div>
+        </button>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-xl bg-amber-500/5 border border-amber-500/10">
+        <button
+          type="button"
+          onClick={() => toggleFilter('reused')}
+          aria-pressed={activeFilter === 'reused'}
+          className={`text-left glass-panel p-4 sm:p-5 rounded-xl bg-brand-secondary/5 border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-secondary/40 ${
+            activeFilter === 'reused'
+              ? 'border-brand-secondary/50 ring-1 ring-brand-secondary/25'
+              : 'border-brand-secondary/15 hover:border-brand-secondary/35'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold tracking-wider text-on-surface-variant uppercase">{t('securityAudit.reusedPasswords')}</span>
-            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            <AlertTriangle className="w-5 h-5 text-brand-secondary" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span data-testid="security-audit-reused-count" className="text-3xl font-bold font-sans text-amber-400">{reusedItems.length}</span>
+            <span data-testid="security-audit-reused-count" className="text-3xl font-bold font-sans text-brand-secondary tabular-nums">{reusedItems.length}</span>
             <span className="text-xs text-on-surface-variant">{t('securityAudit.reducesSecurity')}</span>
           </div>
-        </div>
+        </button>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-xl bg-brand-tertiary/5 border border-brand-tertiary/10">
+        <div className="glass-panel p-4 sm:p-5 rounded-xl bg-brand-tertiary/5 border border-brand-tertiary/15">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold tracking-wider text-on-surface-variant uppercase">{t('securityAudit.securePasswords')}</span>
             <Sparkles className="w-5 h-5 text-brand-tertiary" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span data-testid="security-audit-secure-count" className="text-3xl font-bold font-sans text-brand-tertiary">{secureItems.length}</span>
+            <span data-testid="security-audit-secure-count" className="text-3xl font-bold font-sans text-brand-tertiary tabular-nums">{secureItems.length}</span>
             <span className="text-xs text-on-surface-variant">{t('securityAudit.militaryProtection')}</span>
           </div>
         </div>
 
-        <div className="glass-panel p-4 sm:p-5 rounded-xl bg-red-500/5 border border-red-500/10 flex flex-col justify-between">
+        <div
+          className={`glass-panel p-4 sm:p-5 rounded-xl bg-brand-error/5 border flex flex-col justify-between transition-all ${
+            activeFilter === 'pwned'
+              ? 'border-brand-error/50 ring-1 ring-brand-error/25'
+              : 'border-brand-error/15'
+          }`}
+        >
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold tracking-wider text-on-surface-variant uppercase">{t('securityAudit.pwnedPasswords')}</span>
               <div className="flex items-center gap-1.5">
                 {localHibpPath ? (
                   <span
                     data-testid="security-audit-hibp-local-badge"
                     title={localHibpPath}
-                    className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                    className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border bg-brand-tertiary/15 text-brand-tertiary border-brand-tertiary/30"
                   >
                     <HardDrive className="w-2.5 h-2.5" />
                     <span>{t('securityAudit.hibpLocalActive')}</span>
@@ -467,7 +666,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                       onClick={handleClearLocalHibp}
                       title={t('securityAudit.hibpLocalClear')}
                       aria-label={t('securityAudit.hibpLocalClear')}
-                      className="ml-0.5 hover:text-white cursor-pointer"
+                      className="ml-0.5 hover:opacity-75 cursor-pointer"
                     >
                       <X className="w-2.5 h-2.5" />
                     </button>
@@ -481,8 +680,8 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                       title={hibpEnabled ? t('securityAudit.hibpToggleEnabled') : t('securityAudit.hibpToggleDisabled')}
                       className={`text-[9px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
                         hibpEnabled
-                          ? 'bg-brand-primary/20 text-brand-primary border-brand-primary/30'
-                          : 'bg-outline-variant/10 text-on-surface-variant border-outline-variant/20'
+                          ? 'bg-brand-primary/15 text-brand-primary border-brand-primary/30'
+                          : 'bg-surface-low text-on-surface-variant border-outline-variant/25'
                       }`}
                     >
                       {hibpEnabled ? t('securityAudit.hibpStatusOn') : t('securityAudit.hibpStatusOffline')}
@@ -494,7 +693,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                         onClick={handleSelectLocalHibp}
                         title={t('securityAudit.hibpLocalSelect')}
                         aria-label={t('securityAudit.hibpLocalSelect')}
-                        className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-outline-variant/15 transition-colors cursor-pointer"
+                        className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors cursor-pointer"
                       >
                         <HardDrive className="w-3.5 h-3.5" />
                       </button>
@@ -506,25 +705,25 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                     type="button"
                     data-testid="security-audit-hibp-rescan"
                     onClick={handleManualRescan}
-                    disabled={hibpStatus === 'checking'}
+                    disabled={effectiveHibpStatus === 'checking'}
                     title={t('passwordGenerator.refresh')}
                     aria-label={t('passwordGenerator.refresh')}
-                    className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-outline-variant/15 disabled:opacity-40 transition-colors cursor-pointer"
+                    className="p-1 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-high disabled:opacity-40 transition-colors cursor-pointer"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${hibpStatus === 'checking' ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${effectiveHibpStatus === 'checking' ? 'animate-spin' : ''}`} />
                   </button>
                 )}
                 {isBreachCheckActive && (
-                  hibpStatus === 'unavailable' ? (
-                    <WifiOff className="w-4 h-4 text-amber-300" />
+                  effectiveHibpStatus === 'unavailable' ? (
+                    <WifiOff className="w-4 h-4 text-brand-secondary" />
                   ) : (
-                    <AlertCircle className="w-4 h-4 text-red-300" />
+                    <AlertCircle className="w-4 h-4 text-brand-error" />
                   )
                 )}
               </div>
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-              <span data-testid="security-audit-pwned-count" className="text-3xl font-bold font-sans text-red-300">
+              <span data-testid="security-audit-pwned-count" className="text-3xl font-bold font-sans text-brand-error tabular-nums">
                 {isBreachCheckActive ? pwnedItems.length : '—'}
               </span>
               <span className="text-xs text-on-surface-variant">
@@ -532,11 +731,11 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
                   ? localHibpError
                   : !isBreachCheckActive
                     ? t('securityAudit.pwnedDisabled')
-                    : hibpStatus === 'checking'
-                      ? (hibpProgress && hibpProgress.total > 0
-                        ? `${t('securityAudit.pwnedChecking')} (${hibpProgress.done}/${hibpProgress.total})`
+                    : effectiveHibpStatus === 'checking'
+                      ? (effectiveHibpProgress && effectiveHibpProgress.total > 0
+                        ? `${t('securityAudit.pwnedChecking')} (${effectiveHibpProgress.done}/${effectiveHibpProgress.total})`
                         : t('securityAudit.pwnedChecking'))
-                      : hibpStatus === 'unavailable'
+                      : effectiveHibpStatus === 'unavailable'
                         ? t('securityAudit.pwnedUnavailable')
                         : t('securityAudit.pwnedDescription')}
               </span>
@@ -545,239 +744,323 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
         </div>
       </div>
 
+      {/* Category Filter Bar */}
+      <div
+        role="tablist"
+        aria-label={t('securityAudit.title')}
+        data-testid="security-audit-filter-bar"
+        className="flex flex-wrap items-center gap-1.5 pt-1"
+      >
+        {filterOptions.map((opt) => {
+          const isActive = activeFilter === opt.key;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              data-testid={`security-audit-filter-${opt.key}`}
+              onClick={() => setActiveFilter(opt.key)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
+                isActive
+                  ? 'bg-brand-primary/15 text-brand-primary border-brand-primary/35 shadow-sm'
+                  : 'bg-surface-low text-on-surface-variant border-outline-variant/15 hover:text-on-surface hover:bg-surface-high'
+              }`}
+            >
+              <span>{opt.label}</span>
+              {typeof opt.count === 'number' && opt.count > 0 && (
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                  isActive ? 'bg-brand-primary/20 text-brand-primary' : 'bg-surface-high text-on-surface-variant'
+                }`}>
+                  {opt.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Action lists for correcting credentials */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pt-1 sm:pt-2">
-        {/* WEAK CRITICAL GROUP */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-brand-error uppercase tracking-wider flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>{t('securityAudit.weakGroup')} ({weakItems.length})</span>
-          </h3>
-
-          <div className="space-y-2.5">
-            {weakItems.length === 0 ? (
-              <div className="p-4 bg-[#141614] rounded-xl text-xs text-on-surface-variant/40 italic text-center border border-outline-variant/5">
-                {t('securityAudit.noWeakPasswords')}
-              </div>
-            ) : (
-              weakItems.map((item) => (
-                <div
-                  key={item.id}
-                  data-testid="security-audit-weak-item"
-                  onClick={() => onSelectItem(item)}
-                  className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#181212]/80 hover:bg-[#201515] border border-brand-error/15 rounded-xl cursor-pointer transition-all group"
-                >
-                  <div className="overflow-hidden pr-2">
-                    <h4 className="font-semibold text-sm text-brand-error group-hover:underline truncate">
-                      {item.title}
-                    </h4>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
-                      <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/50" />
-                      <span className="font-mono truncate">{item.username}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-error bg-brand-error/10 px-2.5 py-1 rounded-full shrink-0">
-                    <span>{t('securityAudit.fixAction')}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* REUSED GROUPS */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span>{t('securityAudit.reusedGroup')} ({reusedItems.length})</span>
-          </h3>
-
-          <div className="space-y-2.5">
-            {reusedItems.length === 0 ? (
-              <div className="p-4 bg-[#141614] rounded-xl text-xs text-on-surface-variant/40 italic text-center border border-outline-variant/5">
-                {t('securityAudit.noReusedPasswords')}
-              </div>
-            ) : (
-              reusedItems.map((item) => (
-                <div
-                  key={item.id}
-                  data-testid="security-audit-reused-item"
-                  onClick={() => onSelectItem(item)}
-                  className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#181612]/80 hover:bg-[#221e15] border border-amber-500/10 rounded-xl cursor-pointer transition-all group"
-                >
-                  <div className="overflow-hidden pr-2">
-                    <h4 className="font-semibold text-sm text-amber-300 group-hover:underline truncate">
-                      {item.title}
-                    </h4>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
-                      <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/50" />
-                      <span className="font-mono truncate">{item.username}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full shrink-0">
-                    <span>{t('securityAudit.changeAction')}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* PWNED GROUPS */}
-        {pwnedItems.length > 0 && (
-          <div className="space-y-4 lg:col-span-2">
-            <h3 className="text-sm font-bold text-red-300 uppercase tracking-wider flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pt-1">
+        {/* PWNED GROUPS (Shown at top when present because breached passwords are highest priority) */}
+        {pwnedItems.length > 0 && showSection('pwned') && (
+          <div className="space-y-3 lg:col-span-2">
+            <h3 className="text-sm font-bold text-brand-error uppercase tracking-wider flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
               <span>{t('securityAudit.pwnedGroup')} ({pwnedItems.length})</span>
             </h3>
 
             <div className="space-y-2.5">
               {pwnedItems.map((item) => {
-                const count = pwnedByItemId.get(item.id) || 0;
+                const count = effectivePwnedByItemId.get(item.id) || 0;
                 return (
-                  <div
+                  <button
                     key={item.id}
+                    type="button"
                     data-testid="security-audit-pwned-item"
                     onClick={() => onSelectItem(item)}
-                    className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#1d1212]/80 hover:bg-[#261616] border border-red-400/15 rounded-xl cursor-pointer transition-all group"
+                    className="w-full text-left flex items-center justify-between gap-3 p-3 sm:p-4 bg-brand-error/5 hover:bg-brand-error/10 border border-brand-error/25 rounded-xl cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-error/40"
                   >
-                    <div className="overflow-hidden pr-2">
-                      <h4 className="font-semibold text-sm text-red-200 group-hover:underline truncate">
+                    <div className="overflow-hidden pr-2 min-w-0">
+                      <h4 className="font-semibold text-sm text-brand-error group-hover:underline truncate">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
-                        <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/50" />
-                        <span className="font-mono truncate">{item.username}</span>
-                        <span className="text-red-300/80 shrink-0">{t('securityAudit.pwnedCountPrefix')} {count}</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-on-surface-variant mt-0.5">
+                        <span className="inline-flex items-center gap-1 min-w-0">
+                          <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/60" />
+                          <span className="font-mono truncate">{item.username}</span>
+                        </span>
+                        <span className="text-[11px] font-mono font-semibold text-brand-error shrink-0">
+                          {t('securityAudit.pwnedCountPrefix')} {count.toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-red-200 bg-red-500/10 px-2.5 py-1 rounded-full shrink-0">
+                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-error bg-brand-error/10 px-2.5 py-1 rounded-full shrink-0">
                       <span>{t('securityAudit.fixAction')}</span>
                       <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
         )}
 
-        {/* TOTP DEFICIENCY */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>{t('securityAudit.totpGroup')} ({missingTotpItems.length})</span>
-          </h3>
+        {/* WEAK CRITICAL GROUP */}
+        {showSection('weak') && (
+          <div className={`space-y-3 ${activeFilter === 'weak' ? 'lg:col-span-2' : ''}`}>
+            <h3 className="text-sm font-bold text-brand-error uppercase tracking-wider flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{t('securityAudit.weakGroup')} ({weakItems.length})</span>
+            </h3>
 
-          <div className="space-y-2.5">
-            {missingTotpItems.length === 0 ? (
-              <div className="p-4 bg-[#141614] rounded-xl text-xs text-on-surface-variant/40 italic text-center border border-outline-variant/5">
-                {t('securityAudit.noTotpDeficiency')}
-              </div>
-            ) : (
-              missingTotpItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => onSelectItem(item)}
-                  className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#181612]/80 hover:bg-[#221e15] border border-amber-500/10 rounded-xl cursor-pointer transition-all group"
-                >
-                  <div className="overflow-hidden pr-2">
-                    <h4 className="font-semibold text-sm text-amber-300 group-hover:underline truncate">
-                      {item.title}
-                    </h4>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5 font-mono truncate">
-                      {item.url}
+            <div className="space-y-2.5">
+              {weakItems.length === 0 ? (
+                <div className="p-4 bg-surface-low rounded-xl text-xs text-on-surface-variant/70 italic text-center border border-outline-variant/15">
+                  {t('securityAudit.noWeakPasswords')}
+                </div>
+              ) : (
+                weakItems.map((item) => {
+                  const pwScore = weakScoreById.get(item.id) ?? 0;
+                  const pwLen = (item.password || '').length;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      data-testid="security-audit-weak-item"
+                      onClick={() => onSelectItem(item)}
+                      className="w-full text-left flex items-center justify-between gap-3 p-3 sm:p-4 bg-brand-error/5 hover:bg-brand-error/10 border border-brand-error/20 rounded-xl cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-error/40"
+                    >
+                      <div className="overflow-hidden pr-2 min-w-0">
+                        <h4 className="font-semibold text-sm text-brand-error group-hover:underline truncate">
+                          {item.title}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-on-surface-variant mt-0.5">
+                          <span className="inline-flex items-center gap-1 min-w-0">
+                            <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/60" />
+                            <span className="font-mono truncate">{item.username}</span>
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-error/10 text-brand-error shrink-0">
+                            {pwLen === 0 ? '0 ch' : `${pwLen} ch · ${pwScore}/100`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-error bg-brand-error/10 px-2.5 py-1 rounded-full shrink-0">
+                        <span>{t('securityAudit.fixAction')}</span>
+                        <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* REUSED GROUPS (Clustered by shared password) */}
+        {showSection('reused') && (
+          <div className={`space-y-3 ${activeFilter === 'reused' ? 'lg:col-span-2' : ''}`}>
+            <h3 className="text-sm font-bold text-brand-secondary uppercase tracking-wider flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>{t('securityAudit.reusedGroup')} ({reusedItems.length})</span>
+            </h3>
+
+            <div className="space-y-3">
+              {reusedGroups.length === 0 ? (
+                <div className="p-4 bg-surface-low rounded-xl text-xs text-on-surface-variant/70 italic text-center border border-outline-variant/15">
+                  {t('securityAudit.noReusedPasswords')}
+                </div>
+              ) : (
+                reusedGroups.map((group, groupIdx) => (
+                  <div
+                    key={group.map((g) => g.id).join('-')}
+                    data-testid="security-audit-reused-cluster"
+                    className="rounded-xl border border-brand-secondary/20 bg-brand-secondary/5 p-2.5 space-y-2"
+                  >
+                    <div className="flex items-center justify-between px-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-secondary">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Copy className="w-3 h-3" />
+                        <span>{t('securityAudit.reusedClusterLabel', { index: groupIdx + 1, count: group.length })}</span>
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {group.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          data-testid="security-audit-reused-item"
+                          onClick={() => onSelectItem(item)}
+                          className="w-full text-left flex items-center justify-between gap-3 p-2.5 sm:p-3 bg-surface-container/80 hover:bg-surface-high border border-outline-variant/15 rounded-lg cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-secondary/40"
+                        >
+                          <div className="overflow-hidden pr-2 min-w-0">
+                            <h4 className="font-semibold text-sm text-on-surface group-hover:underline truncate">
+                              {item.title}
+                            </h4>
+                            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
+                              <User className="w-3.5 h-3.5 shrink-0 text-on-surface-variant/60" />
+                              <span className="font-mono truncate">{item.username}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-secondary bg-brand-secondary/10 px-2.5 py-1 rounded-full shrink-0">
+                            <span>{t('securityAudit.changeAction')}</span>
+                            <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full shrink-0">
-                    <span>{t('securityAudit.totpAction')}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* OLD PASSWORDS */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-blue-300 uppercase tracking-wider flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            <span>{t('securityAudit.oldGroup')} ({oldPasswordItems.length})</span>
-          </h3>
+        {/* TOTP DEFICIENCY */}
+        {showSection('totp') && (
+          <div className={`space-y-3 ${activeFilter === 'totp' ? 'lg:col-span-2' : ''}`}>
+            <h3 className="text-sm font-bold text-brand-secondary uppercase tracking-wider flex items-center gap-2">
+              <KeyRound className="w-4 h-4" />
+              <span>{t('securityAudit.totpGroup')} ({missingTotpItems.length})</span>
+            </h3>
 
-          <div className="space-y-2.5">
-            {oldPasswordItems.length === 0 ? (
-              <div className="p-4 bg-[#141614] rounded-xl text-xs text-on-surface-variant/40 italic text-center border border-outline-variant/5">
-                {t('securityAudit.noOldPasswords')}
-              </div>
-            ) : (
-              oldPasswordItems.map((item) => {
-                const age = getPasswordAgeInDays(item.updatedAt || item.createdAt);
-                return (
-                  <div
+            <div className="space-y-2.5">
+              {missingTotpItems.length === 0 ? (
+                <div className="p-4 bg-surface-low rounded-xl text-xs text-on-surface-variant/70 italic text-center border border-outline-variant/15">
+                  {t('securityAudit.noTotpDeficiency')}
+                </div>
+              ) : (
+                missingTotpItems.map((item) => (
+                  <button
                     key={item.id}
+                    type="button"
+                    data-testid="security-audit-totp-item"
                     onClick={() => onSelectItem(item)}
-                    className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#121418]/80 hover:bg-[#151c24] border border-blue-500/10 rounded-xl cursor-pointer transition-all group"
+                    className="w-full text-left flex items-center justify-between gap-3 p-3 sm:p-4 bg-brand-secondary/5 hover:bg-brand-secondary/10 border border-brand-secondary/20 rounded-xl cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-secondary/40"
                   >
-                    <div className="overflow-hidden pr-2">
-                      <h4 className="font-semibold text-sm text-blue-300 group-hover:underline truncate">
+                    <div className="overflow-hidden pr-2 min-w-0">
+                      <h4 className="font-semibold text-sm text-on-surface group-hover:underline truncate">
                         {item.title}
                       </h4>
-                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
-                        <Clock className="w-3.5 h-3.5 text-blue-400" />
-                        <span>{t('securityAudit.passwordAge').replace('{age}', String(age))}</span>
+                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5 font-mono truncate">
+                        {item.url}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-blue-300 bg-blue-500/10 px-2.5 py-1 rounded-full shrink-0">
-                      <span>{t('securityAudit.updateAction')}</span>
+                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-secondary bg-brand-secondary/10 px-2.5 py-1 rounded-full shrink-0">
+                      <span>{t('securityAudit.totpAction')}</span>
                       <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* OLD PASSWORDS */}
+        {showSection('old') && (
+          <div className={`space-y-3 ${activeFilter === 'old' ? 'lg:col-span-2' : ''}`}>
+            <h3 className="text-sm font-bold text-brand-primary uppercase tracking-wider flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>{t('securityAudit.oldGroup')} ({oldPasswordItems.length})</span>
+            </h3>
+
+            <div className="space-y-2.5">
+              {oldPasswordItems.length === 0 ? (
+                <div className="p-4 bg-surface-low rounded-xl text-xs text-on-surface-variant/70 italic text-center border border-outline-variant/15">
+                  {t('securityAudit.noOldPasswords')}
+                </div>
+              ) : (
+                oldPasswordItems.map((item) => {
+                  const age = getItemPasswordAgeInDays(item);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      data-testid="security-audit-old-item"
+                      onClick={() => onSelectItem(item)}
+                      className="w-full text-left flex items-center justify-between gap-3 p-3 sm:p-4 bg-brand-primary/5 hover:bg-brand-primary/10 border border-brand-primary/20 rounded-xl cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40"
+                    >
+                      <div className="overflow-hidden pr-2 min-w-0">
+                        <h4 className="font-semibold text-sm text-on-surface group-hover:underline truncate">
+                          {item.title}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
+                          <Clock className="w-3.5 h-3.5 text-brand-primary shrink-0" />
+                          <span>{t('securityAudit.passwordAge').replace('{age}', String(age))}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full shrink-0">
+                        <span>{t('securityAudit.updateAction')}</span>
+                        <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
 
         {/* UNSECURE HTTP */}
-        <div className="space-y-4 lg:col-span-2">
-          <h3 className="text-sm font-bold text-brand-error uppercase tracking-wider flex items-center gap-2">
-            <Link className="w-4 h-4" />
-            <span>{t('securityAudit.httpGroup')} ({unsecureHttpItems.length})</span>
-          </h3>
+        {showSection('http') && (
+          <div className="space-y-3 lg:col-span-2">
+            <h3 className="text-sm font-bold text-brand-error uppercase tracking-wider flex items-center gap-2">
+              <Link className="w-4 h-4" />
+              <span>{t('securityAudit.httpGroup')} ({unsecureHttpItems.length})</span>
+            </h3>
 
-          <div className="space-y-2.5">
-            {unsecureHttpItems.length === 0 ? (
-              <div className="p-4 bg-[#141614] rounded-xl text-xs text-on-surface-variant/40 italic text-center border border-outline-variant/5">
-                {t('securityAudit.noHttpGroup')}
-              </div>
-            ) : (
-              unsecureHttpItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => onSelectItem(item)}
-                  className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-[#181212]/80 hover:bg-[#201515] border border-brand-error/15 rounded-xl cursor-pointer transition-all group"
-                >
-                  <div className="overflow-hidden pr-2">
-                    <h4 className="font-semibold text-sm text-brand-error group-hover:underline truncate">
-                      {item.title}
-                    </h4>
-                    <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5 font-mono truncate">
-                      {item.url}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-error bg-brand-error/10 px-2.5 py-1 rounded-full shrink-0">
-                    <span>{t('securityAudit.fixActionShort')}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-                  </div>
+            <div className="space-y-2.5">
+              {unsecureHttpItems.length === 0 ? (
+                <div className="p-4 bg-surface-low rounded-xl text-xs text-on-surface-variant/70 italic text-center border border-outline-variant/15">
+                  {t('securityAudit.noHttpGroup')}
                 </div>
-              ))
-            )}
+              ) : (
+                unsecureHttpItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid="security-audit-http-item"
+                    onClick={() => onSelectItem(item)}
+                    className="w-full text-left flex items-center justify-between gap-3 p-3 sm:p-4 bg-brand-error/5 hover:bg-brand-error/10 border border-brand-error/20 rounded-xl cursor-pointer transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-error/40"
+                  >
+                    <div className="overflow-hidden pr-2 min-w-0">
+                      <h4 className="font-semibold text-sm text-brand-error group-hover:underline truncate">
+                        {item.title}
+                      </h4>
+                      <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5 font-mono truncate">
+                        {item.url}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-brand-error bg-brand-error/10 px-2.5 py-1 rounded-full shrink-0">
+                      <span>{t('securityAudit.fixActionShort')}</span>
+                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

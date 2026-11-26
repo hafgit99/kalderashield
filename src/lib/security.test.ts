@@ -1,5 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import { calculatePasswordScore, generatePassword, getStrengthLabel, runVaultAudit, validateMasterPassword, supportsTwoFactor, isUnsecureHttpUrl, getPasswordAgeInDays } from './security';
+import {
+  calculatePasswordScore,
+  clearAuditScoreHistory,
+  generatePassword,
+  getAuditScoreHistory,
+  getItemPasswordAgeInDays,
+  getPasswordAgeInDays,
+  getStrengthLabel,
+  isUnsecureHttpUrl,
+  itemNeedsTwoFactor,
+  runVaultAudit,
+  saveAuditScoreToHistory,
+  supportsTwoFactor,
+  validateMasterPassword,
+} from './security';
 import type { VaultItem } from '../types';
 import { closeVaultSession } from './vaultSession';
 import { ZxcvbnFactory } from '@zxcvbn-ts/core';
@@ -193,5 +207,115 @@ describe('extended security audit checks', () => {
     expect(report.unsecureHttpCount).toBe(1);
     expect(report.oldPasswordCount).toBe(1);
     expect(report.score).toBeLessThan(100);
+  });
+
+  it('penalizes and caps vault score when HIBP breached items are reported', () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const items = [
+      baseItem({ id: 'pwn-1', password: 'G8x#kL9@pQ2!mZ7', url: 'https://a.example.com', createdAt: todayStr, updatedAt: todayStr }),
+      baseItem({ id: 'ok-2', password: 'R4v$nT8!wC3#yH6', url: 'https://b.example.com', createdAt: todayStr, updatedAt: todayStr }),
+    ];
+
+    const cleanReport = runVaultAudit(items, { persistHistory: false });
+    const pwnedReport = runVaultAudit(items, {
+      pwnedItemIds: new Set(['pwn-1']),
+      persistHistory: false,
+    });
+
+    expect(cleanReport.score).toBeGreaterThanOrEqual(85);
+    expect(cleanReport.secureCount).toBe(2);
+    expect(pwnedReport.pwnedCount).toBe(1);
+    expect(pwnedReport.secureCount).toBe(1);
+    expect(pwnedReport.score).toBeLessThanOrEqual(74);
+  });
+
+  it('excludes reused strong passwords from secureCount and handles prototype-key passwords safely', () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const report = runVaultAudit(
+      [
+        baseItem({ id: 'r1', password: 'G8x#kL9@pQ2!mZ7', createdAt: todayStr, updatedAt: todayStr }),
+        baseItem({ id: 'r2', password: 'G8x#kL9@pQ2!mZ7', createdAt: todayStr, updatedAt: todayStr }),
+        baseItem({ id: 'proto-1', password: 'toString', createdAt: todayStr, updatedAt: todayStr }),
+        baseItem({ id: 'proto-2', password: 'constructor', createdAt: todayStr, updatedAt: todayStr }),
+      ],
+      { persistHistory: false },
+    );
+
+    expect(report.reusedCount).toBe(2);
+    expect(report.secureCount).toBe(0);
+    expect(report.weakCount).toBe(2);
+  });
+
+  it('hardens isUnsecureHttpUrl against host spoofing and allows private/local hosts', () => {
+    expect(isUnsecureHttpUrl('http://localhost.evil.com/login')).toBe(true);
+    expect(isUnsecureHttpUrl('http://127.0.0.1.attacker.test')).toBe(true);
+    expect(isUnsecureHttpUrl('http://[::1]:8080/admin')).toBe(false);
+    expect(isUnsecureHttpUrl('http://192.168.1.10:5000')).toBe(false);
+    expect(isUnsecureHttpUrl('http://10.0.0.5/panel')).toBe(false);
+    expect(isUnsecureHttpUrl('http://172.16.0.2/router')).toBe(false);
+    expect(isUnsecureHttpUrl('http://printer.local/status')).toBe(false);
+  });
+
+  it('exempts passkey-protected logins from missing 2FA and recognizes expanded domains', () => {
+    expect(supportsTwoFactor('https://discord.com/login')).toBe(true);
+    expect(supportsTwoFactor('https://paypal.com')).toBe(true);
+    expect(
+      itemNeedsTwoFactor(
+        baseItem({
+          url: 'https://github.com/login',
+          totpSecret: undefined,
+          passkeyCredentialId: 'cred-passkey-1',
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      itemNeedsTwoFactor(
+        baseItem({
+          url: 'https://discord.com/login',
+          totpSecret: undefined,
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('uses latest passwordHistory timestamp for item password age when available', () => {
+    const oldDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+    const recentDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    const item = baseItem({
+      updatedAt: recentDate,
+      passwordHistory: [
+        { password: 'old-password', changedAt: oldDate },
+        { password: 'newer-password', changedAt: recentDate },
+      ],
+    });
+
+    expect(getItemPasswordAgeInDays(item)).toBeLessThanOrEqual(6);
+
+    const stalePasswordItem = baseItem({
+      updatedAt: recentDate,
+      passwordHistory: [{ password: 'old-password', changedAt: oldDate }],
+    });
+    expect(getItemPasswordAgeInDays(stalePasswordItem)).toBeGreaterThanOrEqual(179);
+  });
+
+  it('clears persisted audit score history cleanly', () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value);
+      },
+      removeItem: (key: string) => {
+        store.delete(key);
+      },
+    });
+    try {
+      saveAuditScoreToHistory(88);
+      expect(getAuditScoreHistory()).toHaveLength(1);
+      clearAuditScoreHistory();
+      expect(getAuditScoreHistory()).toHaveLength(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

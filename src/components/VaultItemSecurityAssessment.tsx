@@ -1,6 +1,7 @@
 import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
 import { formatPercent } from '../lib/formatters';
+import { AUDIT_CRITICAL_THRESHOLD, AUDIT_EXCELLENT_THRESHOLD } from '../lib/security';
 
 interface VaultItemSecurityAssessmentProps {
   score: number;
@@ -8,28 +9,28 @@ interface VaultItemSecurityAssessmentProps {
 }
 
 function getToneClass(score: number): string {
-  if (score >= 85) return 'text-brand-tertiary';
-  if (score >= 50) return 'text-brand-secondary';
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) return 'text-brand-tertiary';
+  if (score >= AUDIT_CRITICAL_THRESHOLD) return 'text-brand-secondary';
   return 'text-brand-error';
 }
 
 function getBorderClass(score: number): string {
-  if (score >= 85) return 'border-l-brand-tertiary';
-  if (score >= 50) return 'border-l-brand-secondary';
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) return 'border-l-brand-tertiary';
+  if (score >= AUDIT_CRITICAL_THRESHOLD) return 'border-l-brand-secondary';
   return 'border-l-brand-error';
 }
 
 function getButtonClass(score: number): string {
-  if (score >= 85) return 'bg-brand-tertiary/15 text-brand-tertiary hover:bg-brand-tertiary/20';
-  if (score >= 50) return 'bg-brand-secondary/15 text-brand-secondary hover:bg-brand-secondary/20';
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) return 'bg-brand-tertiary/15 text-brand-tertiary hover:bg-brand-tertiary/20';
+  if (score >= AUDIT_CRITICAL_THRESHOLD) return 'bg-brand-secondary/15 text-brand-secondary hover:bg-brand-secondary/20';
   return 'bg-brand-error/15 text-brand-error hover:bg-brand-error/20';
 }
 
 function getDescriptionKey(score: number): TranslationKey {
-  if (score >= 85) {
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) {
     return 'detail.security.secureDescription';
   }
-  if (score >= 50) {
+  if (score >= AUDIT_CRITICAL_THRESHOLD) {
     return 'detail.security.mediumDescription';
   }
   return 'detail.security.criticalDescription';

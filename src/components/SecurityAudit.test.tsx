@@ -196,6 +196,10 @@ describe('SecurityAudit', () => {
     expect(screen.queryByText('PwnedPass123!')).toBeNull();
     // A breached password must not be counted as "Strong / Secure" even when complex.
     expect(screen.getByTestId('security-audit-secure-count').textContent).toBe('0');
+    // A breached password must penalize and cap the vault score below the Excellent threshold (85).
+    const scoreDigits = Number((screen.getByTestId('security-audit-score').textContent || '').replace(/[^0-9]/g, ''));
+    expect(scoreDigits).toBeLessThanOrEqual(74);
+    expect(screen.queryByText(/Mükemmel/)).toBeNull();
 
     // Manual rescan button re-runs the breach scan on demand
     const callsBeforeRescan = vi.mocked(checkPasswordAgainstHibp).mock.calls.length;
@@ -353,5 +357,49 @@ describe('SecurityAudit', () => {
     } finally {
       delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
     }
+  });
+
+  it('clusters reused passwords and filters sections via the category filter bar', () => {
+    const weakItem = makeItem({
+      id: 'w-1',
+      title: 'Legacy Panel',
+      username: 'root',
+      password: '123',
+    });
+    const sharedA = makeItem({
+      id: 'r-1',
+      title: 'Billing Portal',
+      username: 'billing@example.com',
+      password: 'SharedClusterPass123!',
+    });
+    const sharedB = makeItem({
+      id: 'r-2',
+      title: 'Invoice Portal',
+      username: 'invoices@example.com',
+      password: 'SharedClusterPass123!',
+    });
+
+    render(<SecurityAudit items={[weakItem, sharedA, sharedB]} onSelectItem={vi.fn()} />);
+
+    // Reused accounts are grouped into a shared cluster without exposing the password.
+    expect(screen.getAllByTestId('security-audit-reused-cluster')).toHaveLength(1);
+    expect(screen.queryByText('SharedClusterPass123!')).toBeNull();
+    // Action rows use native button elements for keyboard accessibility.
+    expect(screen.getByTestId('security-audit-weak-item').tagName).toBe('BUTTON');
+
+    // Filter to weak only -> reused section hides
+    fireEvent.click(screen.getByTestId('security-audit-filter-weak'));
+    expect(screen.getByText('Legacy Panel')).toBeTruthy();
+    expect(screen.queryByText('Billing Portal')).toBeNull();
+
+    // Filter to reused only -> weak section hides
+    fireEvent.click(screen.getByTestId('security-audit-filter-reused'));
+    expect(screen.queryByText('Legacy Panel')).toBeNull();
+    expect(screen.getByText('Billing Portal')).toBeTruthy();
+
+    // Back to all -> both sections visible
+    fireEvent.click(screen.getByTestId('security-audit-filter-all'));
+    expect(screen.getByText('Legacy Panel')).toBeTruthy();
+    expect(screen.getByText('Billing Portal')).toBeTruthy();
   });
 });
