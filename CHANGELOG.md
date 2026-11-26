@@ -2,6 +2,12 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.4.0 - Desktop Release Gate & Rust Formatting Alignment
+
+### Fixed
+
+- **Desktop CI release gate (`cargo fmt --check`) alignment.** Applied `rustfmt` to `src-tauri/src/lib.rs` and `src-tauri/src/sync_http.rs` so Linux and Windows desktop release workflows pass `npm run rust:fmt:check` cleanly and publish the full v7.1.3+ encrypted backup/import and Rust E2EE cloud sync hardening release across all platforms.
+
 ## 7.1.3.0 - Hardened Encrypted Backup/Import & Rust E2EE Cloud Sync Bridge
 
 ### Added
