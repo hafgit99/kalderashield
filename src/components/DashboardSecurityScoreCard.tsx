@@ -2,6 +2,8 @@ import { ShieldCheck } from 'lucide-react';
 
 import { useLanguage } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/translations';
+import { formatPercent } from '../lib/formatters';
+import { AUDIT_CRITICAL_THRESHOLD, AUDIT_EXCELLENT_THRESHOLD } from '../lib/security';
 import type { AuditReport } from '../types';
 
 interface DashboardSecurityScoreCardProps {
@@ -10,23 +12,23 @@ interface DashboardSecurityScoreCardProps {
 }
 
 function getScoreTone(score: number): string {
-  if (score >= 85) return 'text-brand-tertiary';
-  if (score >= 50) return 'text-brand-secondary';
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) return 'text-brand-tertiary';
+  if (score >= AUDIT_CRITICAL_THRESHOLD) return 'text-brand-secondary';
   return 'text-brand-error';
 }
 
 function getScoreTitleKey(score: number): TranslationKey {
-  if (score >= 85) return 'dashboard.score.secureTitle';
-  if (score >= 50) return 'dashboard.score.mediumTitle';
+  if (score >= AUDIT_EXCELLENT_THRESHOLD) return 'dashboard.score.secureTitle';
+  if (score >= AUDIT_CRITICAL_THRESHOLD) return 'dashboard.score.mediumTitle';
   return 'dashboard.score.criticalTitle';
 }
 
 function getScoreDescriptionKey(score: number): TranslationKey {
-  return score >= 85 ? 'dashboard.score.secureDescription' : 'dashboard.score.riskyDescription';
+  return score >= AUDIT_EXCELLENT_THRESHOLD ? 'dashboard.score.secureDescription' : 'dashboard.score.riskyDescription';
 }
 
 export default function DashboardSecurityScoreCard({ auditReport, activeItemCount }: DashboardSecurityScoreCardProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <div className="md:col-span-7 surface-panel rounded-xl p-6 flex flex-col justify-between gap-6 relative overflow-hidden group hover:border-brand-primary/15 transition-all">
@@ -59,7 +61,7 @@ export default function DashboardSecurityScoreCard({ auditReport, activeItemCoun
             ></path>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center font-display">
-            <span className="text-2xl font-bold font-mono text-on-surface">%{auditReport.score}</span>
+            <span className="text-2xl font-bold font-mono text-on-surface tabular-nums">{formatPercent(auditReport.score, language)}</span>
             <span className="text-[9px] text-on-surface-variant/70 tracking-widest uppercase">{t('dashboard.score.power')}</span>
           </div>
         </div>
@@ -77,25 +79,25 @@ export default function DashboardSecurityScoreCard({ auditReport, activeItemCoun
         </div>
         <div className="space-y-0.5 border-l border-outline-variant/10">
           <p className="text-[10px] text-on-surface-variant truncate">{t('dashboard.score.weakPasswords')}</p>
-          <p className={`text-sm font-bold font-mono ${auditReport.weakCount > 0 ? 'text-red-400' : 'text-brand-tertiary'}`}>
+          <p className={`text-sm font-bold font-mono ${auditReport.weakCount > 0 ? 'text-brand-error' : 'text-brand-tertiary'}`}>
             {auditReport.weakCount}
           </p>
         </div>
         <div className="space-y-0.5 border-l border-outline-variant/10 font-mono">
           <p className="text-[10px] text-on-surface-variant font-sans truncate">{t('dashboard.score.reusedPasswords')}</p>
-          <p className={`text-sm font-bold ${auditReport.reusedCount > 0 ? 'text-amber-300' : 'text-brand-tertiary'}`}>
+          <p className={`text-sm font-bold ${auditReport.reusedCount > 0 ? 'text-brand-secondary' : 'text-brand-tertiary'}`}>
             {auditReport.reusedCount}
           </p>
         </div>
         <div className="space-y-0.5 border-l border-outline-variant/10 font-mono">
           <p className="text-[10px] text-on-surface-variant font-sans truncate">{t('dashboard.score.oldPasswords')}</p>
-          <p className={`text-sm font-bold ${(auditReport.oldPasswordCount ?? 0) > 0 ? 'text-amber-300' : 'text-brand-tertiary'}`}>
+          <p className={`text-sm font-bold ${(auditReport.oldPasswordCount ?? 0) > 0 ? 'text-brand-secondary' : 'text-brand-tertiary'}`}>
             {auditReport.oldPasswordCount ?? 0}
           </p>
         </div>
         <div className="space-y-0.5 border-l border-outline-variant/10 font-mono col-span-2 sm:col-span-1">
           <p className="text-[10px] text-on-surface-variant font-sans truncate">{t('dashboard.score.missingTotp')}</p>
-          <p className={`text-sm font-bold ${(auditReport.missingTotpCount ?? 0) > 0 ? 'text-amber-300' : 'text-brand-tertiary'}`}>
+          <p className={`text-sm font-bold ${(auditReport.missingTotpCount ?? 0) > 0 ? 'text-brand-secondary' : 'text-brand-tertiary'}`}>
             {auditReport.missingTotpCount ?? 0}
           </p>
         </div>

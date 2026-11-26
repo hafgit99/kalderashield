@@ -155,34 +155,81 @@ export function getStrengthLabel(password: string): {
   }
 }
 
+export const AUDIT_EXCELLENT_THRESHOLD = 85;
+export const AUDIT_CRITICAL_THRESHOLD = 50;
+export const PASSWORD_SECURE_SCORE_THRESHOLD = 85;
+export const PASSWORD_WEAK_SCORE_THRESHOLD = 40;
+export const PASSWORD_OLD_AGE_DAYS = 90;
+
 const COMMON_2FA_DOMAINS = [
   'github.com',
   'google.com',
   'microsoft.com',
+  'live.com',
+  'outlook.com',
   'apple.com',
+  'icloud.com',
   'facebook.com',
+  'instagram.com',
   'twitter.com',
   'x.com',
   'gitlab.com',
   'bitbucket.org',
   'amazon.com',
+  'aws.amazon.com',
   'dropbox.com',
   'proton.me',
   'protonmail.com',
+  'tuta.com',
+  'fastmail.com',
   'binance.com',
-  'coinbase.com'
+  'coinbase.com',
+  'kraken.com',
+  'paypal.com',
+  'stripe.com',
+  'discord.com',
+  'slack.com',
+  'reddit.com',
+  'linkedin.com',
+  'steampowered.com',
+  'store.steampowered.com',
+  'epicgames.com',
+  'twitch.tv',
+  'cloudflare.com',
+  'digitalocean.com',
+  'hetzner.com',
+  'vercel.com',
+  'netlify.com',
+  'heroku.com',
+  'npmjs.com',
+  'pypi.org',
+  'docker.com',
+  'openai.com',
+  'notion.so',
+  'figma.com',
+  'atlassian.com',
+  'zoom.us',
+  'adobe.com',
+  'yahoo.com',
+  'shopify.com',
 ];
 
 export function supportsTwoFactor(url: string | undefined): boolean {
   if (!url) return false;
   try {
-    const hostname = url.includes('://') ? new URL(url).hostname : url;
-    const cleanHost = hostname.toLowerCase().replace('www.', '');
-    return COMMON_2FA_DOMAINS.some(d => cleanHost === d || cleanHost.endsWith('.' + d));
+    const hostname = url.includes('://') ? new URL(url).hostname : new URL(`https://${url}`).hostname;
+    const cleanHost = hostname.toLowerCase().replace(/^www\./, '');
+    return COMMON_2FA_DOMAINS.some((d) => cleanHost === d || cleanHost.endsWith(`.${d}`));
   } catch {
     const cleanUrl = url.toLowerCase();
-    return COMMON_2FA_DOMAINS.some(d => cleanUrl.includes(d));
+    return COMMON_2FA_DOMAINS.some((d) => cleanUrl.includes(d));
   }
+}
+
+export function itemNeedsTwoFactor(item: VaultItem): boolean {
+  if (item.category !== 'login') return false;
+  if (item.totpSecret || item.passkeyCredentialId) return false;
+  return supportsTwoFactor(item.url);
 }
 
 export function getPasswordAgeInDays(updatedAt: string): number {
@@ -193,44 +240,99 @@ export function getPasswordAgeInDays(updatedAt: string): number {
   return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
 }
 
+export function getItemPasswordAgeInDays(item: VaultItem): number {
+  if (Array.isArray(item.passwordHistory) && item.passwordHistory.length > 0) {
+    let latestMs = -1;
+    let latestStr = '';
+    for (const entry of item.passwordHistory) {
+      const ms = new Date(entry.changedAt).getTime();
+      if (!Number.isNaN(ms) && ms > latestMs) {
+        latestMs = ms;
+        latestStr = entry.changedAt;
+      }
+    }
+    if (latestStr) {
+      return getPasswordAgeInDays(latestStr);
+    }
+  }
+  return getPasswordAgeInDays(item.updatedAt || item.createdAt);
+}
+
+function isLocalOrPrivateHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0') {
+    return true;
+  }
+  if (host.endsWith('.local') || host.endsWith('.localhost')) {
+    return true;
+  }
+  if (host.startsWith('10.') || host.startsWith('192.168.')) {
+    return true;
+  }
+  const m172 = /^172\.(\d{1,3})\./.exec(host);
+  if (m172) {
+    const secondOctet = Number(m172[1]);
+    if (secondOctet >= 16 && secondOctet <= 31) return true;
+  }
+  return false;
+}
+
 export function isUnsecureHttpUrl(url: string | undefined): boolean {
   if (!url) return false;
-  const cleanUrl = url.trim().toLowerCase();
-  return cleanUrl.startsWith('http://') && !cleanUrl.startsWith('http://localhost') && !cleanUrl.startsWith('http://127.0.0.1');
+  const trimmed = url.trim();
+  if (!/^http:\/\//i.test(trimmed)) return false;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:') return false;
+    return !isLocalOrPrivateHost(parsed.hostname);
+  } catch {
+    return true;
+  }
 }
+
+const AUDIT_HISTORY_STORAGE_KEY = 'kalderashield-audit-history';
 
 export function saveAuditScoreToHistory(score: number): void {
   if (typeof localStorage === 'undefined') return;
   try {
-    const historyJson = localStorage.getItem('kalderashield-audit-history') || '[]';
+    const historyJson = localStorage.getItem(AUDIT_HISTORY_STORAGE_KEY) || '[]';
     let history: { date: string; score: number }[] = JSON.parse(historyJson);
     if (!Array.isArray(history)) {
       history = [];
     }
     const today = new Date().toISOString().split('T')[0] ?? '';
-    
-    const existingIndex = history.findIndex(h => h.date === today);
+
+    const existingIndex = history.findIndex((h) => h.date === today);
     if (existingIndex !== -1 && history[existingIndex]) {
       history[existingIndex].score = score;
     } else if (today) {
       history.push({ date: today, score });
     }
-    
+
     history.sort((a, b) => a.date.localeCompare(b.date));
     if (history.length > 10) {
       history.shift();
     }
-    
-    localStorage.setItem('kalderashield-audit-history', JSON.stringify(history));
+
+    localStorage.setItem(AUDIT_HISTORY_STORAGE_KEY, JSON.stringify(history));
   } catch (e) {
-    console.error("Failed to save audit history:", e);
+    console.error('Failed to save audit history:', e);
+  }
+}
+
+export function clearAuditScoreHistory(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(AUDIT_HISTORY_STORAGE_KEY);
+  } catch {
+    // Ignore storage restriction errors
   }
 }
 
 export function getAuditScoreHistory(): { date: string; score: number }[] {
   if (typeof localStorage !== 'undefined') {
     try {
-      const historyJson = localStorage.getItem('kalderashield-audit-history');
+      const historyJson = localStorage.getItem(AUDIT_HISTORY_STORAGE_KEY);
       if (historyJson) {
         const history = JSON.parse(historyJson);
         if (Array.isArray(history) && history.length > 0) {
@@ -243,18 +345,27 @@ export function getAuditScoreHistory(): { date: string; score: number }[] {
           );
         }
       }
-    } catch {}
+    } catch {
+      // Ignore malformed storage data
+    }
   }
   return [];
 }
 
+interface RunVaultAuditOptions {
+  /** Optional set of item IDs whose passwords appeared in HIBP breach data. */
+  pwnedItemIds?: ReadonlySet<string>;
+  /** Whether to persist the resulting score into localStorage history (default: true). */
+  persistHistory?: boolean;
+}
+
 /**
  * Performs a comprehensive audit of the entire vault collection.
- * Identifies weak and reused values.
- * Uses a fast heuristic scorer instead of zxcvbn for all bulk auditing 
- * to avoid blocking the main thread under any circumstances.
+ * Identifies weak, reused, breached, 2FA-missing, aged, and insecure HTTP items.
  */
-export function runVaultAudit(items: VaultItem[]): AuditReport {
+export function runVaultAudit(items: VaultItem[], auditOptions: RunVaultAuditOptions = {}): AuditReport {
+  const { pwnedItemIds, persistHistory = true } = auditOptions;
+
   if (items.length === 0) {
     return {
       score: 100,
@@ -262,6 +373,7 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
       reusedCount: 0,
       secureCount: 0,
       totalCount: 0,
+      pwnedCount: 0,
       missingTotpCount: 0,
       oldPasswordCount: 0,
       unsecureHttpCount: 0,
@@ -273,16 +385,17 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
   let weakCount = 0;
   let reusedCount = 0;
   let secureCount = 0;
+  let pwnedCount = 0;
   let missingTotpCount = 0;
   let oldPasswordCount = 0;
   let unsecureHttpCount = 0;
 
-  // Record frequencies of passwords to detect duplicates
-  const passwordFreq: Record<string, number> = {};
+  // Use Map instead of plain object so passwords like "constructor" or "toString" never collide with Object.prototype
+  const passwordFreq = new Map<string, number>();
   items.forEach((item) => {
     const pw = item.password || '';
     if (pw) {
-      passwordFreq[pw] = (passwordFreq[pw] || 0) + 1;
+      passwordFreq.set(pw, (passwordFreq.get(pw) ?? 0) + 1);
     }
   });
 
@@ -297,28 +410,34 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
       // with real zxcvbn entropy scoring before trusting it; scores below the
       // weak threshold are already classified without the expensive call.
       let score = fastPasswordScore(pw);
-      if (score >= 40) {
+      if (score >= PASSWORD_WEAK_SCORE_THRESHOLD) {
         score = calculatePasswordScore(pw);
       }
       totalIndividualScore += score;
 
-      if (pw.length < 8 || score < 40) {
-        weakCount++;
-      } else if (score >= 85) {
-        secureCount++;
+      const isReused = Boolean(pw && (passwordFreq.get(pw) ?? 0) > 1);
+      const isPwned = Boolean(pwnedItemIds?.has(item.id));
+
+      if (isReused) {
+        reusedCount++;
+      }
+      if (isPwned) {
+        pwnedCount++;
       }
 
-      if (pw && (passwordFreq[pw] ?? 0) > 1) {
-        reusedCount++;
+      if (pw.length < 8 || score < PASSWORD_WEAK_SCORE_THRESHOLD) {
+        weakCount++;
+      } else if (score >= PASSWORD_SECURE_SCORE_THRESHOLD && !isReused && !isPwned) {
+        secureCount++;
       }
     }
 
     if (item.category === 'login') {
-      if (supportsTwoFactor(item.url) && !item.totpSecret) {
+      if (itemNeedsTwoFactor(item)) {
         missingTotpCount++;
       }
-      const age = getPasswordAgeInDays(item.updatedAt || item.createdAt);
-      if (age >= 90) {
+      const age = getItemPasswordAgeInDays(item);
+      if (age >= PASSWORD_OLD_AGE_DAYS) {
         oldPasswordCount++;
       }
     }
@@ -329,22 +448,34 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
   });
 
   // Calculate overall security rating
-  // Deduct penalty for vulnerabilities like reused or weak items
   const denominator = passwordAuditedCount > 0 ? passwordAuditedCount : items.length;
   const averageScore = passwordAuditedCount > 0 ? totalIndividualScore / passwordAuditedCount : 100;
   const reusedPenalty = (reusedCount / denominator) * 35;
   const weakPenalty = (weakCount / denominator) * 45;
+  const pwnedPenalty = pwnedCount > 0 ? Math.min(60, 20 + (pwnedCount / denominator) * 45) : 0;
 
   // NIST / Advanced security checks penalties
   const unsecureHttpPenalty = Math.min(20, unsecureHttpCount * 5);
   const oldPasswordPenalty = Math.min(15, oldPasswordCount * 3);
   const missingTotpPenalty = Math.min(20, missingTotpCount * 4);
 
-  const rawScore = averageScore - reusedPenalty - weakPenalty - unsecureHttpPenalty - oldPasswordPenalty - missingTotpPenalty;
-  const finalScore = Math.max(10, Math.min(100, Math.round(rawScore)));
+  const rawScore =
+    averageScore
+    - reusedPenalty
+    - weakPenalty
+    - pwnedPenalty
+    - unsecureHttpPenalty
+    - oldPasswordPenalty
+    - missingTotpPenalty;
+  let finalScore = Math.max(10, Math.min(100, Math.round(rawScore)));
+  // A vault with known breached passwords must never display an "Excellent" score.
+  if (pwnedCount > 0) {
+    finalScore = Math.min(finalScore, 74);
+  }
 
-  // Save score to history
-  saveAuditScoreToHistory(finalScore);
+  if (persistHistory) {
+    saveAuditScoreToHistory(finalScore);
+  }
 
   return {
     score: finalScore,
@@ -352,6 +483,7 @@ export function runVaultAudit(items: VaultItem[]): AuditReport {
     reusedCount,
     secureCount,
     totalCount: items.length,
+    pwnedCount,
     missingTotpCount,
     oldPasswordCount,
     unsecureHttpCount,

@@ -34,6 +34,7 @@ import { importAttachments, type AttachmentBackupRecord } from './attachments';
 import { disableBiometric, hydrateBiometric } from './biometric';
 import { disableRecoveryKey } from './recoveryKey';
 import { clearPasswordHint } from './passwordHint';
+import { clearAuditScoreHistory } from './security';
 import { rotateSyncConfigPassword } from './sync/syncConfigStorage';
 import { importPasskeysFromEncryptedBackup } from './passkey';
 import { mergeImportedFolders } from './folders';
@@ -750,6 +751,7 @@ export async function resetSystem(): Promise<void> {
   disableBiometric();
   disableRecoveryKey();
   clearPasswordHint();
+  clearAuditScoreHistory();
   forgetRememberedAccountSecretKey();
   clearAllSetupFlagsSync();
   clearPersistedActiveVaultStorageBackend();
