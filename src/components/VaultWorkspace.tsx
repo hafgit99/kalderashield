@@ -12,6 +12,7 @@ import {
 import { useLanguage } from '../i18n/LanguageContext';
 import { androidAutofillTargetLabel, type AndroidAutofillRequest } from '../lib/androidAutofill';
 import { isAndroidAutofillTargetMatch, sortAndroidAutofillMatches } from '../lib/androidAutofillMatching';
+import { AUDIT_EXCELLENT_THRESHOLD } from '../lib/security';
 import type { AuditReport, TagDefinition, VaultFolder, VaultItem } from '../types';
 import { useBulkSelection } from '../hooks/useOrganisation';
 import type { BulkActionDescriptor } from './BulkActionBar';
@@ -585,12 +586,12 @@ export function VaultWorkspaceContent({
             onSecureShare={() => onSecureShare(selectedItem)}
           />
         ) : (
-          <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5 py-2 sm:py-4 lg:py-5 animate-fade-in text-left">
-            <div className="lg:hidden sticky top-0 z-20 -mx-3 px-3 py-2 mb-1 bg-brand-bg/95 backdrop-blur border-b border-outline-variant/10 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto space-y-4 py-1 sm:py-3 animate-fade-in text-left">
+            <div className="lg:hidden sticky top-0 z-20 -mx-3 px-3 py-2 mb-1 bg-brand-bg/95 backdrop-blur border-b border-outline-variant/15 flex items-center justify-between">
               <button
                 type="button"
                 onClick={onBackToList}
-                className="flex items-center gap-2 text-xs font-bold bg-[#1a1c1a] border border-outline-variant/15 px-3 py-2 rounded-lg text-on-surface hover:text-brand-primary active:scale-95 transition-all cursor-pointer"
+                className="flex items-center gap-2 text-xs font-bold bg-surface-low hover:bg-surface-high border border-outline-variant/20 px-3 py-2 rounded-lg text-on-surface hover:text-brand-primary active:scale-95 transition-all cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 text-brand-primary" strokeWidth={2.5} />
                 <span>{t('detail.mobile.back')}</span>
@@ -603,7 +604,7 @@ export function VaultWorkspaceContent({
                   type="button"
                   data-testid="mobile-dashboard-lock-button"
                   onClick={onLock}
-                  className="w-9 h-9 rounded-lg bg-red-500/10 border border-red-400/20 flex items-center justify-center text-red-300 hover:text-red-200 hover:bg-red-500/15 focus:outline-none focus:ring-1 focus:ring-red-300/40 active:scale-95 transition-all cursor-pointer"
+                  className="w-9 h-9 rounded-lg bg-brand-error/10 border border-brand-error/25 flex items-center justify-center text-brand-error hover:bg-brand-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-error/40 active:scale-95 transition-all cursor-pointer"
                   title={t('nav.lockVault')}
                   aria-label={t('nav.lockVault')}
                 >
@@ -614,13 +615,23 @@ export function VaultWorkspaceContent({
 
             <DashboardHeader profileName={profileName} onOpenProfile={onOpenProfile} onLock={onLock} />
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
-              <DashboardSecurityScoreCard auditReport={auditReport} activeItemCount={activeItems.length} />
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <DashboardSecurityScoreCard
+                auditReport={auditReport}
+                activeItemCount={activeItems.length}
+                onOpenAudit={onOpenAudit}
+              />
 
               <DashboardCategoryStats
                 loginCount={loginCount}
                 cardCount={cardCount}
                 secureNoteCount={secureNoteCount}
+                passkeyCount={passkeyCount}
+                identityCount={identityCount}
+                onSelectCategory={(cat) => {
+                  onSelectCategory(cat);
+                  onBackToList();
+                }}
               />
             </div>
 
@@ -630,18 +641,19 @@ export function VaultWorkspaceContent({
               onOpenGenerator={onOpenGenerator}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 animate-fade-in text-left">
-              <RecentVaultPanel
-                items={activeItems}
-                copiedField={copiedField}
-                onSelect={onSelectItem}
-                onCopyText={onCopyText}
-              />
+            <RecentVaultPanel
+              items={activeItems}
+              copiedField={copiedField}
+              onSelect={onSelectItem}
+              onCopyText={onCopyText}
+              maxItems={6}
+            />
 
-              <CryptoShieldPanel />
-            </div>
+            {auditReport.score < AUDIT_EXCELLENT_THRESHOLD && (
+              <KalderaShieldGuardReport auditReport={auditReport} onOpenAudit={onOpenAudit} />
+            )}
 
-            <KalderaShieldGuardReport auditReport={auditReport} />
+            <CryptoShieldPanel compact />
           </div>
         )}
       </section>

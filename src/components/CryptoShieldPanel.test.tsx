@@ -101,4 +101,21 @@ describe('CryptoShieldPanel', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(screen.getByText('Azaltılmış KDF güvenliği')).toBeTruthy();
   });
+
+  it('renders a compact status bar in compact mode and still surfaces KDF degradation alerts', () => {
+    render(<CryptoShieldPanel compact />);
+    expect(screen.getByText('WebCrypto AES-256-GCM')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    cleanup();
+    vi.mocked(getArgon2DegradationInfo).mockReturnValue({
+      degraded: true,
+      requestedMemoryKiB: 32768,
+      activeMemoryKiB: 8192,
+      timestamp: Date.now(),
+      writeBlocked: false,
+    });
+    render(<CryptoShieldPanel compact />);
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
 });

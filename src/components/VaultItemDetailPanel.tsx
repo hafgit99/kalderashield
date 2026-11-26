@@ -87,15 +87,16 @@ export default function VaultItemDetailPanel({
 
   return (
     <div className="max-w-6xl mx-auto space-y-4 lg:space-y-5">
-      <div className="lg:hidden sticky top-0 z-20 -mx-3 px-3 py-2 bg-brand-bg/95 backdrop-blur flex items-center justify-between border-b border-outline-variant/10">
+      <div className="lg:hidden sticky top-0 z-20 -mx-3 px-3 py-2 bg-brand-bg/95 backdrop-blur flex items-center justify-between border-b border-outline-variant/15">
         <button
+          type="button"
           onClick={onBackToList}
-          className="flex items-center gap-2 text-xs font-bold bg-[#1a1c1a] border border-outline-variant/15 px-3 py-2 rounded-lg text-on-surface hover:text-brand-primary active:scale-95 transition-all cursor-pointer"
+          className="flex items-center gap-2 text-xs font-bold bg-surface-low hover:bg-surface-high border border-outline-variant/20 px-3 py-2 rounded-lg text-on-surface hover:text-brand-primary active:scale-95 transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 text-brand-primary" strokeWidth={2.5} />
           <span>{t('detail.mobile.back')}</span>
         </button>
-        <span className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">{t('detail.mobile.title')}</span>
+        <span className="text-[11px] text-on-surface-variant uppercase tracking-wider font-bold">{t('detail.mobile.title')}</span>
       </div>
 
       <VaultItemDetailHeader
@@ -125,14 +126,14 @@ export default function VaultItemDetailPanel({
                 {t('autofill.detail.description')}
               </p>
               {autofillTargetLabel && (
-                <p className="mt-2 inline-flex max-w-full items-center rounded-md border border-brand-primary/15 bg-[#080a09]/35 px-2 py-1 font-mono text-[10px] text-on-surface truncate">
+                <p className="mt-2 inline-flex max-w-full items-center rounded-md border border-brand-primary/20 bg-surface-low/80 px-2 py-1 font-mono text-[11px] text-on-surface truncate">
                   {t('autofill.target.label')}: {autofillTargetLabel}
                 </p>
               )}
               {autofillTargetLabel && (
                 <p
                   data-testid="autofill-match-status"
-                  className={`mt-2 text-[10px] font-bold ${isAutofillMatch ? 'text-brand-primary' : 'text-amber-300'}`}
+                  className={`mt-2 text-[11px] font-bold ${isAutofillMatch ? 'text-brand-primary' : 'text-brand-secondary'}`}
                 >
                   {isAutofillMatch
                     ? t('autofill.match.confirmed')
@@ -147,10 +148,10 @@ export default function VaultItemDetailPanel({
             type="button"
             data-testid="autofill-approve-button"
             onClick={handleAutofillApproveClick}
-            className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-xs font-bold shadow-lg focus:outline-none focus:ring-1 active:scale-[0.98] transition-all cursor-pointer ${
+            className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-xs font-bold shadow-lg focus-visible:outline-none focus-visible:ring-2 active:scale-[0.98] transition-all cursor-pointer ${
               requiresMismatchConfirmation && !mismatchConfirmed
-                ? 'border-amber-300/30 bg-amber-300/15 text-amber-100 shadow-amber-400/5 hover:bg-amber-300/20 focus:ring-amber-300/40'
-                : 'border-brand-primary/25 bg-brand-primary text-[#081008] shadow-brand-primary/10 hover:bg-brand-primary/90 focus:ring-brand-primary/50'
+                ? 'border-brand-secondary/35 bg-brand-secondary/15 text-brand-secondary hover:bg-brand-secondary/20 focus-visible:ring-brand-secondary/40'
+                : 'border-brand-primary/25 bg-brand-primary text-brand-on-primary shadow-brand-primary/10 hover:bg-brand-primary/90 focus-visible:ring-brand-primary/50'
             }`}
           >
             <ShieldCheck className="h-4 w-4" />

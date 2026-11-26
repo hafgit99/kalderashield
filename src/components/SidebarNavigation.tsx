@@ -100,7 +100,7 @@ export default function SidebarNavigation({
             <span>{t('nav.trash')}</span>
           </div>
           {trashCount > 0 && (
-            <span className="px-2 py-0.5 text-[10px] rounded-full bg-red-500/20 text-red-400 font-mono font-bold">
+            <span className="px-2 py-0.5 text-[10px] rounded-full bg-brand-error/15 text-brand-error font-mono font-bold tabular-nums">
               {trashCount}
             </span>
           )}

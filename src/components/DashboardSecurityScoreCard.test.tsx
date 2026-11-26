@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LanguageProvider } from '../i18n/LanguageContext';
 import { languageStorageKey } from '../i18n/translations';
@@ -137,5 +137,27 @@ describe('DashboardSecurityScoreCard', () => {
     expect(screen.getByText('Eksik 2FA')).toBeTruthy();
     expect(screen.getByText('3')).toBeTruthy();
     expect(screen.getByText('2')).toBeTruthy();
+  });
+
+  it('opens Security Audit when clicking the audit shortcut or risk metrics strip', () => {
+    const onOpenAudit = vi.fn();
+
+    render(
+      <DashboardSecurityScoreCard
+        activeItemCount={5}
+        auditReport={{
+          score: 70,
+          weakCount: 2,
+          reusedCount: 1,
+          secureCount: 2,
+          totalCount: 5,
+        }}
+        onOpenAudit={onOpenAudit}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('dashboard-score-audit-link'));
+    fireEvent.click(screen.getByTestId('dashboard-score-metrics-button'));
+    expect(onOpenAudit).toHaveBeenCalledTimes(2);
   });
 });
