@@ -2,6 +2,18 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.5.0 - Password Recovery Hardening & Security Audit Redesign
+
+### Added
+
+- **Security Audit Light/Dark redesign, category filter bar & reused-password clustering.** Replaced hardcoded dark surfaces across `SecurityAudit`, `DashboardSecurityScoreCard`, and `VaultItemSecurityAssessment` with semantic Light/Dark theme tokens, added an accessible `role="tablist"` category filter bar (`All`, `Breached`, `Weak`, `Reused`, `Missing 2FA`, `Old`, `HTTP`) and clickable Weak/Reused KPI cards, moved breached HIBP findings to the top of the action list, grouped reused credentials into password-hiding shared clusters (`Group #1 · N accounts`), added weak-password length/score badges, and converted all audit rows to keyboard-accessible `<button>` controls across all 12 locales.
+- **Emergency Kit PDF export in Settings & desktop passkey recovery continuity.** Added a dedicated printable Emergency Kit PDF button (`Save PDF`) in Settings with proper text wrapping and wired desktop `changeMasterPasswordWithHash` to re-wrap vault-backed WebAuthn passkey private keys (`reWrapPasskeysInVaultItems`).
+
+### Fixed & Hardened
+
+- **Locked-screen BIP-39 / Shamir recovery flow (`recoverAndChangeMasterPassword`).** Fixed the locked-screen password recovery flow so resetting the master password from a recovered vault key opens a verified session, re-wraps passkeys, clears stale password hints, and preserves `changeMasterPassword` fail-closed session enforcement; added numbered recovery word parsing, OS keychain cleanup on `resetSystem`, and dangerous password-hint blocking.
+- **Unified Security Audit scoring, HIBP breach penalty & hardened helpers.** Consolidated audit thresholds (`85` excellent / `50` critical) in `src/lib/security.ts`, penalized and capped vault scores (`≤ 74`) whenever HIBP breached passwords are detected, excluded reused/breached credentials from `secureCount`, replaced plain-object password frequency maps with `Map` to prevent prototype-key collisions, hardened `isUnsecureHttpUrl` via `new URL()` (catching spoofed hosts like `http://localhost.evil.com` while exempting loopback/RFC 1918 LAN/mDNS), expanded 2FA domain coverage to 50 services with Passkey exemption, used `passwordHistory[].changedAt` for password age, cleared audit history on `resetSystem`, and expanded the verified suite to 2,566 unit tests across 270 files.
+
 ## 7.1.4.0 - Desktop Release Gate & Rust Formatting Alignment
 
 ### Fixed
