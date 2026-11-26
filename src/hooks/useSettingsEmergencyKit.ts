@@ -9,7 +9,7 @@
 import { useState } from 'react';
 
 import { useLanguage } from '../i18n/LanguageContext';
-import { saveEmergencyKit } from '../lib/emergencyKit';
+import { saveEmergencyKit, saveEmergencyKitPdf } from '../lib/emergencyKit';
 import { getRememberedAccountSecretKey } from '../lib/storage';
 import { isAccountSecretKeyFormatValid } from '../lib/secretKey';
 
@@ -19,7 +19,7 @@ export function useSettingsEmergencyKit() {
   const [emergencyKitSuccess, setEmergencyKitSuccess] = useState<string | null>(null);
   const [emergencyKitError, setEmergencyKitError] = useState<string | null>(null);
 
-  const handleDownloadEmergencyKit = async () => {
+  const runEmergencyKitDownload = async (saver: (secretKey: string) => Promise<boolean>) => {
     setEmergencyKitSuccess(null);
     setEmergencyKitError(null);
 
@@ -37,7 +37,7 @@ export function useSettingsEmergencyKit() {
     }
 
     try {
-      const saved = await saveEmergencyKit(secretKey);
+      const saved = await saver(secretKey);
       if (!saved) return;
       setEmergencySecretKey('');
       setEmergencyKitSuccess(t('settings.emergencyKit.success'));
@@ -48,11 +48,15 @@ export function useSettingsEmergencyKit() {
     }
   };
 
+  const handleDownloadEmergencyKit = () => runEmergencyKitDownload((key) => saveEmergencyKit(key));
+  const handleDownloadEmergencyKitPdf = () => runEmergencyKitDownload((key) => saveEmergencyKitPdf(key));
+
   return {
     emergencySecretKey,
     onEmergencySecretKeyChange: setEmergencySecretKey,
     emergencyKitSuccess,
     emergencyKitError,
     handleDownloadEmergencyKit,
+    handleDownloadEmergencyKitPdf,
   };
 }

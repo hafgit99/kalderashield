@@ -162,7 +162,31 @@ describe('emergencyKit', () => {
     });
     const pdfText = new TextDecoder().decode(pdfBytes);
     expect(pdfText).toContain('Recovery Key Words');
+    expect(pdfText).toContain('/F1 11 Tf');
+
+    // Verify xref byte offsets match actual object byte positions in the PDF
+    const xrefMatch = pdfText.match(/xref\n0 5\n0000000000 65535 f \n(\d{10}) 00000 n \n(\d{10}) 00000 n \n(\d{10}) 00000 n \n(\d{10}) 00000 n \n/);
+    expect(xrefMatch).toBeTruthy();
+    expect(pdfText.slice(Number(xrefMatch![1]), Number(xrefMatch![1]) + 7)).toBe('1 0 obj');
+    expect(pdfText.slice(Number(xrefMatch![4]), Number(xrefMatch![4]) + 7)).toBe('4 0 obj');
 
     expect(() => buildEmergencyKitPdfBytes('invalid-key')).toThrow('Invalid account secret key format.');
+  });
+
+  it('forwards recoveryWords option through saveEmergencyKit and saveEmergencyKitPdf', async () => {
+    const recoveryWords = Array(24).fill('abandon');
+    vi.mocked(saveDesktopExportFile).mockResolvedValueOnce(true);
+    vi.mocked(saveDesktopBinaryFile).mockResolvedValueOnce(true);
+
+    await expect(saveEmergencyKit(secretKey, { recoveryWords })).resolves.toBe(true);
+    expect(saveDesktopExportFile).toHaveBeenCalledWith(
+      EMERGENCY_KIT_FILENAME,
+      expect.stringContaining('1. abandon'),
+    );
+
+    await expect(saveEmergencyKitPdf(secretKey, { recoveryWords })).resolves.toBe(true);
+    const [, pdfBytes] = vi.mocked(saveDesktopBinaryFile).mock.calls[0]!;
+    const decoded = new TextDecoder().decode(pdfBytes as Uint8Array);
+    expect(decoded).toContain('1. abandon');
   });
 });

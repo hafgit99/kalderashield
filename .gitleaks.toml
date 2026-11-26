@@ -71,3 +71,8 @@ paths = [
   # the statement out.
   '''(^|/)src/i18n/locales/''',
 ]
+# Explicitly self-labeled synthetic test fixtures (`A3-TEST-ONLY-...` / `A3-NOTA-REAL-...`)
+# never look like production credentials while keeping generic-api-key active for real keys.
+regexes = [
+  '''A3-(?:TEST-ONLY|NOTA-REAL)(?:-[A-Z2-7]{4}){6}''',
+]

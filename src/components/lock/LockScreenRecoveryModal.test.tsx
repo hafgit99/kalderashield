@@ -12,6 +12,7 @@ import * as recoveryKeyModule from '../../lib/recoveryKey';
 import * as biometricModule from '../../lib/biometric';
 import * as passwordHintModule from '../../lib/passwordHint';
 import * as storageModule from '../../lib/storage';
+import { recordFailedUnlockAttempt, resetFailedUnlockAttempts } from '../../lib/vaultSession';
 
 vi.mock('../../lib/recoveryKey');
 vi.mock('../../lib/biometric');
@@ -20,6 +21,7 @@ vi.mock('../../lib/storage');
 
 describe('LockScreenRecoveryModal', () => {
   beforeEach(() => {
+    resetFailedUnlockAttempts();
     // getPasswordHint is async (M1 encrypted envelope) — provide a safe
     // default so the modal's load effect always gets a promise.
     vi.mocked(passwordHintModule.getPasswordHint).mockResolvedValue(null);
@@ -99,7 +101,7 @@ describe('LockScreenRecoveryModal', () => {
   it('handles recovery key submission and password reset flow', async () => {
     vi.mocked(recoveryKeyModule.isRecoveryKeySetup).mockReturnValue(true);
     vi.mocked(recoveryKeyModule.recoverWithRecoveryKey).mockResolvedValueOnce('OldPass123!');
-    vi.mocked(storageModule.changeMasterPassword).mockResolvedValueOnce();
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockResolvedValueOnce();
 
     const onUnlockedAfterRecovery = vi.fn();
     const onClearLockoutState = vi.fn();
@@ -267,7 +269,7 @@ describe('LockScreenRecoveryModal', () => {
     await waitFor(() => {
       expect(screen.getByTestId('lock-recovery-error').textContent).toContain('karmaşık');
     });
-    expect(storageModule.changeMasterPassword).not.toHaveBeenCalled();
+    expect(storageModule.recoverAndChangeMasterPassword).not.toHaveBeenCalled();
   });
 
   it('rejects mismatched replacement passwords', async () => {
@@ -280,14 +282,14 @@ describe('LockScreenRecoveryModal', () => {
     await waitFor(() => {
       expect(screen.getByTestId('lock-recovery-error').textContent).toContain('eşleşmiyor');
     });
-    expect(storageModule.changeMasterPassword).not.toHaveBeenCalled();
+    expect(storageModule.recoverAndChangeMasterPassword).not.toHaveBeenCalled();
   });
 
-  it('surfaces changeMasterPassword failures', async () => {
+  it('surfaces recoverAndChangeMasterPassword failures', async () => {
     await openPasswordResetStep();
 
-    vi.mocked(storageModule.changeMasterPassword).mockReset();
-    vi.mocked(storageModule.changeMasterPassword).mockRejectedValueOnce(new Error('Vault update failed'));
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockReset();
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockRejectedValueOnce(new Error('Vault update failed'));
 
     fireEvent.change(screen.getByTestId('lock-recovery-new-password'), { target: { value: 'NewSecure1!x' } });
     fireEvent.change(screen.getByTestId('lock-recovery-confirm-password'), { target: { value: 'NewSecure1!x' } });
@@ -304,8 +306,8 @@ describe('LockScreenRecoveryModal', () => {
 
     await openPasswordResetStep({ onUnlockedAfterRecovery, onClearLockoutState });
 
-    vi.mocked(storageModule.changeMasterPassword).mockReset();
-    vi.mocked(storageModule.changeMasterPassword).mockResolvedValue(undefined);
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockReset();
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockResolvedValue(undefined);
 
     fireEvent.change(screen.getByTestId('lock-recovery-new-password'), { target: { value: 'NewSecure1!x' } });
     fireEvent.change(screen.getByTestId('lock-recovery-confirm-password'), { target: { value: 'NewSecure1!x' } });
@@ -314,7 +316,7 @@ describe('LockScreenRecoveryModal', () => {
     await waitFor(() => {
       expect(screen.getByTestId('lock-recovery-success').textContent).toContain('Şifreniz başarıyla değiştirildi');
     });
-    expect(storageModule.changeMasterPassword).toHaveBeenCalledWith('OldPass123!', 'NewSecure1!x');
+    expect(storageModule.recoverAndChangeMasterPassword).toHaveBeenCalledWith('OldPass123!', 'NewSecure1!x');
     expect(onClearLockoutState).toHaveBeenCalledTimes(1);
 
     // The unlock callback is intentionally deferred by 800ms.
@@ -324,5 +326,78 @@ describe('LockScreenRecoveryModal', () => {
       },
       { timeout: 2000 },
     );
+  });
+
+  it('passes biometric-recovered secretKey to recoverAndChangeMasterPassword when present', async () => {
+    const dummySecretKey = 'A3-TEST-ONLY-TEST-ONLY-TEST-ONLY-TEST-ONLY';
+    vi.mocked(biometricModule.isBiometricEnabled).mockReturnValue(true);
+    vi.mocked(biometricModule.authenticateBiometricCredentials).mockResolvedValueOnce({
+      masterPassword: 'BioOldPass123!',
+      secretKey: dummySecretKey,
+    });
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockResolvedValueOnce();
+
+    renderModal();
+
+    fireEvent.click(screen.getByTestId('lock-recovery-tab-biometric'));
+    fireEvent.click(screen.getByTestId('lock-recovery-biometric-button'));
+
+    await screen.findByTestId('lock-recovery-new-password');
+    fireEvent.change(screen.getByTestId('lock-recovery-new-password'), { target: { value: 'NewSecure1!x' } });
+    fireEvent.change(screen.getByTestId('lock-recovery-confirm-password'), { target: { value: 'NewSecure1!x' } });
+    fireEvent.click(screen.getByTestId('lock-recovery-apply-button'));
+
+    await waitFor(() => {
+      expect(storageModule.recoverAndChangeMasterPassword).toHaveBeenCalledWith(
+        'BioOldPass123!',
+        'NewSecure1!x',
+        dummySecretKey,
+      );
+    });
+  });
+
+  it('requires manual Account Secret Key when vault requires one and none is remembered', async () => {
+    const dummySecretKey = 'A3-TEST-ONLY-TEST-ONLY-TEST-ONLY-TEST-ONLY';
+    vi.mocked(storageModule.isAccountSecretKeyRequired).mockReturnValue(true);
+    vi.mocked(storageModule.getRememberedAccountSecretKey).mockReturnValue(null);
+    vi.mocked(storageModule.recoverAndChangeMasterPassword).mockResolvedValueOnce();
+
+    await openPasswordResetStep();
+
+    const secretInput = screen.getByTestId('lock-recovery-secret-key');
+    fireEvent.change(secretInput, { target: { value: dummySecretKey } });
+    fireEvent.change(screen.getByTestId('lock-recovery-new-password'), { target: { value: 'NewSecure1!x' } });
+    fireEvent.change(screen.getByTestId('lock-recovery-confirm-password'), { target: { value: 'NewSecure1!x' } });
+    fireEvent.click(screen.getByTestId('lock-recovery-apply-button'));
+
+    await waitFor(() => {
+      expect(storageModule.recoverAndChangeMasterPassword).toHaveBeenCalledWith(
+        'OldPass123!',
+        'NewSecure1!x',
+        dummySecretKey,
+      );
+    });
+  });
+
+  it('enforces shared brute-force lockout before recovery key or biometric attempts', async () => {
+    vi.mocked(recoveryKeyModule.isRecoveryKeySetup).mockReturnValue(true);
+    vi.mocked(biometricModule.isBiometricEnabled).mockReturnValue(true);
+    recordFailedUnlockAttempt();
+
+    renderModal();
+
+    fireEvent.change(
+      screen.getByTestId('lock-recovery-words-input'),
+      { target: { value: 'word1 word2 word3' } },
+    );
+    fireEvent.click(screen.getByTestId('lock-recovery-submit-button'));
+    expect(recoveryKeyModule.recoverWithRecoveryKey).not.toHaveBeenCalled();
+    expect(screen.getByTestId('lock-recovery-error').textContent).toContain('Güvenlik gecikmesi');
+
+    fireEvent.click(screen.getByTestId('lock-recovery-tab-biometric'));
+    fireEvent.click(screen.getByTestId('lock-recovery-biometric-button'));
+    expect(biometricModule.authenticateBiometricCredentials).not.toHaveBeenCalled();
+    expect(biometricModule.authenticateBiometric).not.toHaveBeenCalled();
+    expect(screen.getByTestId('lock-recovery-error').textContent).toContain('Güvenlik gecikmesi');
   });
 });

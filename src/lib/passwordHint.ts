@@ -58,6 +58,7 @@ function getOrCreateWrappingKey(): Uint8Array {
 
   const generatedKey = secureRandomBytes(32);
   if (setSecureStorageItem(secureStorageKeys.passwordHintWrappingKey, bytesToBase64(generatedKey))) {
+    removeIndexedDbItemSync(HINT_KEY_INDEXED_DB_STORAGE_KEY);
     return generatedKey;
   }
 
@@ -160,6 +161,10 @@ export async function setPasswordHint(hint: string, masterPassword?: string): Pr
   }
 
   const warning = masterPassword ? isHintDangerouslySimilar(trimmed, masterPassword) : false;
+  if (warning) {
+    // Never persist a hint that reveals or closely matches the master password.
+    return { saved: false, warning: true };
+  }
   const wrappingKey = getOrCreateWrappingKey();
   try {
     const payload = await webCryptoAesGcmEncrypt(trimmed, wrappingKey, generateSafeIv());
@@ -169,7 +174,7 @@ export async function setPasswordHint(hint: string, masterPassword?: string): Pr
       payload,
     };
     setIndexedDbItemSync(HINT_STORAGE_KEY, JSON.stringify(envelope));
-    return { saved: true, warning };
+    return { saved: true, warning: false };
   } finally {
     wrappingKey.fill(0);
   }

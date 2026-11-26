@@ -117,6 +117,7 @@ export default function SettingsPanel({
     emergencyKitSuccess,
     emergencyKitError,
     handleDownloadEmergencyKit,
+    handleDownloadEmergencyKitPdf,
   } = useSettingsEmergencyKit();
 
   const {
@@ -296,6 +297,7 @@ export default function SettingsPanel({
               emergencyKitSuccess={emergencyKitSuccess}
               emergencyKitError={emergencyKitError}
               onDownloadEmergencyKit={handleDownloadEmergencyKit}
+              onDownloadEmergencyKitPdf={handleDownloadEmergencyKitPdf}
             />
           )}
 

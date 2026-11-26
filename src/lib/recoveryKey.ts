@@ -146,17 +146,48 @@ export function generateRecoveryWords(): string[] {
   return words;
 }
 
+const BIP39_WORD_MAP = new Map<string, number>(
+  BIP39_WORDLIST.map((word, index) => [word, index]),
+);
+
+/**
+ * Parses a 24-word BIP-39 recovery phrase from user input.
+ * Supports plain whitespace-separated words, comma/semicolon-separated words,
+ * numbered formats ("1. word  2. word", "1) word"), and pasted contents of
+ * `KalderaShield-vault-recovery-key.txt` / Emergency Kit files.
+ */
+export function parseRecoveryWordsInput(rawInput: string): string[] {
+  let text = rawInput.trim();
+  if (!text) return [];
+
+  // Extract section when the user pastes an entire downloaded recovery/emergency kit file
+  const markerMatch = text.match(/Recovery\s+(?:Key\s+)?Words[^:\n]*:/i);
+  if (markerMatch && markerMatch.index !== undefined) {
+    text = text.slice(markerMatch.index + markerMatch[0].length);
+  }
+  const footerMatch = text.match(/Keep this file|You need these|KalderaShield cannot/i);
+  if (footerMatch && footerMatch.index !== undefined) {
+    text = text.slice(0, footerMatch.index);
+  }
+
+  // Strip numbering prefixes such as "1.", "12)", "24:" before splitting
+  const cleaned = text.replace(/(?:^|[\s,;]+)\d+\s*[.):]\s*/g, ' ');
+  return cleaned
+    .trim()
+    .split(/[\s,;]+/)
+    .map((word) => word.trim().toLowerCase())
+    .filter((word) => word.length > 0);
+}
+
 /**
  * Validates that an array of words forms a valid 24-word BIP-39 phrase with SHA-256 checksum.
  */
 export function validateRecoveryWords(words: string[]): boolean {
   if (words.length !== 24) return false;
-  const wordMap = new Map<string, number>();
-  BIP39_WORDLIST.forEach((w, i) => wordMap.set(w, i));
 
   const indices: number[] = [];
   for (const w of words) {
-    const idx = wordMap.get(w.toLowerCase().trim());
+    const idx = BIP39_WORD_MAP.get(w.toLowerCase().trim());
     if (idx === undefined) return false;
     indices.push(idx);
   }
@@ -169,19 +200,23 @@ export function validateRecoveryWords(words: string[]): boolean {
   }
 
   const payload = new Uint8Array(33);
-  for (let i = 0; i < 33; i++) {
-    let byteVal = 0;
-    for (let b = 0; b < 8; b++) {
-      byteVal = (byteVal << 1) | (bits[i * 8 + b] ?? 0);
+  try {
+    for (let i = 0; i < 33; i++) {
+      let byteVal = 0;
+      for (let b = 0; b < 8; b++) {
+        byteVal = (byteVal << 1) | (bits[i * 8 + b] ?? 0);
+      }
+      payload[i] = byteVal;
     }
-    payload[i] = byteVal;
+
+    const rawEntropy = payload.subarray(0, 32);
+    const expectedChecksum = computeSha256ChecksumByteSync(rawEntropy);
+    const actualChecksum = payload[32] ?? 0;
+
+    return expectedChecksum === actualChecksum;
+  } finally {
+    payload.fill(0);
   }
-
-  const rawEntropy = payload.subarray(0, 32);
-  const expectedChecksum = computeSha256ChecksumByteSync(rawEntropy);
-  const actualChecksum = payload[32] ?? 0;
-
-  return expectedChecksum === actualChecksum;
 }
 
 /**
@@ -220,18 +255,24 @@ export async function setupRecoveryKey(masterPassword: string, recoveryWords: st
 
   const saltBytes = secureRandomBytes(16);
   const saltHex = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  saltBytes.fill(0);
 
   const derivedKey = await deriveKeyFromRecoveryWords(recoveryWords, saltHex);
-  const aad = buildRecoveryBundleAad({
-    version: 1,
-    kdf: 'Argon2id',
-    memoryKiB: RECOVERY_KDF_PROFILE.memoryKiB,
-    iterations: RECOVERY_KDF_PROFILE.iterations,
-    parallelism: RECOVERY_KDF_PROFILE.parallelism,
-    hashLength: RECOVERY_KDF_PROFILE.hashLength,
-    salt: saltHex,
-  });
-  const bundle = await webCryptoAesGcmEncrypt(masterPassword, derivedKey, generateSafeIv(), aad);
+  let bundle: WebCryptoAesGcmPayload;
+  try {
+    const aad = buildRecoveryBundleAad({
+      version: 1,
+      kdf: 'Argon2id',
+      memoryKiB: RECOVERY_KDF_PROFILE.memoryKiB,
+      iterations: RECOVERY_KDF_PROFILE.iterations,
+      parallelism: RECOVERY_KDF_PROFILE.parallelism,
+      hashLength: RECOVERY_KDF_PROFILE.hashLength,
+      salt: saltHex,
+    });
+    bundle = await webCryptoAesGcmEncrypt(masterPassword, derivedKey, generateSafeIv(), aad);
+  } finally {
+    derivedKey.fill(0);
+  }
 
   const recoveryBundle: RecoveryKeyBundle = {
     version: 1,
@@ -251,7 +292,9 @@ export async function setupRecoveryKey(masterPassword: string, recoveryWords: st
   // The bundle is cryptographically sealed with AES-256-GCM using an Argon2id key derived from
   // 256-bit BIP-39 recovery entropy, ensuring the master password cannot be retrieved offline
   // without the 24 recovery words.
-  if (!setSecureStorageItem(secureStorageKeys.recoveryKeyBundle, serialised)) {
+  if (setSecureStorageItem(secureStorageKeys.recoveryKeyBundle, serialised)) {
+    removeIndexedDbItemSync(RECOVERY_STORAGE_KEY);
+  } else {
     setIndexedDbItemSync(RECOVERY_STORAGE_KEY, serialised);
   }
 }
@@ -289,6 +332,8 @@ export async function recoverWithRecoveryKey(recoveryWords: string[]): Promise<s
     return await webCryptoAesGcmDecrypt(bundle.bundle, derivedKey, aad);
   } catch {
     throw new Error('Recovery failed: words do not match. Check your recovery phrase.');
+  } finally {
+    derivedKey.fill(0);
   }
 }
 

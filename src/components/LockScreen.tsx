@@ -887,8 +887,13 @@ export default function LockScreen({ onUnlock = () => {}, isAutofillPending = fa
         {showVaultRecovery && (
           <LockScreenVaultRecovery
             masterPassword={password}
-            onRestored={() => {
+            secretKey={getRememberedAccountSecretKey() || (isAccountSecretKeyRequired() ? secretKey : null)}
+            onRestored={async () => {
               setShowVaultRecovery(false);
+              const effectiveKey = getRememberedAccountSecretKey() || (isAccountSecretKeyRequired() ? secretKey : null);
+              if (password) {
+                await verifyMasterPassword(password, effectiveKey).catch(() => {});
+              }
               onUnlock();
             }}
             onDismiss={() => setShowVaultRecovery(false)}

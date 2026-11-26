@@ -19,6 +19,7 @@ import { logSecurityEvent, securityEventCodes } from './securityEvents';
 import { applyNotePolicyToItems } from './notes';
 import {
   closeVaultSession,
+  hasActiveVaultSession,
   openVaultSession,
   updateActiveVaultEncryptionKey,
   withActiveAccountSecretKey,
@@ -32,7 +33,11 @@ import { validateBackupPayload } from './backupValidation';
 import { importAttachments, type AttachmentBackupRecord } from './attachments';
 import { disableBiometric, hydrateBiometric } from './biometric';
 import { disableRecoveryKey } from './recoveryKey';
+import { clearPasswordHint } from './passwordHint';
 import { rotateSyncConfigPassword } from './sync/syncConfigStorage';
+import { importPasskeysFromEncryptedBackup } from './passkey';
+import { mergeImportedFolders } from './folders';
+import { mergeImportedTags } from './tags';
 import { createDemoItems } from './storageDemoItems';
 import {
   getSecureStorageItem,
@@ -563,9 +568,30 @@ export async function setupMasterPasswordWithSecretKey(
   });
 }
 
+export async function recoverAndChangeMasterPassword(
+  recoveredOldPassword: string,
+  newPassword: string,
+  secretKey?: string | null,
+): Promise<void> {
+  await initializeStorage();
+
+  // Recovery flows (24-word recovery key or biometric recovery from the lock
+  // screen) run while the vault is locked. Open the session with the verified
+  // recovered credential first so Rust rotation, passkey re-wrapping, and
+  // attachment re-encryption have the active old vault key.
+  if (!hasActiveVaultSession()) {
+    const verified = await verifyMasterPassword(recoveredOldPassword, secretKey);
+    if (!verified) {
+      throw new Error('current-master-password-invalid');
+    }
+  }
+
+  await changeMasterPassword(recoveredOldPassword, newPassword);
+}
+
 export async function changeMasterPassword(oldPassword: string, newPassword: string): Promise<void> {
   await initializeStorage();
-  
+
   if (isDesktopRuntime()) {
     const repo = getVaultStorageRepository();
     const newSalt = Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -637,8 +663,9 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
     // Y-3: the old recovery bundle is sealed under the previous master
     // password — after a rotation it must be invalidated, otherwise a
     // compromised 24-word phrase still unlocks the vault while the UI
-    // claims recovery is active.
+    // claims recovery is active. Also clear the stale password hint.
     disableRecoveryKey();
+    clearPasswordHint();
     await rotateSyncConfigPassword(oldPassword, newPassword).catch((syncRotateErr) => {
       logSecurityEvent(
         securityEventCodes.securityLegacyCryptoWarning,
@@ -699,8 +726,9 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
 
     await openDerivedVaultSession(newCredential, newPassword);
     disableBiometric();
-    // Y-3: see desktop branch — rotate-out stale recovery bundles.
+    // Y-3: see desktop branch — rotate-out stale recovery bundles and hint.
     disableRecoveryKey();
+    clearPasswordHint();
     await rotateSyncConfigPassword(oldPassword, newPassword).catch((syncRotateErr) => {
       logSecurityEvent(
         securityEventCodes.securityLegacyCryptoWarning,
@@ -719,6 +747,10 @@ export async function changeMasterPassword(oldPassword: string, newPassword: str
 export async function resetSystem(): Promise<void> {
   await getVaultStorageRepository().resetAll();
   closeVaultSession();
+  disableBiometric();
+  disableRecoveryKey();
+  clearPasswordHint();
+  forgetRememberedAccountSecretKey();
   clearAllSetupFlagsSync();
   clearPersistedActiveVaultStorageBackend();
 }
@@ -766,6 +798,7 @@ export interface VaultRebuildFromSnapshotResult {
 export async function rebuildVaultFromSnapshot(
   snapshotId: string,
   masterPassword: string,
+  secretKey?: string | null,
 ): Promise<VaultRebuildFromSnapshotResult> {
   const snapshots = await getVaultSnapshots();
   const target = snapshots.find((snapshot) => snapshot.id === snapshotId);
@@ -792,6 +825,10 @@ export async function rebuildVaultFromSnapshot(
   const items = validated.items as unknown as VaultItem[];
   const attachments = (validated.attachments || []) as unknown as AttachmentBackupRecord[];
 
+  const previousSecretRequired = isAccountSecretKeyRequired();
+  const rememberedSecretKey = getRememberedAccountSecretKey();
+  const effectiveSecretKey = secretKey || rememberedSecretKey;
+
   // 1. Replace the unreadable vault with an empty one under the same password.
   await getVaultStorageRepository().resetAll();
   clearVaultIntegrityLedger();
@@ -799,17 +836,36 @@ export async function rebuildVaultFromSnapshot(
   clearPersistedActiveVaultStorageBackend();
   closeVaultSession();
 
-  // 2. Re-create the vault so the user's existing password works again.
-  await setupMasterPassword(masterPassword);
+  // 2. Re-create the vault so the user's existing password (and secret key, if used) works again.
+  if (previousSecretRequired && effectiveSecretKey && isRememberSecretKeySupported()) {
+    await setupMasterPasswordWithSecretKey(masterPassword, effectiveSecretKey, Boolean(rememberedSecretKey));
+  } else {
+    await setupMasterPassword(masterPassword);
+  }
 
   // 3. Repopulate from the snapshot. From here on the normal, session-backed
   //    save path is usable, so no bespoke write path is needed.
-  const sessionCredential = resolveVaultCredential(masterPassword);
+  const sessionCredential = resolveVaultCredential(masterPassword, effectiveSecretKey);
   await openDerivedVaultSession(sessionCredential, masterPassword);
 
   let restoredAttachments = 0;
   try {
-    await saveVaultItems(items);
+    let itemsToSave = items;
+    const restoredVaultKey = await withActiveVaultEncryptionKey((key) => new Uint8Array(key));
+    if (restoredVaultKey) {
+      try {
+        itemsToSave = await importPasskeysFromEncryptedBackup(items, restoredVaultKey);
+      } finally {
+        restoredVaultKey.fill(0);
+      }
+    }
+    await saveVaultItems(itemsToSave);
+    if (Array.isArray(validated.folders) && validated.folders.length > 0) {
+      mergeImportedFolders(validated.folders);
+    }
+    if (Array.isArray(validated.tags) && validated.tags.length > 0) {
+      mergeImportedTags(validated.tags);
+    }
     if (attachments.length > 0) {
       await importAttachments(attachments);
       restoredAttachments = attachments.length;
