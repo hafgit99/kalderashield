@@ -172,6 +172,8 @@ export const de = {
   'securityAudit.filterOld': 'Alt',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'Gruppe #{index} · {count} Konten teilen dasselbe Passwort',
+  'securityAudit.uniquePasswordsShort': 'eindeutig',
+  'securityAudit.hibpUniqueTooltip': 'Doppelte Passwörter werden dedupliziert; nur eindeutige Passwörter werden geprüft.',
   'passwordGenerator.title': 'Bereich zur Passwortgenerierung',
   'passwordGenerator.subtitle': 'Erstellen Sie sichere Passwörter mit zufälligen Zeichen oder einprägsame Diceware-Wortkombinationen.',
   'passwordGenerator.characterMode': 'Charakterbasiert',

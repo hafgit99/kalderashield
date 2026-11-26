@@ -28,6 +28,8 @@ export interface HibpBatchScanOptions {
   maxConsecutiveFailures?: number;
   onProgress?: (done: number, total: number) => void;
   checkPassword?: (password: string, options?: HibpCheckOptions) => Promise<HibpPasswordCheck>;
+  /** Reuse session-scoped SHA-1 digest results so unchanged passwords are not re-fetched. */
+  useSessionCache?: boolean;
 }
 
 export interface HibpBatchScanResult {
@@ -58,14 +60,75 @@ interface CacheEntry {
   timestamp: number;
 }
 
+interface SessionPasswordResultEntry {
+  count: number;
+  timestamp: number;
+}
+
+interface SessionScanSnapshot {
+  sourceKey: string;
+  fingerprint: string;
+  status: 'complete' | 'unavailable';
+  pwnedByItemId: Map<string, number>;
+  timestamp: number;
+}
+
 const prefixCache = new Map<string, CacheEntry>();
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 1000;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-// Clear cached SHA-1 prefix buckets whenever the vault locks so no password
-// metadata lingers in RAM across locked sessions.
-registerOnCloseSession(() => {
+const sessionPasswordResultCache = new Map<string, SessionPasswordResultEntry>();
+const MAX_SESSION_RESULT_CACHE_SIZE = 4000;
+let lastSessionScan: SessionScanSnapshot | null = null;
+
+export function clearHibpSessionCache(): void {
   prefixCache.clear();
+  sessionPasswordResultCache.clear();
+  lastSessionScan = null;
+}
+
+export function getCachedHibpSessionScan(
+  sourceKey: string,
+  fingerprint: string,
+): { status: 'complete' | 'unavailable'; pwnedByItemId: Map<string, number> } | null {
+  if (!lastSessionScan) return null;
+  if (Date.now() - lastSessionScan.timestamp >= CACHE_TTL_MS) {
+    lastSessionScan = null;
+    return null;
+  }
+  if (
+    lastSessionScan.status !== 'complete' ||
+    lastSessionScan.sourceKey !== sourceKey ||
+    lastSessionScan.fingerprint !== fingerprint
+  ) {
+    return null;
+  }
+  return {
+    status: lastSessionScan.status,
+    pwnedByItemId: new Map(lastSessionScan.pwnedByItemId),
+  };
+}
+
+export function setCachedHibpSessionScan(
+  sourceKey: string,
+  fingerprint: string,
+  status: 'complete' | 'unavailable',
+  pwnedByItemId: Map<string, number>,
+): void {
+  if (status !== 'complete') return;
+  lastSessionScan = {
+    sourceKey,
+    fingerprint,
+    status,
+    pwnedByItemId: new Map(pwnedByItemId),
+    timestamp: Date.now(),
+  };
+}
+
+// Clear cached SHA-1 prefix buckets and session scan results whenever the vault
+// locks so no password metadata lingers in RAM across locked sessions.
+registerOnCloseSession(() => {
+  clearHibpSessionCache();
 });
 
 function toHex(bytes: ArrayBuffer): string {
@@ -283,15 +346,59 @@ export async function scanVaultItemsAgainstHibp(
   }
 
   const uniquePasswords = shuffleWithCsprng([...itemIdsByPassword.keys()]);
-  const totalCount = uniquePasswords.length;
   const pwnedByItemId = new Map<string, number>();
 
-  if (totalCount === 0) {
+  if (uniquePasswords.length === 0) {
     return { pwnedByItemId, status: 'complete', checkedCount: 0, totalCount: 0 };
   }
 
   const signal = options?.signal;
   const checkFn = options?.checkPassword ?? checkPasswordAgainstHibp;
+  const useSessionCache = Boolean(options?.useSessionCache);
+  const digestByPassword = new Map<string, string>();
+  const passwordsToQuery: string[] = [];
+
+  if (useSessionCache) {
+    const now = Date.now();
+    for (const password of uniquePasswords) {
+      if (signal?.aborted) {
+        return { pwnedByItemId, status: 'aborted', checkedCount: 0, totalCount: 0 };
+      }
+      let digestKey: string | null = null;
+      try {
+        digestKey = `online:${await sha1Hex(password)}`;
+        digestByPassword.set(password, digestKey);
+      } catch {
+        digestKey = null;
+      }
+
+      if (digestKey) {
+        const cachedResult = sessionPasswordResultCache.get(digestKey);
+        if (cachedResult && now - cachedResult.timestamp < CACHE_TTL_MS) {
+          if (cachedResult.count > 0) {
+            for (const itemId of itemIdsByPassword.get(password) ?? []) {
+              pwnedByItemId.set(itemId, cachedResult.count);
+            }
+          }
+          continue;
+        }
+        if (cachedResult) {
+          sessionPasswordResultCache.delete(digestKey);
+        }
+      }
+      passwordsToQuery.push(password);
+    }
+  } else {
+    passwordsToQuery.push(...uniquePasswords);
+  }
+
+  const totalCount = passwordsToQuery.length;
+  if (totalCount === 0) {
+    return { pwnedByItemId, status: 'complete', checkedCount: 0, totalCount: 0 };
+  }
+
+  options?.onProgress?.(0, totalCount);
+
   const maxConsecutiveFailures = Math.max(1, options?.maxConsecutiveFailures ?? 2);
   const workerCount = Math.min(Math.max(1, options?.concurrency ?? 3), totalCount);
 
@@ -301,6 +408,19 @@ export async function scanVaultItemsAgainstHibp(
   let unavailable = false;
   let circuitTripped = false;
 
+  const rememberPasswordResult = (password: string, count: number) => {
+    if (!useSessionCache) return;
+    const digestKey = digestByPassword.get(password);
+    if (!digestKey) return;
+    if (sessionPasswordResultCache.size >= MAX_SESSION_RESULT_CACHE_SIZE) {
+      const oldestKey = sessionPasswordResultCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        sessionPasswordResultCache.delete(oldestKey);
+      }
+    }
+    sessionPasswordResultCache.set(digestKey, { count, timestamp: Date.now() });
+  };
+
   const runWorker = async () => {
     while (true) {
       if (signal?.aborted || circuitTripped) return;
@@ -308,7 +428,7 @@ export async function scanVaultItemsAgainstHibp(
       if (current >= totalCount) return;
       nextIndex += 1;
 
-      const password = uniquePasswords[current]!;
+      const password = passwordsToQuery[current]!;
       const result = await checkFn(password, { signal });
       if (signal?.aborted) return;
 
@@ -317,11 +437,13 @@ export async function scanVaultItemsAgainstHibp(
 
       if (result.status === 'pwned') {
         consecutiveFailures = 0;
+        rememberPasswordResult(password, result.count);
         for (const itemId of itemIdsByPassword.get(password) ?? []) {
           pwnedByItemId.set(itemId, result.count);
         }
       } else if (result.status === 'clean') {
         consecutiveFailures = 0;
+        rememberPasswordResult(password, 0);
       } else {
         unavailable = true;
         consecutiveFailures += 1;
@@ -469,5 +591,5 @@ export function setHibpCheckEnabled(enabled: boolean): void {
 }
 
 export function resetHibpCacheForTesting(): void {
-  prefixCache.clear();
+  clearHibpSessionCache();
 }

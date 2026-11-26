@@ -9,7 +9,7 @@ import { LanguageProvider } from '../i18n/LanguageContext';
 import { languageStorageKey } from '../i18n/translations';
 import type { VaultItem } from '../types';
 import SecurityAudit from './SecurityAudit';
-import { checkPasswordAgainstHibp, HIBP_STORAGE_KEY } from '../lib/hibp';
+import { checkPasswordAgainstHibp, HIBP_STORAGE_KEY, resetHibpCacheForTesting } from '../lib/hibp';
 
 import type * as HibpModule from '../lib/hibp';
 
@@ -32,6 +32,7 @@ vi.mock('../lib/hibp', async () => {
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  resetHibpCacheForTesting();
   vi.mocked(checkPasswordAgainstHibp).mockReset();
   vi.mocked(checkPasswordAgainstHibp).mockResolvedValue({ status: 'clean', count: 0 });
 });
@@ -401,5 +402,45 @@ describe('SecurityAudit', () => {
     fireEvent.click(screen.getByTestId('security-audit-filter-all'));
     expect(screen.getByText('Legacy Panel')).toBeTruthy();
     expect(screen.getByText('Billing Portal')).toBeTruthy();
+  });
+
+  it('reuses cached HIBP results on remount, scans only changed passwords incrementally, and clears cache on manual rescan', async () => {
+    window.localStorage.setItem(HIBP_STORAGE_KEY, 'true');
+    vi.mocked(checkPasswordAgainstHibp).mockImplementation(async (password) => {
+      if (password === 'BreachedOne123!') return { status: 'pwned', count: 19 };
+      return { status: 'clean', count: 0 };
+    });
+
+    const itemA = makeItem({ id: 'a', title: 'Account A', password: 'BreachedOne123!' });
+    const itemB = makeItem({ id: 'b', title: 'Account B', password: 'SafeUniquePass987!' });
+
+    const firstRender = render(<SecurityAudit items={[itemA, itemB]} onSelectItem={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('security-audit-pwned-count').textContent).toBe('1');
+    });
+    expect(vi.mocked(checkPasswordAgainstHibp)).toHaveBeenCalledTimes(2);
+
+    // Unmount and remount with unchanged passwords -> instant cached result, zero new checks
+    firstRender.unmount();
+    const secondRender = render(<SecurityAudit items={[itemA, itemB]} onSelectItem={vi.fn()} />);
+    expect(screen.getByTestId('security-audit-pwned-count').textContent).toBe('1');
+    await waitFor(() => {
+      expect(vi.mocked(checkPasswordAgainstHibp)).toHaveBeenCalledTimes(2);
+    });
+
+    // Add 1 new password -> incremental scan checks ONLY the 1 new password (total 3)
+    const itemC = makeItem({ id: 'c', title: 'Account C', password: 'AnotherFreshPass321!' });
+    secondRender.rerender(<SecurityAudit items={[itemA, itemB, itemC]} onSelectItem={vi.fn()} />);
+    await waitFor(() => {
+      expect(vi.mocked(checkPasswordAgainstHibp)).toHaveBeenCalledTimes(3);
+    });
+    expect(screen.getByTestId('security-audit-pwned-count').textContent).toBe('1');
+
+    // Manual refresh clears session cache and re-checks all 3 unique passwords (total 6)
+    fireEvent.click(screen.getByTestId('security-audit-hibp-rescan'));
+    await waitFor(() => {
+      expect(vi.mocked(checkPasswordAgainstHibp)).toHaveBeenCalledTimes(6);
+    });
   });
 });

@@ -41,12 +41,15 @@ import {
 } from '../lib/security';
 import {
   checkPasswordAgainstHibp,
+  clearHibpSessionCache,
+  getCachedHibpSessionScan,
   getLocalHibpFilePath,
   isHibpCheckEnabled,
   isLocalHibpSupported,
   scanVaultItemsAgainstHibp,
   scanVaultItemsAgainstLocalHibp,
   selectLocalHibpFile,
+  setCachedHibpSessionScan,
   setHibpCheckEnabled,
   setLocalHibpFilePath,
 } from '../lib/hibp';
@@ -80,8 +83,18 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
   const [hibpEnabled, setHibpEnabled] = React.useState<boolean>(() => isHibpCheckEnabled());
   const [localHibpPath, setLocalHibpPath] = React.useState<string | null>(() => getLocalHibpFilePath());
   const [localHibpError, setLocalHibpError] = React.useState<string | null>(null);
-  const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(EMPTY_PWNED_MAP);
-  const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>('idle');
+  const itemsPasswordFingerprint = React.useMemo(() => computeItemsPasswordFingerprint(items), [items]);
+  const breachSourceKey = localHibpPath ? `local:${localHibpPath}` : 'online';
+  const isBreachCheckActive = Boolean(localHibpPath) || hibpEnabled;
+
+  const [pwnedByItemId, setPwnedByItemId] = React.useState<Map<string, number>>(() => {
+    if (!isBreachCheckActive) return EMPTY_PWNED_MAP;
+    return getCachedHibpSessionScan(breachSourceKey, itemsPasswordFingerprint)?.pwnedByItemId ?? EMPTY_PWNED_MAP;
+  });
+  const [hibpStatus, setHibpStatus] = React.useState<'idle' | 'checking' | 'complete' | 'unavailable'>(() => {
+    if (!isBreachCheckActive) return 'idle';
+    return getCachedHibpSessionScan(breachSourceKey, itemsPasswordFingerprint)?.status ?? 'idle';
+  });
   const [hibpProgress, setHibpProgress] = React.useState<{ done: number; total: number } | null>(null);
   const [scanNonce, setScanNonce] = React.useState(0);
   const [activeFilter, setActiveFilter] = React.useState<AuditFilterKey>('all');
@@ -92,8 +105,6 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
   }, [items]);
 
   const localHibpSupported = isLocalHibpSupported();
-  const isBreachCheckActive = Boolean(localHibpPath) || hibpEnabled;
-  const itemsPasswordFingerprint = React.useMemo(() => computeItemsPasswordFingerprint(items), [items]);
 
   const effectivePwnedByItemId = isBreachCheckActive ? pwnedByItemId : EMPTY_PWNED_MAP;
   const effectiveHibpStatus = isBreachCheckActive ? hibpStatus : 'idle';
@@ -165,6 +176,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
     e.stopPropagation();
     if (!isBreachCheckActive || effectiveHibpStatus === 'checking') return;
     setLocalHibpError(null);
+    clearHibpSessionCache();
     setScanNonce((n) => n + 1);
   };
 
@@ -187,9 +199,19 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
         return;
       }
 
+      const cachedScan = getCachedHibpSessionScan(breachSourceKey, itemsPasswordFingerprint);
+      if (cachedScan) {
+        if (!controller.signal.aborted) {
+          setPwnedByItemId(cachedScan.pwnedByItemId);
+          setHibpProgress(null);
+          setHibpStatus(cachedScan.status);
+        }
+        return;
+      }
+
       if (!controller.signal.aborted) {
         setHibpStatus('checking');
-        setHibpProgress({ done: 0, total: new Set(scanItems.map((i) => i.password)).size });
+        setHibpProgress(null);
       }
 
       const scanResult = localHibpPath
@@ -197,6 +219,7 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
         : await scanVaultItemsAgainstHibp(scanItems, {
           signal: controller.signal,
           checkPassword: checkPasswordAgainstHibp,
+          useSessionCache: true,
           onProgress: (done, total) => {
             if (!controller.signal.aborted) {
               setHibpProgress({ done, total });
@@ -205,16 +228,18 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
         });
 
       if (!controller.signal.aborted && scanResult.status !== 'aborted') {
+        const finalStatus = scanResult.status === 'unavailable' ? 'unavailable' : 'complete';
+        setCachedHibpSessionScan(breachSourceKey, itemsPasswordFingerprint, finalStatus, scanResult.pwnedByItemId);
         setPwnedByItemId(scanResult.pwnedByItemId);
         setHibpProgress(null);
-        setHibpStatus(scanResult.status === 'unavailable' ? 'unavailable' : 'complete');
+        setHibpStatus(finalStatus);
       }
     })();
 
     return () => {
       controller.abort();
     };
-  }, [isBreachCheckActive, localHibpPath, scanNonce, itemsPasswordFingerprint]);
+  }, [isBreachCheckActive, localHibpPath, breachSourceKey, scanNonce, itemsPasswordFingerprint]);
 
   // Single memoized O(N) classification using Map/Set (prototype-safe)
   const {
@@ -726,14 +751,17 @@ export default function SecurityAudit({ items, onSelectItem }: SecurityAuditProp
               <span data-testid="security-audit-pwned-count" className="text-3xl font-bold font-sans text-brand-error tabular-nums">
                 {isBreachCheckActive ? pwnedItems.length : '—'}
               </span>
-              <span className="text-xs text-on-surface-variant">
+              <span
+                className="text-xs text-on-surface-variant"
+                title={effectiveHibpStatus === 'checking' ? t('securityAudit.hibpUniqueTooltip') : undefined}
+              >
                 {localHibpError
                   ? localHibpError
                   : !isBreachCheckActive
                     ? t('securityAudit.pwnedDisabled')
                     : effectiveHibpStatus === 'checking'
                       ? (effectiveHibpProgress && effectiveHibpProgress.total > 0
-                        ? `${t('securityAudit.pwnedChecking')} (${effectiveHibpProgress.done}/${effectiveHibpProgress.total})`
+                        ? `${t('securityAudit.pwnedChecking')} (${effectiveHibpProgress.done}/${effectiveHibpProgress.total} ${t('securityAudit.uniquePasswordsShort')})`
                         : t('securityAudit.pwnedChecking'))
                       : effectiveHibpStatus === 'unavailable'
                         ? t('securityAudit.pwnedUnavailable')

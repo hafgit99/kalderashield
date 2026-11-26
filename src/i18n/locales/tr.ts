@@ -173,6 +173,8 @@ export const tr = {
     'securityAudit.filterOld': 'Eski Şifre',
     'securityAudit.filterHttp': 'HTTP',
     'securityAudit.reusedClusterLabel': 'Grup #{index} · {count} hesap aynı şifreyi paylaşıyor',
+    'securityAudit.uniquePasswordsShort': 'benzersiz',
+    'securityAudit.hibpUniqueTooltip': 'Aynı şifreyi paylaşan kartlar tekilleştirilir; yalnızca benzersiz şifreler sorgulanır.',
     'passwordGenerator.title': 'Şifre Üretim Paneli',
     'passwordGenerator.subtitle': 'Güçlü rastgele karakter parolaları veya akılda kalıcı Diceware kelime kombinasyonları oluşturun.',
     'passwordGenerator.characterMode': 'Karakter Tabanlı',

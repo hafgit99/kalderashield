@@ -173,6 +173,8 @@ export const zh = {
     'securityAudit.filterOld': '旧密码',
     'securityAudit.filterHttp': 'HTTP',
     'securityAudit.reusedClusterLabel': '第 #{index} 组 · {count} 个账户共用此密码',
+    'securityAudit.uniquePasswordsShort': '个唯一',
+    'securityAudit.hibpUniqueTooltip': '重复密码已去重，仅检查唯一密码。',
     'passwordGenerator.title': '密码生成面板',
     'passwordGenerator.subtitle': '创建强随机字符密码或易记的 Diceware 单词组合。',
     'passwordGenerator.characterMode': '字符模式',
