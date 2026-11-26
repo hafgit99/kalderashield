@@ -172,6 +172,8 @@ export const ar = {
   'securityAudit.filterOld': 'قديمة',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'المجموعة #{index} · {count} حسابات تشترك في نفس كلمة المرور',
+  'securityAudit.uniquePasswordsShort': 'فريدة',
+  'securityAudit.hibpUniqueTooltip': 'يتم دمج كلمات المرور المكررة؛ ويتم فحص كلمات المرور الفريدة فقط.',
   'passwordGenerator.title': 'لوحة إنشاء كلمة المرور',
   'passwordGenerator.subtitle': 'قم بإنشاء كلمات مرور قوية ذات أحرف عشوائية أو مجموعات كلمات Diceware لا تُنسى.',
   'passwordGenerator.characterMode': 'على أساس الشخصية',

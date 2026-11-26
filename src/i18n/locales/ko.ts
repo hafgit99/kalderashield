@@ -172,6 +172,8 @@ export const ko = {
   'securityAudit.filterOld': '오래됨',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': '그룹 #{index} · {count}개 계정이 동일한 비밀번호를 공유합니다',
+  'securityAudit.uniquePasswordsShort': '고유',
+  'securityAudit.hibpUniqueTooltip': '중복된 비밀번호는 하나로 묶여 고유 비밀번호만 검사됩니다.',
   'passwordGenerator.title': '비밀번호 생성 패널',
   'passwordGenerator.subtitle': '강력한 임의 문자 비밀번호나 기억에 남는 Diceware 단어 조합을 만드세요.',
   'passwordGenerator.characterMode': '문자 기반',

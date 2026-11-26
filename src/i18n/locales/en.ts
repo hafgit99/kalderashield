@@ -173,6 +173,8 @@ export const en = {
     'securityAudit.filterOld': 'Old',
     'securityAudit.filterHttp': 'HTTP',
     'securityAudit.reusedClusterLabel': 'Group #{index} · {count} accounts share this password',
+    'securityAudit.uniquePasswordsShort': 'unique',
+    'securityAudit.hibpUniqueTooltip': 'Duplicate passwords are deduplicated; only unique passwords are checked.',
     'passwordGenerator.title': 'Password Generation Panel',
     'passwordGenerator.subtitle': 'Create strong random-character passwords or memorable Diceware word combinations.',
     'passwordGenerator.characterMode': 'Character Based',

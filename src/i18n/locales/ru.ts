@@ -172,6 +172,8 @@ export const ru = {
   'securityAudit.filterOld': 'Старые',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'Группа #{index} · {count} аккаунтов используют один пароль',
+  'securityAudit.uniquePasswordsShort': 'уник.',
+  'securityAudit.hibpUniqueTooltip': 'Повторяющиеся пароли объединяются; проверяются только уникальные пароли.',
   'passwordGenerator.title': 'Панель генерации паролей',
   'passwordGenerator.subtitle': 'Создавайте надежные пароли из случайных символов или запоминающиеся комбинации слов Diceware.',
   'passwordGenerator.characterMode': 'Основанный на персонажах',

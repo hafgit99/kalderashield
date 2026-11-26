@@ -172,6 +172,8 @@ export const fr = {
   'securityAudit.filterOld': 'Ancien',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'Groupe #{index} · {count} comptes partagent ce mot de passe',
+  'securityAudit.uniquePasswordsShort': 'uniques',
+  'securityAudit.hibpUniqueTooltip': 'Les mots de passe en double sont dédupliqués ; seuls les mots de passe uniques sont vérifiés.',
   'passwordGenerator.title': 'Panneau de génération de mot de passe',
   'passwordGenerator.subtitle': 'Créez des mots de passe forts à caractères aléatoires ou des combinaisons de mots Diceware mémorables.',
   'passwordGenerator.characterMode': 'Basé sur le personnage',

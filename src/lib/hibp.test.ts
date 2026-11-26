@@ -5,6 +5,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   checkPasswordAgainstHibp,
+  clearHibpSessionCache,
+  getCachedHibpSessionScan,
   getLocalHibpFilePath,
   HIBP_LOCAL_PATH_KEY,
   HIBP_STORAGE_KEY,
@@ -13,6 +15,7 @@ import {
   scanVaultItemsAgainstHibp,
   scanVaultItemsAgainstLocalHibp,
   selectLocalHibpFile,
+  setCachedHibpSessionScan,
   setLocalHibpFilePath,
 } from './hibp';
 import { closeVaultSession } from './vaultSession';
@@ -164,11 +167,13 @@ describe('HIBP password checks', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    for (let i = 0; i < 101; i++) {
+    let i = 0;
+    while (fetchMock.mock.calls.length < 1001) {
       await checkPasswordAgainstHibp(`different_password_${i}`);
+      i += 1;
     }
 
-    expect(fetchMock).toHaveBeenCalledTimes(101);
+    expect(fetchMock).toHaveBeenCalledTimes(1001);
 
     fetchMock.mockClear();
 
@@ -298,7 +303,8 @@ describe('HIBP password checks', () => {
     expect(res.pwnedByItemId.get('b')).toBe(88);
     expect(res.pwnedByItemId.has('c')).toBe(false);
     expect(checkPassword).toHaveBeenCalledTimes(2);
-    expect(progressCalls).toHaveLength(2);
+    expect(progressCalls[0]).toEqual([0, 2]);
+    expect(progressCalls[progressCalls.length - 1]).toEqual([2, 2]);
 
     // Circuit-breaker trips after 2 consecutive offline failures instead of checking all 10 passwords
     const offlineCheck = vi.fn(async () => ({
@@ -317,6 +323,59 @@ describe('HIBP password checks', () => {
     });
     expect(offlineRes.status).toBe('unavailable');
     expect(offlineCheck).toHaveBeenCalledTimes(2);
+  });
+
+  it('reuses session digest cache for incremental batch scans and clears it when vault locks', async () => {
+    const checkPassword = vi.fn(async (pw: string) => {
+      if (pw === 'leaked-pw') return { status: 'pwned' as const, count: 42 };
+      return { status: 'clean' as const, count: 0 as const };
+    });
+
+    const first = await scanVaultItemsAgainstHibp(
+      [
+        { id: '1', password: 'leaked-pw' },
+        { id: '2', password: 'clean-pw' },
+      ],
+      { checkPassword, useSessionCache: true },
+    );
+    expect(first.status).toBe('complete');
+    expect(first.pwnedByItemId.get('1')).toBe(42);
+    expect(checkPassword).toHaveBeenCalledTimes(2);
+
+    // Adding one new password should query ONLY the new password and preserve cached findings
+    const progressCalls: [number, number][] = [];
+    const second = await scanVaultItemsAgainstHibp(
+      [
+        { id: '1', password: 'leaked-pw' },
+        { id: '2', password: 'clean-pw' },
+        { id: '3', password: 'brand-new-pw' },
+      ],
+      {
+        checkPassword,
+        useSessionCache: true,
+        onProgress: (done, total) => progressCalls.push([done, total]),
+      },
+    );
+    expect(second.status).toBe('complete');
+    expect(second.pwnedByItemId.get('1')).toBe(42);
+    expect(checkPassword).toHaveBeenCalledTimes(3);
+    expect(progressCalls).toEqual([[0, 1], [1, 1]]);
+
+    // Session scan snapshot caches full result by sourceKey + fingerprint and wipes on lock
+    setCachedHibpSessionScan('online', 'fp-1', 'complete', second.pwnedByItemId);
+    expect(getCachedHibpSessionScan('online', 'fp-1')?.pwnedByItemId.get('1')).toBe(42);
+    expect(getCachedHibpSessionScan('local:/db', 'fp-1')).toBeNull();
+
+    closeVaultSession(true);
+    expect(getCachedHibpSessionScan('online', 'fp-1')).toBeNull();
+
+    // After lock, all unique passwords are checked again
+    clearHibpSessionCache();
+    await scanVaultItemsAgainstHibp(
+      [{ id: '1', password: 'leaked-pw' }],
+      { checkPassword, useSessionCache: true },
+    );
+    expect(checkPassword).toHaveBeenCalledTimes(4);
   });
 
   it('persists local HIBP DB path and runs fully offline batch scans via Tauri IPC', async () => {

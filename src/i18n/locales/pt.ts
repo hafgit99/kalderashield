@@ -172,6 +172,8 @@ export const pt = {
   'securityAudit.filterOld': 'Antigas',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'Grupo #{index} · {count} contas compartilham esta senha',
+  'securityAudit.uniquePasswordsShort': 'únicas',
+  'securityAudit.hibpUniqueTooltip': 'Senhas duplicadas são deduplicadas; apenas senhas únicas são verificadas.',
   'passwordGenerator.title': 'Painel de geração de senha',
   'passwordGenerator.subtitle': 'Crie senhas fortes com caracteres aleatórios ou combinações memoráveis ​​de palavras do Diceware.',
   'passwordGenerator.characterMode': 'Baseado em Personagem',

@@ -172,6 +172,8 @@ export const it = {
   'securityAudit.filterOld': 'Vecchie',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'Gruppo #{index} · {count} account condividono questa password',
+  'securityAudit.uniquePasswordsShort': 'uniche',
+  'securityAudit.hibpUniqueTooltip': 'Le password duplicate vengono deduplicate; vengono controllate solo le password uniche.',
   'passwordGenerator.title': 'Pannello di generazione della password',
   'passwordGenerator.subtitle': 'Crea password complesse con caratteri casuali o combinazioni di parole Diceware memorabili.',
   'passwordGenerator.characterMode': 'Basato sui personaggi',

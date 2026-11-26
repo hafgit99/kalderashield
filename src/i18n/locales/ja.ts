@@ -172,6 +172,8 @@ export const ja = {
   'securityAudit.filterOld': '古いパスワード',
   'securityAudit.filterHttp': 'HTTP',
   'securityAudit.reusedClusterLabel': 'グループ #{index} · {count}件のアカウントが同じパスワードを共有',
+  'securityAudit.uniquePasswordsShort': '固有',
+  'securityAudit.hibpUniqueTooltip': '重複するパスワードは統合され、固有のパスワードのみが照会されます。',
   'passwordGenerator.title': 'パスワード生成パネル',
   'passwordGenerator.subtitle': '強力なランダム文字のパスワードや記憶に残る Diceware の単語の組み合わせを作成します。',
   'passwordGenerator.characterMode': 'キャラクターベース',
