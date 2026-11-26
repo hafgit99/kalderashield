@@ -82,4 +82,26 @@ describe('RecentVaultPanel', () => {
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'one' }));
     expect(onCopyText).toHaveBeenCalledWith('one-secret', 'recent-pass-one');
   });
+
+  it('orders items by most recent updatedAt timestamp first', () => {
+    render(
+      <RecentVaultPanel
+        items={[
+          { ...item('newest-edited', 'Newest Edited'), updatedAt: '2026-08-20T10:00:00.000Z' },
+          { ...item('older', 'Older Item'), updatedAt: '2026-06-01T10:00:00.000Z' },
+          { ...item('middle', 'Middle Item'), updatedAt: '2026-07-15T10:00:00.000Z' },
+        ]}
+        copiedField={null}
+        onSelect={vi.fn()}
+        onCopyText={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText('Newest Edited').compareDocumentPosition(screen.getByText('Middle Item')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      screen.getByText('Middle Item').compareDocumentPosition(screen.getByText('Older Item')),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });

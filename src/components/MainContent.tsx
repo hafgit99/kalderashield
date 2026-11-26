@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 import type { VaultCategoryFilter } from '../hooks/useVaultFilters';
 import type { AndroidAutofillRequest } from '../lib/androidAutofill';
@@ -105,48 +105,45 @@ export function MainContentComponent({
 }: MainContentProps) {
   return (
     <div className="flex flex-1 overflow-hidden relative min-w-0 max-w-full w-full">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -15 }}
-          transition={{ duration: 0.18, ease: 'easeInOut' }}
-          className="flex-1 flex overflow-hidden min-h-0 min-w-0 max-w-full w-full"
-        >
-          {activeTab === 'vault' && <VaultPage {...pageProps} />}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0.9 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.09, ease: 'easeOut' }}
+        className="flex-1 flex overflow-hidden min-h-0 min-w-0 max-w-full w-full"
+      >
+        {activeTab === 'vault' && <VaultPage {...pageProps} />}
 
-          {activeTab === 'audit' && (
-            <AuditPage activeItems={pageProps.activeItems} onSelectAuditItem={pageProps.onSelectAuditItem} />
-          )}
+        {activeTab === 'audit' && (
+          <AuditPage activeItems={pageProps.activeItems} onSelectAuditItem={pageProps.onSelectAuditItem} />
+        )}
 
-          {activeTab === 'generator' && (
-            <GeneratorPage copiedField={pageProps.copiedField} onCopyText={pageProps.onCopyText} />
-          )}
+        {activeTab === 'generator' && (
+          <GeneratorPage copiedField={pageProps.copiedField} onCopyText={pageProps.onCopyText} />
+        )}
 
-          {activeTab === 'settings' && (
-            <SettingsPage
-              autoLockDuration={pageProps.autoLockDuration}
-              onDatabaseChanged={pageProps.onDatabaseChanged}
-              onAutoLockDurationChange={pageProps.onAutoLockDurationChange}
-              onNotify={pageProps.onNotify}
-            />
-          )}
+        {activeTab === 'settings' && (
+          <SettingsPage
+            autoLockDuration={pageProps.autoLockDuration}
+            onDatabaseChanged={pageProps.onDatabaseChanged}
+            onAutoLockDurationChange={pageProps.onAutoLockDurationChange}
+            onNotify={pageProps.onNotify}
+          />
+        )}
 
-          {activeTab === 'donate' && (
-            <DonatePage copiedField={pageProps.copiedField} onCopyText={pageProps.onCopyText} />
-          )}
+        {activeTab === 'donate' && (
+          <DonatePage copiedField={pageProps.copiedField} onCopyText={pageProps.onCopyText} />
+        )}
 
-          {activeTab === 'trash' && (
-            <TrashWorkspace
-              items={trashItems}
-              onEmptyTrash={onEmptyTrash}
-              onRestore={onRestoreTrashItem}
-              onDeletePermanently={onDeleteTrashItemPermanently}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+        {activeTab === 'trash' && (
+          <TrashWorkspace
+            items={trashItems}
+            onEmptyTrash={onEmptyTrash}
+            onRestore={onRestoreTrashItem}
+            onDeletePermanently={onDeleteTrashItemPermanently}
+          />
+        )}
+      </motion.div>
     </div>
   );
 }
