@@ -16,11 +16,26 @@ import {
   Unlock 
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { isRecoveryKeySetup, recoverWithRecoveryKey } from '../../lib/recoveryKey';
+import { isRecoveryKeySetup, parseRecoveryWordsInput, recoverWithRecoveryKey } from '../../lib/recoveryKey';
 import { getPasswordHint } from '../../lib/passwordHint';
-import { authenticateBiometric, isBiometricEnabled } from '../../lib/biometric';
+import {
+  authenticateBiometric,
+  authenticateBiometricCredentials,
+  isBiometricEnabled,
+  subscribeBiometric,
+} from '../../lib/biometric';
 import { validateMasterPassword } from '../../lib/security';
-import { changeMasterPassword } from '../../lib/storage';
+import {
+  getRememberedAccountSecretKey,
+  isAccountSecretKeyRequired,
+  recoverAndChangeMasterPassword,
+} from '../../lib/storage';
+import { isAccountSecretKeyFormatValid } from '../../lib/secretKey';
+import { subscribeDesktopSecureStorage } from '../../lib/secureStorage';
+import {
+  getUnlockAttemptLockoutDelayMs,
+  recordFailedUnlockAttempt,
+} from '../../lib/vaultSession';
 import { Modal } from '../ui/Modal';
 
 interface LockScreenRecoveryModalProps {
@@ -37,11 +52,14 @@ export function LockScreenRecoveryModal({
   onClearLockoutState,
 }: LockScreenRecoveryModalProps) {
   const { t } = useLanguage();
-  const isBioEnabled = isBiometricEnabled();
+  const [isBioEnabled, setIsBioEnabled] = useState(() => Boolean(isBiometricEnabled()));
+  const [hasRecoveryKey, setHasRecoveryKey] = useState(() => Boolean(isRecoveryKeySetup()));
 
   const [activeRecoveryTab, setActiveRecoveryTab] = useState<'key' | 'hint' | 'biometric'>('key');
   const [recoveryInputWords, setRecoveryInputWords] = useState('');
   const [recoveredMasterPassword, setRecoveredMasterPassword] = useState<string | null>(null);
+  const [recoveredSecretKey, setRecoveredSecretKey] = useState<string | null>(null);
+  const [manualSecretKey, setManualSecretKey] = useState('');
   const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
   const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState('');
   const [recoveryModalError, setRecoveryModalError] = useState<string | null>(null);
@@ -49,6 +67,19 @@ export function LockScreenRecoveryModal({
   const [recoveryModalLoading, setRecoveryModalLoading] = useState(false);
   // M1: the hint lives in an encrypted envelope and is loaded asynchronously.
   const [hintContent, setHintContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubBio = typeof subscribeBiometric === 'function'
+      ? subscribeBiometric((state) => setIsBioEnabled(state.enabled))
+      : undefined;
+    const unsubSecure = typeof subscribeDesktopSecureStorage === 'function'
+      ? subscribeDesktopSecureStorage(() => setHasRecoveryKey(Boolean(isRecoveryKeySetup())))
+      : undefined;
+    return () => {
+      unsubBio?.();
+      unsubSecure?.();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +106,8 @@ export function LockScreenRecoveryModal({
     if (!isOpen) {
       setRecoveryInputWords('');
       setRecoveredMasterPassword(null);
+      setRecoveredSecretKey(null);
+      setManualSecretKey('');
       setRecoveryNewPassword('');
       setRecoveryConfirmPassword('');
       setRecoveryModalError(null);
@@ -82,34 +115,79 @@ export function LockScreenRecoveryModal({
       setRecoveryModalLoading(false);
       setActiveRecoveryTab('key');
       setHintContent(null);
+    } else {
+      setIsBioEnabled(Boolean(isBiometricEnabled()));
+      setHasRecoveryKey(Boolean(isRecoveryKeySetup()));
     }
   }
 
   if (!isOpen) return null;
 
+  const requiresManualSecretKey =
+    Boolean(isAccountSecretKeyRequired())
+    && !getRememberedAccountSecretKey()
+    && !recoveredSecretKey;
+
+  const getRateLimitError = (remainingMs: number) =>
+    `${t('lock.error.rateLimitedPrefix')} ${Math.ceil(remainingMs / 1000)} ${t('lock.error.rateLimitedSuffix')}`;
+
   const handleRecoverWithKey = async (e: React.FormEvent) => {
     e.preventDefault();
+    const lockoutMs = getUnlockAttemptLockoutDelayMs();
+    if (lockoutMs > 0) {
+      setRecoveryModalError(getRateLimitError(lockoutMs));
+      return;
+    }
+
     setRecoveryModalError(null);
     setRecoveryModalLoading(true);
 
-    const words = recoveryInputWords.trim().split(/\s+/);
+    const parsedWords = typeof parseRecoveryWordsInput === 'function'
+      ? parseRecoveryWordsInput(recoveryInputWords)
+      : undefined;
+    const words = Array.isArray(parsedWords)
+      ? parsedWords
+      : recoveryInputWords.trim().split(/\s+/);
     try {
       const decryptedMaster = await recoverWithRecoveryKey(words);
       setRecoveredMasterPassword(decryptedMaster);
+      setRecoveredSecretKey(null);
       setRecoveryModalError(null);
     } catch (err) {
-      setRecoveryModalError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg !== 'No recovery key has been set up.') {
+        recordFailedUnlockAttempt();
+      }
+      setRecoveryModalError(msg);
     } finally {
       setRecoveryModalLoading(false);
     }
   };
 
   const handleRecoverWithBiometric = async () => {
+    const lockoutMs = getUnlockAttemptLockoutDelayMs();
+    if (lockoutMs > 0) {
+      setRecoveryModalError(getRateLimitError(lockoutMs));
+      return;
+    }
+
     setRecoveryModalError(null);
     setRecoveryModalLoading(true);
     try {
-      const decryptedMaster = await authenticateBiometric();
+      let decryptedMaster: string | undefined;
+      let bioSecretKey: string | null = null;
+      if (typeof authenticateBiometricCredentials === 'function') {
+        const creds = await authenticateBiometricCredentials();
+        if (creds && typeof creds.masterPassword === 'string') {
+          decryptedMaster = creds.masterPassword;
+          bioSecretKey = creds.secretKey ?? null;
+        }
+      }
+      if (!decryptedMaster) {
+        decryptedMaster = await authenticateBiometric();
+      }
       setRecoveredMasterPassword(decryptedMaster);
+      setRecoveredSecretKey(bioSecretKey);
       setRecoveryModalError(null);
     } catch (err: unknown) {
       const errorObj = err && typeof err === 'object' ? (err as { name?: string; code?: string }) : null;
@@ -121,6 +199,7 @@ export function LockScreenRecoveryModal({
             setRecoveryModalError(t('lock.error.biometricUnsupported'));
             break;
           case 'biometric.integrityMismatch':
+            recordFailedUnlockAttempt();
             setRecoveryModalError(t('lock.error.biometricIntegrity'));
             break;
           case 'biometric.missingBundle':
@@ -128,6 +207,7 @@ export function LockScreenRecoveryModal({
             setRecoveryModalError(t('lock.error.biometricFailed'));
             break;
           default:
+            recordFailedUnlockAttempt();
             setRecoveryModalError(t('lock.error.biometricFailed'));
             break;
         }
@@ -149,13 +229,23 @@ export function LockScreenRecoveryModal({
       setRecoveryModalError(t('lock.error.confirmationMismatch'));
       return;
     }
+    if (requiresManualSecretKey && !isAccountSecretKeyFormatValid(manualSecretKey)) {
+      setRecoveryModalError(t('lock.error.secretKeyRequired'));
+      return;
+    }
 
     setRecoveryModalLoading(true);
     setRecoveryModalError(null);
 
+    const effectiveSecretKey = recoveredSecretKey || (requiresManualSecretKey ? manualSecretKey : null);
+
     try {
-      await changeMasterPassword(recoveredMasterPassword, recoveryNewPassword);
-      setRecoveryModalSuccess(t('lock.recoveryModal.newPasswordSuccess'));
+      if (effectiveSecretKey) {
+        await recoverAndChangeMasterPassword(recoveredMasterPassword, recoveryNewPassword, effectiveSecretKey);
+      } else {
+        await recoverAndChangeMasterPassword(recoveredMasterPassword, recoveryNewPassword);
+      }
+      setRecoveryModalSuccess(`${t('lock.recoveryModal.newPasswordSuccess')} ${t('lock.recoveryModal.newKeyReminder')}`);
       onClearLockoutState();
       setTimeout(() => {
         onUnlockedAfterRecovery();
@@ -255,7 +345,7 @@ export function LockScreenRecoveryModal({
         {/* Tab 1: Recovery Key */}
         {!recoveredMasterPassword && activeRecoveryTab === 'key' && (
           <div className="space-y-4">
-            {!isRecoveryKeySetup() ? (
+            {!hasRecoveryKey ? (
               <p className="text-xs text-on-surface-variant/60 py-4 text-center">
                 {t('lock.recoveryModal.noKey')}
               </p>
@@ -343,6 +433,31 @@ export function LockScreenRecoveryModal({
               <Check className="w-4 h-4 shrink-0" />
               <span>{t('lock.recoveryModal.newPasswordTitle')}</span>
             </div>
+
+            {requiresManualSecretKey && (
+              <div>
+                <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">
+                  {t('lock.secret.label')}
+                </label>
+                <input
+                  data-testid="lock-recovery-secret-key"
+                  type="text"
+                  value={manualSecretKey}
+                  onChange={(e) => setManualSecretKey(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
+                  className="w-full bg-surface-lowest border border-outline-variant/20 rounded-xl px-4 py-3 text-xs text-on-surface font-mono"
+                  placeholder="A3-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+                  required
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">

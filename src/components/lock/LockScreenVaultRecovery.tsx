@@ -39,6 +39,8 @@ const SNAPSHOT_TRIGGER_LABEL_KEYS: Record<string, TranslationKey> = {
 interface LockScreenVaultRecoveryProps {
   /** The password already typed into the lock screen form. */
   masterPassword: string;
+  /** Optional Account Secret Key already remembered or typed into the lock screen. */
+  secretKey?: string | null;
   onRestored: () => void;
   onDismiss: () => void;
   onResetVault: () => void;
@@ -46,6 +48,7 @@ interface LockScreenVaultRecoveryProps {
 
 export function LockScreenVaultRecovery({
   masterPassword,
+  secretKey,
   onRestored,
   onDismiss,
   onResetVault,
@@ -91,7 +94,11 @@ export function LockScreenVaultRecovery({
     setBusy(true);
     setError(null);
     try {
-      await rebuildVaultFromSnapshot(selectedId, masterPassword);
+      if (secretKey) {
+        await rebuildVaultFromSnapshot(selectedId, masterPassword, secretKey);
+      } else {
+        await rebuildVaultFromSnapshot(selectedId, masterPassword);
+      }
       onRestored();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -111,7 +118,7 @@ export function LockScreenVaultRecovery({
       setBusy(false);
       setConfirming(false);
     }
-  }, [masterPassword, onDismiss, onRestored, selectedId, t]);
+  }, [masterPassword, onDismiss, onRestored, secretKey, selectedId, t]);
 
   return (
     <div

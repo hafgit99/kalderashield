@@ -1492,4 +1492,47 @@ expect(saved[0]!.id).toHaveLength(9);
     expect(items).toHaveLength(1);
     expect(items[0]?.title).toBe('Bank Login');
   });
+
+  it('re-wraps embedded software passkeys during desktop changeMasterPasswordWithHash rotation', async () => {
+    const sqlite = await freshSqliteInstance();
+    const { wrapPrivateKeyJwk, unwrapPrivateKeyJwk } = await import('./passkey');
+    const kdfParams = { memoryKiB: 65536, iterations: 4, parallelism: 2, hashLength: 32 };
+    const oldKey = new Uint8Array(32).fill(0x31);
+    const newKey = new Uint8Array(32).fill(0x42);
+
+    await sqlite.setupMasterWithHash('$argon2id$hash-old', '11111111111111111111111111111111', kdfParams, oldKey);
+
+    const keyPair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const jwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+    const oldBundle = await wrapPrivateKeyJwk(jwk, oldKey);
+
+    await sqlite.saveVaultItemsWithKey(
+      [
+        {
+          ...sampleItem({ id: 'pk-item-1', title: 'GitHub Passkey' }),
+          passkeyPrivateKeyBundle: oldBundle,
+        } as ReturnType<typeof sampleItem> & { passkeyPrivateKeyBundle: typeof oldBundle },
+      ],
+      oldKey,
+    );
+
+    await sqlite.changeMasterPasswordWithHash(
+      '$argon2id$hash-new',
+      '22222222222222222222222222222222',
+      kdfParams,
+      oldKey,
+      newKey,
+    );
+
+    const rotatedItems = await sqlite.getVaultItemsWithKey(newKey);
+    expect(rotatedItems).toHaveLength(1);
+    const rotatedBundle = (rotatedItems[0] as { passkeyPrivateKeyBundle?: typeof oldBundle }).passkeyPrivateKeyBundle;
+    expect(rotatedBundle).toBeDefined();
+    expect(rotatedBundle!.iv).not.toBe(oldBundle.iv);
+
+    // Must decrypt cleanly with newKey (and NOT oldKey)
+    const unwrapped = await unwrapPrivateKeyJwk(rotatedBundle!, newKey);
+    expect(unwrapped.kty).toBe('EC');
+    expect(unwrapped.d).toBe(jwk.d);
+  });
 });

@@ -22,6 +22,8 @@ const repository = vi.hoisted(() => ({
   resetAll: vi.fn(async () => undefined),
   setupMasterWithHash: vi.fn(async () => undefined),
   setupMaster: vi.fn(async () => undefined),
+  verifyPassword: vi.fn(async () => true),
+  changeMasterPassword: vi.fn(async () => undefined),
   deriveEncryptionKey: vi.fn(async () => new Uint8Array(32).fill(3)),
   saveVaultItemsWithKey: vi.fn(async () => []),
 }));
@@ -32,6 +34,11 @@ const openDerivedVaultSession = vi.hoisted(() => vi.fn());
 const clearAllSetupFlagsSync = vi.hoisted(() => vi.fn());
 const clearPersistedActiveVaultStorageBackend = vi.hoisted(() => vi.fn());
 const clearVaultIntegrityLedger = vi.hoisted(() => vi.fn());
+const hasActiveVaultSession = vi.hoisted(() => vi.fn(() => true));
+const disableBiometric = vi.hoisted(() => vi.fn());
+const disableRecoveryKey = vi.hoisted(() => vi.fn());
+const clearPasswordHint = vi.hoisted(() => vi.fn());
+const removeSecureStorageItem = vi.hoisted(() => vi.fn());
 const invoke = vi.hoisted(() => vi.fn());
 const isDesktopRuntime = vi.hoisted(() => false);
 const sqliteOPFSInstance = vi.hoisted(() => ({ hydrate: vi.fn(async () => undefined) }));
@@ -61,29 +68,33 @@ vi.mock('./sqlite_opfs', () => ({ sqliteOPFSInstance }));
 vi.mock('./vaultSession', () => ({
   openVaultSession,
   closeVaultSession,
+  hasActiveVaultSession,
   openDerivedVaultSession,
   registerOnCloseSession: vi.fn(),
   updateActiveVaultEncryptionKey: vi.fn(),
   withActiveAccountSecretKey: vi.fn(() => null),
   // These two invoke the callback synchronously, like the real implementations:
   // the rebuild path depends on the session key actually reaching the write.
-  withActiveSessionSecrets: vi.fn((fn: (bytes: Uint8Array) => unknown) => fn(new Uint8Array(32).fill(5))),
+  withActiveSessionSecrets: vi.fn((fn: (masterBytes: Uint8Array, backupBytes: Uint8Array) => unknown) => fn(new Uint8Array(32).fill(5), new Uint8Array(32).fill(5))),
   withActiveVaultEncryptionKey: vi.fn((fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32).fill(5))),
 }));
-vi.mock('./biometric', () => ({ disableBiometric: vi.fn(), hydrateBiometric: vi.fn(async () => undefined) }));
-vi.mock('./recoveryKey', () => ({ disableRecoveryKey: vi.fn(async () => undefined) }));
+vi.mock('./biometric', () => ({ disableBiometric, hydrateBiometric: vi.fn(async () => undefined) }));
+vi.mock('./recoveryKey', () => ({ disableRecoveryKey }));
+vi.mock('./passwordHint', () => ({ clearPasswordHint }));
 vi.mock('./argon2id', () => ({ getDefaultKdfProfile: () => ({ memoryKiB: 32768, iterations: 3, parallelism: 1, hashLength: 32 }) }));
 vi.mock('./secureStorage', () => ({
-  getSecureStorageItem: vi.fn(async () => null),
-  isSecureStorageAvailable: vi.fn(async () => false),
-  removeSecureStorageItem: vi.fn(async () => undefined),
-  secureStorageKeys: {},
-  setSecureStorageItem: vi.fn(async () => undefined),
+  getSecureStorageItem: vi.fn(() => null),
+  isSecureStorageAvailable: vi.fn(() => false),
+  removeSecureStorageItem,
+  secureStorageKeys: {
+    rememberedSecretKey: 'KalderaShield_account_secret_key_remembered',
+  },
+  setSecureStorageItem: vi.fn(() => false),
   initializeDesktopSecureStorage: vi.fn(async () => undefined),
 }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
 
-import { rebuildVaultFromSnapshot } from './storage';
+import { rebuildVaultFromSnapshot, recoverAndChangeMasterPassword, resetSystem } from './storage';
 
 const snapshot = (overrides: Record<string, unknown> = {}) => ({
   id: 'snap-1',
@@ -183,5 +194,35 @@ describe('K-4: rebuildVaultFromSnapshot', () => {
 
     expect(importAttachments).not.toHaveBeenCalled();
     expect(result.restoredAttachments).toBe(0);
+  });
+
+  it('resetSystem clears biometric, recovery key, password hint, and remembered secret key', async () => {
+    disableBiometric.mockClear();
+    disableRecoveryKey.mockClear();
+    clearPasswordHint.mockClear();
+    removeSecureStorageItem.mockClear();
+
+    await resetSystem();
+
+    expect(disableBiometric).toHaveBeenCalledTimes(1);
+    expect(disableRecoveryKey).toHaveBeenCalledTimes(1);
+    expect(clearPasswordHint).toHaveBeenCalledTimes(1);
+    expect(removeSecureStorageItem).toHaveBeenCalledWith('KalderaShield_account_secret_key_remembered');
+  });
+
+  it('recoverAndChangeMasterPassword opens a verified session when invoked from locked recovery flow and clears stale hint', async () => {
+    hasActiveVaultSession.mockReturnValueOnce(false);
+    repository.verifyPassword.mockResolvedValue(true);
+    repository.changeMasterPassword.mockClear();
+    clearPasswordHint.mockClear();
+    disableRecoveryKey.mockClear();
+
+    await recoverAndChangeMasterPassword('OldRecoveredPass1!', 'NewRotatedPass2!');
+
+    expect(repository.verifyPassword).toHaveBeenCalledWith('OldRecoveredPass1!');
+    expect(openVaultSession).toHaveBeenCalled();
+    expect(repository.changeMasterPassword).toHaveBeenCalledWith('OldRecoveredPass1!', 'NewRotatedPass2!');
+    expect(disableRecoveryKey).toHaveBeenCalled();
+    expect(clearPasswordHint).toHaveBeenCalled();
   });
 });

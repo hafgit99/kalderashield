@@ -98,10 +98,11 @@ describe('passwordHint', () => {
 
   // ── Safety Checks ────────────────────────────────────────────────────
 
-  it('warns when hint exactly matches password (case-insensitive)', async () => {
+  it('blocks saving when hint exactly matches password (case-insensitive)', async () => {
     const result = await setPasswordHint('MyP@ssword123!', 'myp@ssword123!');
     expect(result.warning).toBe(true);
-    expect(result.saved).toBe(true);
+    expect(result.saved).toBe(false);
+    await expect(getPasswordHint()).resolves.toBeNull();
   });
 
   it('warns when hint is a substring of password', async () => {

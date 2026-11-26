@@ -41,6 +41,7 @@ vi.mock('./argon2id', () => ({
 import {
   computeSha256ChecksumByteSync,
   generateRecoveryWords,
+  parseRecoveryWordsInput,
   validateRecoveryWords,
   formatRecoveryWords,
   setupRecoveryKey,
@@ -218,5 +219,43 @@ describe('recoveryKey', () => {
     store.set('KalderaShield_recovery_key_bundle', JSON.stringify(parsed));
 
     await expect(recoverWithRecoveryKey(words)).rejects.toThrow('Recovery failed');
+  });
+
+  it('parses numbered recovery text and full downloaded KalderaShield-vault-recovery-key.txt content', () => {
+    const words = generateRecoveryWords();
+    const formatted = formatRecoveryWords(words);
+    expect(parseRecoveryWordsInput(formatted)).toEqual(words);
+
+    const downloadedTxt = [
+      'KalderaShield Recovery Key',
+      '',
+      'Generated: 2026-11-26T17:00:00.000Z',
+      '',
+      'Recovery Words (24):',
+      formatted,
+      '',
+      'Keep this file OFFLINE and OUTSIDE the vault.',
+      'You need these 24 words to recover your master password.',
+      'KalderaShield cannot recover these words for you.',
+    ].join('\n');
+
+    const parsedFromTxt = parseRecoveryWordsInput(downloadedTxt);
+    expect(parsedFromTxt).toEqual(words);
+    expect(validateRecoveryWords(parsedFromTxt)).toBe(true);
+  });
+
+  it('removes stale IndexedDB fallback bundle when OS secure storage succeeds', async () => {
+    const secureStorageModule = await import('./secureStorage');
+    const words = generateRecoveryWords();
+
+    // First store in IndexedDB fallback
+    vi.mocked(secureStorageModule.setSecureStorageItem).mockReturnValueOnce(false);
+    await setupRecoveryKey('FallbackPass1!', words);
+    expect(store.has('KalderaShield_recovery_key_bundle')).toBe(true);
+
+    // Then save with OS secure storage available — stale IndexedDB copy must be removed
+    vi.mocked(secureStorageModule.setSecureStorageItem).mockReturnValueOnce(true);
+    await setupRecoveryKey('OsKeychainPass2!', words);
+    expect(store.has('KalderaShield_recovery_key_bundle')).toBe(false);
   });
 });

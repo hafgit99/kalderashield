@@ -658,8 +658,10 @@ class SQLiteOPFS implements VaultStorageRepository {  private state: VersionedVa
         argon_hash: newArgonHash,
       }];
 
+      const reWrappedItems = await reWrapPasskeysInVaultItems(items, oldVaultKey, newVaultKey);
+
       const rotation = await rotateMasterEncryptedRows({
-        items,
+        items: reWrappedItems,
         oldVaultKey,
         newVaultKey,
       });

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   KeyRound,
@@ -32,6 +32,12 @@ import {
 } from '../../lib/passwordHint';
 import { withActiveBackupPassword } from '../../lib/vaultSession';
 import { isNativeFileDialogSupported, saveDesktopExportFile } from '../../lib/desktopFiles';
+import { subscribeDesktopSecureStorage } from '../../lib/secureStorage';
+import {
+  clearClipboardIfUnchanged,
+  DEFAULT_CLIPBOARD_CLEAR_DELAY_MS,
+  writeClipboardText,
+} from '../../lib/clipboard';
 
 interface SettingsRecoverySectionProps {
   masterPassword?: string | null;
@@ -40,8 +46,8 @@ interface SettingsRecoverySectionProps {
 export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySectionProps) {
   const { t } = useLanguage();
   // ── Recovery Key State ────────────────────────────────────────────
-  const [recoverySetup, setRecoverySetup] = useState(isRecoveryKeySetup());
-  const [recoveryCreatedAt] = useState(getRecoveryKeyCreatedAt());
+  const [recoverySetup, setRecoverySetup] = useState(() => isRecoveryKeySetup());
+  const [recoveryCreatedAt, setRecoveryCreatedAt] = useState(() => getRecoveryKeyCreatedAt());
   const [showRecoverySetup, setShowRecoverySetup] = useState(false);
   const [recoveryWords, setRecoveryWords] = useState<string[]>([]);
   const [recoveryLoading, setRecoveryLoading] = useState(false);
@@ -50,6 +56,22 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
   const [showWords, setShowWords] = useState(false);
   const [wordsCopied, setWordsCopied] = useState(false);
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const clipboardClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const unsub = typeof subscribeDesktopSecureStorage === 'function'
+      ? subscribeDesktopSecureStorage(() => {
+          setRecoverySetup(isRecoveryKeySetup());
+          setRecoveryCreatedAt(getRecoveryKeyCreatedAt());
+        })
+      : undefined;
+    return () => {
+      unsub?.();
+      if (clipboardClearTimerRef.current) {
+        clearTimeout(clipboardClearTimerRef.current);
+      }
+    };
+  }, []);
 
   // ── Password Hint State ───────────────────────────────────────────
   // M1: the hint lives in an encrypted envelope — load it asynchronously.
@@ -101,6 +123,7 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
       }
       await setupRecoveryKey(activePassword, recoveryWords);
       setRecoverySetup(true);
+      setRecoveryCreatedAt(getRecoveryKeyCreatedAt() ?? new Date().toISOString());
       setRecoverySuccess(t('settings.recovery.keySuccess'));
       setShowRecoverySetup(false);
       setRecoveryWords([]);
@@ -112,12 +135,20 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
   };
 
   const handleCopyWords = async () => {
+    const phrase = recoveryWords.join(' ');
     try {
-      await navigator.clipboard.writeText(recoveryWords.join(' '));
+      const copied = await writeClipboardText(phrase);
+      if (!copied) return;
       setWordsCopied(true);
       setTimeout(() => setWordsCopied(false), 2000);
+      if (clipboardClearTimerRef.current) {
+        clearTimeout(clipboardClearTimerRef.current);
+      }
+      clipboardClearTimerRef.current = setTimeout(() => {
+        void clearClipboardIfUnchanged(phrase);
+      }, DEFAULT_CLIPBOARD_CLEAR_DELAY_MS);
     } catch {
-      // Fallback: select text
+      // Clipboard denied or unavailable
     }
   };
 
@@ -142,7 +173,8 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
       if (savedWithNativeDialog) return;
       if (isNativeFileDialogSupported()) return;
     } catch (err) {
-      console.error('Native save dialog error:', err);
+      setRecoveryError(err instanceof Error ? err.message : String(err));
+      return;
     }
 
     // Web browser fallback
@@ -160,6 +192,7 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
   const handleDisableRecoveryKey = () => {
     disableRecoveryKey();
     setRecoverySetup(false);
+    setRecoveryCreatedAt(null);
     setConfirmDisable(false);
     setRecoverySuccess(null);
   };
@@ -173,8 +206,10 @@ export function SettingsRecoverySection({ masterPassword }: SettingsRecoverySect
     }
     const result = await setPasswordHint(hint, activePassword || undefined);
     setHintWarning(result.warning);
-    setHintSaved(true);
-    setTimeout(() => setHintSaved(false), 2000);
+    setHintSaved(result.saved);
+    if (result.saved) {
+      setTimeout(() => setHintSaved(false), 2000);
+    }
   };
 
   const handleClearHint = () => {

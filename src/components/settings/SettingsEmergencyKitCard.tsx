@@ -13,6 +13,7 @@ interface SettingsEmergencyKitCardProps {
   emergencyKitSuccess: string | null;
   emergencyKitError: string | null;
   onDownloadEmergencyKit: () => void | Promise<void>;
+  onDownloadEmergencyKitPdf?: () => void | Promise<void>;
 }
 
 export function SettingsEmergencyKitCard({
@@ -21,6 +22,7 @@ export function SettingsEmergencyKitCard({
   emergencyKitSuccess,
   emergencyKitError,
   onDownloadEmergencyKit,
+  onDownloadEmergencyKitPdf,
 }: SettingsEmergencyKitCardProps) {
   const { t } = useLanguage();
   return (
@@ -61,15 +63,28 @@ export function SettingsEmergencyKitCard({
               {t('settings.emergencyKit.rememberedHint')}
             </p>
           </div>
-          <button
-            data-testid="settings-emergency-kit-download-button"
-            type="button"
-            onClick={onDownloadEmergencyKit}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 bg-brand-secondary text-black hover:brightness-110 shadow-md shadow-brand-secondary/10"
-          >
-            <Download className="w-4 h-4" />
-            <span>{t('settings.emergencyKit.download')}</span>
-          </button>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button
+              data-testid="settings-emergency-kit-download-button"
+              type="button"
+              onClick={onDownloadEmergencyKit}
+              className="px-5 py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 bg-brand-secondary text-black hover:brightness-110 shadow-md shadow-brand-secondary/10"
+            >
+              <Download className="w-4 h-4" />
+              <span>{t('settings.emergencyKit.download')}</span>
+            </button>
+            {onDownloadEmergencyKitPdf && (
+              <button
+                data-testid="settings-emergency-kit-download-pdf-button"
+                type="button"
+                onClick={onDownloadEmergencyKitPdf}
+                className="px-4 py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 border border-outline-variant/25 bg-surface-lowest text-on-surface hover:bg-surface-high"
+              >
+                <Download className="w-4 h-4" />
+                <span>{t('settings.emergencyKit.downloadPdf')}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {emergencyKitSuccess && (
