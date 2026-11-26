@@ -2,6 +2,17 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.6.0 - Streamlined Dashboard UX, Faster Tab Navigation & Incremental HIBP Session Cache
+
+### Added
+
+- **Session-scoped HIBP scan cache & incremental breach checking.** Added RAM-only session scan snapshot caching (`getCachedHibpSessionScan` / `setCachedHibpSessionScan`) and SHA-1 digest result caching (`useSessionCache`, 1-hour TTL, wiped automatically on vault lock via `registerOnCloseSession`), raised `MAX_CACHE_SIZE` from `100` to `1,000` prefix buckets, and added localized `"unique"` progress labels and tooltips across all 12 locales so revisiting Security Audit displays cached results immediately with zero network requests and editing one password re-checks only that changed password.
+- **Interactive Dashboard categories, score shortcuts & real recent sorting.** Made `DashboardCategoryStats` keyboard-accessible buttons (adding Passkey and Identity counts alongside Logins, Payment Cards, and Secure Notes), wired `DashboardSecurityScoreCard` and `KalderaShieldGuardReport` risk strips directly to Security Audit, and updated `RecentVaultPanel` to sort by true `updatedAt` timestamps in a 2-column quick-access grid.
+
+### Improved & Fixed
+
+- **Single-screen Dashboard calm UX, instant tab switching & Light Mode token parity.** Compacted `CryptoShieldPanel` into a single-row status bar on the Dashboard (expanding automatically on real Argon2id KDF memory degradation), hid duplicate desktop lock actions in `DashboardHeader`, removed `AnimatePresence mode="wait"` tab-switch delay in `MainContent`, removed pulsing icon noise, and replaced remaining hardcoded dark hex classes in `RecentVaultItem`, `VaultWorkspace`, `VaultItemDetailPanel`, `DashboardHeader`, `CryptoShieldPanel`, and `SidebarNavigation` with Light/Dark semantic tokens (2,572 unit tests across 270 files).
+
 ## 7.1.5.0 - Password Recovery Hardening & Security Audit Redesign
 
 ### Added
