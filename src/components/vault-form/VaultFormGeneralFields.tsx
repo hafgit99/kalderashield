@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Globe, Shield, Sparkle } from 'lucide-react';
+import { Globe, Plus, Shield, Sparkle, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 
@@ -12,6 +12,8 @@ interface VaultFormGeneralFieldsProps {
   url: string;
   onTitleChange: (value: string) => void;
   onUrlChange: (value: string) => void;
+  additionalUrls?: string[];
+  onAdditionalUrlsChange?: (urls: string[]) => void;
 }
 
 export function VaultFormGeneralFields({
@@ -19,6 +21,8 @@ export function VaultFormGeneralFields({
   url,
   onTitleChange,
   onUrlChange,
+  additionalUrls = [],
+  onAdditionalUrlsChange,
 }: VaultFormGeneralFieldsProps) {
   const { t } = useLanguage();
   return (
@@ -63,6 +67,47 @@ export function VaultFormGeneralFields({
           </div>
         </div>
       </div>
+
+      {onAdditionalUrlsChange && (
+        <div className="space-y-2 pt-1">
+          {additionalUrls.map((extraUrl, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Globe className="w-3.5 h-3.5 absolute left-3 top-3 text-on-surface-variant/40" />
+                <input
+                  data-testid={`vault-item-additional-url-input-${idx}`}
+                  type="text"
+                  value={extraUrl}
+                  onChange={(e) => {
+                    const next = [...additionalUrls];
+                    next[idx] = e.target.value;
+                    onAdditionalUrlsChange(next);
+                  }}
+                  className="w-full bg-surface-lowest border border-outline-variant/20 rounded-xl pl-9 pr-3 py-2 text-xs font-mono text-on-surface focus:ring-1 focus:ring-brand-primary/30 focus:outline-none"
+                  placeholder={t('vaultForm.additionalUrlPlaceholder')}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => onAdditionalUrlsChange(additionalUrls.filter((_, i) => i !== idx))}
+                className="p-2 rounded-lg bg-surface-lowest hover:bg-brand-error/10 border border-outline-variant/20 text-on-surface-variant hover:text-brand-error transition-colors cursor-pointer"
+                title={t('vaultForm.removeField')}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            data-testid="vault-item-add-url-button"
+            onClick={() => onAdditionalUrlsChange([...additionalUrls, ''])}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand-primary hover:underline cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t('vaultForm.addAdditionalUrl')}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

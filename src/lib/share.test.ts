@@ -143,4 +143,14 @@ describe('Password Sharing Library', () => {
     expect(decrypted).toBeNull();
     dateSpy.mockRestore();
   });
+
+  it('decrypts a full public share URL in addition to bare hash fragments', async () => {
+    const shareUrl = await generateShareUrl(testItem, 2, TEST_SHARE_PASSWORD);
+    const fullPublicUrl = `https://kalderashield.com/share/${shareUrl.substring(shareUrl.indexOf('#'))}`;
+
+    const decrypted = await decryptShareUrl(fullPublicUrl, TEST_SHARE_PASSWORD);
+    expect(decrypted).not.toBeNull();
+    expect(decrypted!.title).toBe(testItem.title);
+    expect(decrypted!.password).toBe(testItem.password);
+  });
 });

@@ -82,4 +82,27 @@ describe('androidAutofillMatching', () => {
     expect(isAndroidAutofillTargetMatch(item('host-only', 'www.login.example.com/account'), malformedRequest)).toBe(true);
     expect(isAndroidAutofillTargetMatch(item('deceptive', 'https://login.example.com.evil.test'), malformedRequest)).toBe(false);
   });
+
+  it('matches additionalUrls and androidapp:// package URIs', () => {
+    const multiUrlItem: VaultItem = {
+      ...item('multi', 'https://primary.test'),
+      additionalUrls: ['https://login.example.com', 'androidapp://com.example.app'],
+    };
+
+    expect(isAndroidAutofillTargetMatch(multiUrlItem, request)).toBe(true);
+    expect(
+      isAndroidAutofillTargetMatch(
+        {
+          ...item('android-only', 'https://other.test'),
+          additionalUrls: ['androidapp://com.example.app'],
+        },
+        {
+          requestId: 'request-5',
+          createdAt: 1000,
+          source: 'android-autofill',
+          appPackage: 'com.example.app',
+        },
+      ),
+    ).toBe(true);
+  });
 });

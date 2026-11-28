@@ -32,8 +32,19 @@ async function overwriteThenClearClipboard(): Promise<boolean> {
 }
 
 export async function clearClipboardIfUnchanged(expectedText: string): Promise<boolean> {
+  if (!expectedText) return false;
+
+  if (isDesktopRuntime()) {
+    try {
+      const cleared = await invoke<boolean>('clear_clipboard_if_unchanged_protected', { expectedText });
+      if (cleared) return true;
+    } catch {
+      // Fall through to WebView clipboard fallback
+    }
+  }
+
   const clipboard = navigator.clipboard;
-  if (!expectedText || !clipboard?.readText || !clipboard?.writeText) return false;
+  if (!clipboard?.readText || !clipboard?.writeText) return false;
 
   try {
     const currentText = await clipboard.readText();

@@ -12,8 +12,8 @@ import {
 import type { VaultItem } from '../types';
 
 describe('passwordHistory module', () => {
-  it('has a free tier cap of 3 passwords', () => {
-    expect(MAX_FREE_PASSWORD_HISTORY).toBe(3);
+  it('has a free tier cap of 20 passwords', () => {
+    expect(MAX_FREE_PASSWORD_HISTORY).toBe(20);
   });
 
   it('records previous password when password changes', () => {
@@ -38,16 +38,16 @@ describe('passwordHistory module', () => {
     expect(history).toEqual(existing);
   });
 
-  it('caps history at 3 entries and preserves newest first', () => {
+  it('caps history at 20 entries and preserves newest first', () => {
     let history = recordPasswordHistory([], 'pass1', 'pass2', '2026-01-01');
-    history = recordPasswordHistory(history, 'pass2', 'pass3', '2026-02-01');
-    history = recordPasswordHistory(history, 'pass3', 'pass4', '2026-03-01');
-    history = recordPasswordHistory(history, 'pass4', 'pass5', '2026-04-01');
+    for (let i = 2; i <= 24; i++) {
+      history = recordPasswordHistory(history, `pass${i}`, `pass${i + 1}`, `2026-01-${String(i).padStart(2, '0')}`);
+    }
 
-    expect(history).toHaveLength(3);
-    expect(history[0]?.password).toBe('pass4');
-    expect(history[1]?.password).toBe('pass3');
-    expect(history[2]?.password).toBe('pass2');
+    expect(history).toHaveLength(20);
+    expect(history[0]?.password).toBe('pass24');
+    expect(history[1]?.password).toBe('pass23');
+    expect(history[19]?.password).toBe('pass5');
   });
 
   it('getPasswordHistory returns empty array when item has no history', () => {

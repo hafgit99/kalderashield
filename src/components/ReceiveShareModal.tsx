@@ -85,7 +85,7 @@ export default function ReceiveShareModal({ isOpen, onClose, payload, onImport }
         <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary" />
 
         {/* Header */}
-        <div className="flex justify-between items-center px-5 py-4 border-b border-outline-variant/10 bg-[#0c0d0c]/95">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-outline-variant/15 bg-surface-low">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
               <Download className="w-4.5 h-4.5" />
@@ -113,7 +113,7 @@ export default function ReceiveShareModal({ isOpen, onClose, payload, onImport }
           {/* Expiration Banner */}
           {isExpired ? (
             <div className="p-3.5 bg-brand-error/10 border border-brand-error/20 rounded-xl flex items-start gap-3 text-brand-error text-xs text-left animate-fade-in">
-              <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-red-400 mt-0.5" />
+              <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-brand-error mt-0.5" />
               <div>
                 <p className="font-bold">{t('share.expiredTitle')}</p>
                 <p className="text-[10px] opacity-80 mt-0.5">
@@ -133,7 +133,7 @@ export default function ReceiveShareModal({ isOpen, onClose, payload, onImport }
           )}
 
           {/* Credentials Info Panel */}
-          <div className="space-y-3 bg-[#101210]/60 p-4 rounded-xl border border-outline-variant/15 text-left">
+          <div className="space-y-3 bg-surface-low/80 p-4 rounded-xl border border-outline-variant/15 text-left">
             
             {/* Title / Category */}
             <div>

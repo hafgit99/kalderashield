@@ -13,6 +13,7 @@ import PasskeyDetail from './PasskeyDetail';
 import SecureNoteDetail from './SecureNoteDetail';
 import VaultItemAttachmentCard from './VaultItemAttachmentCard';
 import VaultItemDetailHeader from './VaultItemDetailHeader';
+import VaultItemExtrasCard from './VaultItemExtrasCard';
 import VaultItemSecurityAssessment from './VaultItemSecurityAssessment';
 import VaultItemSideInfo from './VaultItemSideInfo';
 
@@ -205,6 +206,8 @@ export default function VaultItemDetailPanel({
           <IdentityDetail item={item} copiedField={copiedField} onCopyText={onCopyText} />
 
           <SecureNoteDetail item={item} copiedField={copiedField} onCopyText={onCopyText} />
+
+          <VaultItemExtrasCard item={item} copiedField={copiedField} onCopyText={onCopyText} />
 
           <VaultItemAttachmentCard item={item} onDownload={onDownloadAttachment} />
         </div>

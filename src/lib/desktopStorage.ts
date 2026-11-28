@@ -41,8 +41,13 @@ export async function syncExtensionCredentials(items: VaultItem[], ttlMs = EXTEN
         username: item.username || item.cardholderName || '',
         password: item.password || item.cardNumber || '',
         url: item.url || '',
+        additionalUrls: Array.isArray(item.additionalUrls) ? item.additionalUrls.filter(Boolean) : [],
         category: item.category,
         favorite: Boolean(item.favorite),
+        totpSecret: item.totpSecret || '',
+        hasTotp: Boolean(item.totpSecret && item.totpSecret.trim().length > 0),
+        cardExpiry: item.cardExpiry || '',
+        cardCvv: item.cardCvv || '',
       }));
     await invoke('sync_extension_credentials', { credentials: creds, ttlMs });
     const softwarePasskeys = items

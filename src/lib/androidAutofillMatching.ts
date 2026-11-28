@@ -77,11 +77,26 @@ export function isAndroidAutofillTargetMatch(item: VaultItem, request: AndroidAu
   const target = androidAutofillTargetLabel(request);
   if (!target) return false;
 
-  const itemHost = normalizeHost(item.url);
+  const appPackage = request?.appPackage?.trim().toLowerCase() || '';
   const targetHost = normalizeHost(target);
-  if (!itemHost || !targetHost) return false;
 
-  return hostsMatch(itemHost, targetHost);
+  const candidateUrls = [item.url, ...(Array.isArray(item.additionalUrls) ? item.additionalUrls : [])];
+  for (const rawUrl of candidateUrls) {
+    const trimmed = (rawUrl || '').trim();
+    if (!trimmed) continue;
+    // Direct Android package URI matching (`androidapp://com.example.app`)
+    if (appPackage && trimmed.toLowerCase().startsWith('androidapp://')) {
+      const pkg = trimmed.slice('androidapp://'.length).trim().toLowerCase();
+      if (pkg === appPackage) return true;
+      continue;
+    }
+    const itemHost = normalizeHost(trimmed);
+    if (itemHost && targetHost && hostsMatch(itemHost, targetHost)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function sortAndroidAutofillMatches(items: VaultItem[], request: AndroidAutofillRequest | null | undefined): VaultItem[] {

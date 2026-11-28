@@ -114,13 +114,33 @@ export interface SmartFolder {
   createdAt: string;
 }
 
+export interface VaultCustomField {
+  id: string;
+  label: string;
+  value: string;
+  type: 'text' | 'hidden' | 'url';
+}
+
+export interface VaultAttachmentMeta {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+}
+
 export interface VaultItem {
   id: string;
   title: string;
   username: string;
   password?: string;
   url: string;
+  /** Additional matching URLs or Android app URIs (`androidapp://com.example.app`). */
+  additionalUrls?: string[];
   totpSecret?: string; // e.g. for generating rotation codes
+  /** Optional 2FA backup / recovery codes associated with this login. */
+  totpRecoveryCodes?: string[];
+  /** Optional user-defined custom fields (text, masked hidden secrets, or URLs). */
+  customFields?: VaultCustomField[];
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -171,10 +191,12 @@ export interface VaultItem {
   };
 
   // Attachment fields
-  attachmentId?: string; // Linked ID in IndexedDB
+  attachmentId?: string; // Linked ID in IndexedDB (primary/legacy single attachment)
   attachmentName?: string;
   attachmentSize?: number;
   attachmentType?: string;
+  /** Multi-attachment list (kept backward-compatible with legacy `attachmentId`). */
+  attachments?: VaultAttachmentMeta[];
 
   // Optional: free-form tags used by the advanced search feature.
   // Backwards-compatible — the field is omitted for older vaults and
@@ -203,6 +225,10 @@ export interface GeneratorOptions {
   lowercase: boolean;
   numbers: boolean;
   symbols: boolean;
+  /** Exclude visually ambiguous characters (`O`, `0`, `I`, `l`, `1`, `|`). */
+  excludeAmbiguous?: boolean;
+  /** Optional custom symbol set overriding the default symbol alphabet. */
+  customSymbols?: string;
 }
 
 export type ActiveTab = 'vault' | 'audit' | 'generator' | 'settings' | 'donate' | 'trash';
