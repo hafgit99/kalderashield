@@ -92,12 +92,35 @@ function buildImportedTitle(
 
 
 function decodeXmlEntities(text: string): string {
-  return text
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
+  return text.replace(/&(lt|gt|quot|apos|amp|#x[0-9a-fA-F]+|#\d+);/g, (match, entity: string) => {
+    switch (entity) {
+      case 'lt':
+        return '<';
+      case 'gt':
+        return '>';
+      case 'quot':
+        return '"';
+      case 'apos':
+        return "'";
+      case 'amp':
+        return '&';
+      default: {
+        if (entity.startsWith('#x') || entity.startsWith('#X')) {
+          const code = Number.parseInt(entity.slice(2), 16);
+          return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+            ? String.fromCodePoint(code)
+            : match;
+        }
+        if (entity.startsWith('#')) {
+          const code = Number.parseInt(entity.slice(1), 10);
+          return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+            ? String.fromCodePoint(code)
+            : match;
+        }
+        return match;
+      }
+    }
+  });
 }
 
 function parseKeePassXml(xml: string, untitledFallback: string): Partial<VaultItem>[] {
@@ -604,8 +627,13 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
     return { type: 'success', items, formatName: 'Apple Passwords / Safari (CSV)' };
   }
 
-  // 2d. Proton Pass CSV detection: "name,url,email,username,password,note,totp"
-  if (headers.includes('totp') && headers.includes('name') && headers.includes('password') && headers.includes('email')) {
+  // 2d. Proton Pass CSV detection: "name,url,email,username,password,note,totp,vault"
+  if (
+    headers.includes('totp')
+    && headers.includes('name')
+    && headers.includes('password')
+    && (headers.includes('email') || headers.includes('vault'))
+  ) {
     const nameIdx = findColumnIndex(['name']);
     const urlIdx = findColumnIndex(['url']);
     const emailIdx = findColumnIndex(['email']);

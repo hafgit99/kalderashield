@@ -122,4 +122,80 @@ describe('CommandPalette', () => {
     expect(onOpenAudit).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('supports keyboard ArrowDown/ArrowUp navigation, action execution, username copy, and empty state', async () => {
+    const onCopyText = vi.fn();
+    const onNewItem = vi.fn();
+    const onOpenGenerator = vi.fn();
+    const onFocusVaultSearch = vi.fn();
+    const onLock = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <CommandPalette
+        isOpen={true}
+        items={[
+          ...sampleItems,
+          {
+            id: 'item-card',
+            title: 'Corp Card',
+            username: 'Ada',
+            url: '',
+            category: 'card',
+            createdAt: '2026-06-03T00:00:00.000Z',
+            updatedAt: '2026-06-03T00:00:00.000Z',
+          },
+          {
+            id: 'item-id',
+            title: 'Passport',
+            username: 'P123',
+            url: '',
+            category: 'identity',
+            createdAt: '2026-06-03T00:00:00.000Z',
+            updatedAt: '2026-06-03T00:00:00.000Z',
+          },
+          {
+            id: 'item-note',
+            title: 'SSH Note',
+            username: '',
+            url: '',
+            category: 'secure_note',
+            createdAt: '2026-06-03T00:00:00.000Z',
+            updatedAt: '2026-06-03T00:00:00.000Z',
+          },
+        ]}
+        copiedField={null}
+        onClose={onClose}
+        onSelectItem={vi.fn()}
+        onCopyText={onCopyText}
+        onNewItem={onNewItem}
+        onOpenAudit={vi.fn()}
+        onOpenGenerator={onOpenGenerator}
+        onFocusVaultSearch={onFocusVaultSearch}
+        onLock={onLock}
+      />,
+    );
+
+    const input = screen.getByTestId('command-palette-input');
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+
+    const copyUserBtns = screen.getAllByTitle('Kullanıcı Adını Kopyala');
+    fireEvent.click(copyUserBtns[0]!);
+    expect(onCopyText).toHaveBeenCalledWith('octocat@example.com', 'palette_user_item-github');
+
+    // Quick actions
+    fireEvent.click(screen.getByTestId('action-new-item'));
+    expect(onNewItem).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('action-generator'));
+    expect(onOpenGenerator).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('action-vault-search'));
+    expect(onFocusVaultSearch).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('action-lock'));
+    expect(onLock).toHaveBeenCalledTimes(1);
+
+    // Empty state
+    fireEvent.change(input, { target: { value: 'zzzz-no-match-999' } });
+    expect(screen.getByText('Eşleşen kasa öğesi veya komut bulunamadı.')).toBeTruthy();
+  });
 });

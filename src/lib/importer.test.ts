@@ -786,5 +786,53 @@ describe('universal importer', () => {
         expect.objectContaining({ label: 'Security Answer', value: 'SecretAnswer', type: 'hidden' }),
       ]);
     });
+
+    it('decodes KeePass XML entities in a single pass without double-unescaping', () => {
+      const xml = `<KeePassFile><Root><Group><Entry>
+        <String><Key>Title</Key><Value>Entity &amp;lt;Test&amp;gt; &quot;A&quot; &apos;B&apos; &#65; &#x42;</Value></String>
+        <String><Key>UserName</Key><Value>u</Value></String>
+        <String><Key>Password</Key><Value>p&amp;q</Value></String>
+      </Entry></Group></Root></KeePassFile>`;
+
+      const result = parseUniversalImport(xml);
+      expect(result.type).toBe('success');
+      if (result.type !== 'success') return;
+      expect(result.items[0]?.title).toBe('Entity &lt;Test&gt; "A" \'B\' A B');
+      expect(result.items[0]?.password).toBe('p&q');
+    });
+
+    it('parses Proton Pass CSV and Google Authenticator otpauth-migration URIs', () => {
+      const protonCsv =
+        'name,url,username,password,note,totp,vault\n' +
+        'Proton Site,https://proton.me,me@proton.me,Secret#1,my note,JBSWY3DPEHPK3PXP,Personal';
+      const csvRes = parseUniversalImport(protonCsv);
+      expect(csvRes.type).toBe('success');
+      if (csvRes.type === 'success') {
+        expect(csvRes.formatName).toContain('Proton Pass');
+        expect(csvRes.items[0]).toMatchObject({
+          title: 'Proton Site',
+          username: 'me@proton.me',
+          password: 'Secret#1',
+          totpSecret: 'JBSWY3DPEHPK3PXP',
+        });
+      }
+
+      // Single-account Google Authenticator migration payload for JBSWY3DPEHPK3PXP
+      const payloadBytes = new Uint8Array([
+        0x0a, 0x26,
+        0x0a, 0x0a, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, 0xde, 0xad, 0xbe, 0xef,
+        0x12, 0x10, ...new TextEncoder().encode('GitHub:alice@dev'),
+        0x1a, 0x06, ...new TextEncoder().encode('GitHub'),
+        0x20, 0x01, 0x28, 0x01, 0x30, 0x02,
+      ]);
+      const b64 = btoa(String.fromCharCode(...payloadBytes));
+      const gauthRes = parseUniversalImport(`otpauth-migration://offline?data=${encodeURIComponent(b64)}`);
+      expect(gauthRes.type).toBe('success');
+      if (gauthRes.type === 'success') {
+        expect(gauthRes.formatName).toContain('Google Authenticator');
+        expect(gauthRes.items).toHaveLength(1);
+        expect(gauthRes.items[0]?.totpSecret).toContain('secret=JBSWY3DPEHPK3PXP');
+      }
+    });
   });
 });

@@ -222,13 +222,16 @@ fn get_linux_security_status() -> Result<Option<LinuxSecurityStatus>, String> {
     }
 }
 
+#[cfg(target_os = "windows")]
 static LAST_PROTECTED_CLIPBOARD_HASH: std::sync::OnceLock<std::sync::Mutex<Option<[u8; 32]>>> =
     std::sync::OnceLock::new();
 
+#[cfg(target_os = "windows")]
 fn last_clipboard_hash_cell() -> &'static std::sync::Mutex<Option<[u8; 32]>> {
     LAST_PROTECTED_CLIPBOARD_HASH.get_or_init(|| std::sync::Mutex::new(None))
 }
 
+#[cfg(target_os = "windows")]
 fn sha256_bytes(input: &str) -> [u8; 32] {
     use sha2::{Digest, Sha256};
     let digest = Sha256::digest(input.as_bytes());
@@ -237,6 +240,7 @@ fn sha256_bytes(input: &str) -> [u8; 32] {
     out
 }
 
+#[cfg(target_os = "windows")]
 fn record_protected_clipboard_hash(text: &str) {
     if let Ok(mut guard) = last_clipboard_hash_cell().lock() {
         if text.is_empty() || text == "KalderaShield clipboard cleared" {
@@ -473,9 +477,8 @@ fn spawn_os_session_lock_monitor(
         fn WTSRegisterSessionNotification(hwnd: HWND, dw_flags: u32) -> i32;
     }
 
-    static LOCK_CALLBACK: std::sync::OnceLock<
-        std::sync::Mutex<Option<Box<dyn Fn() + Send + Sync>>>,
-    > = std::sync::OnceLock::new();
+    type OsLockCallbackSlot = std::sync::Mutex<Option<Box<dyn Fn() + Send + Sync>>>;
+    static LOCK_CALLBACK: std::sync::OnceLock<OsLockCallbackSlot> = std::sync::OnceLock::new();
 
     unsafe extern "system" fn wnd_proc(
         hwnd: HWND,

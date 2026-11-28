@@ -129,6 +129,30 @@ describe('PasswordGenerator', () => {
     expect(generatePassword).toHaveBeenLastCalledWith(expect.objectContaining({ symbols: false }));
   });
 
+  it('supports excludeAmbiguous, customSymbols, and session password history drawer', () => {
+    render(<PasswordGenerator />);
+
+    const excludeCheckbox = screen.getByTestId('generator-exclude-ambiguous-checkbox');
+    fireEvent.click(excludeCheckbox);
+    expect(generatePassword).toHaveBeenLastCalledWith(
+      expect.objectContaining({ excludeAmbiguous: true }),
+    );
+
+    const customSymbolsInput = screen.getByTestId('generator-custom-symbols-input');
+    fireEvent.change(customSymbolsInput, { target: { value: '!@#' } });
+    expect(generatePassword).toHaveBeenLastCalledWith(
+      expect.objectContaining({ customSymbols: '!@#' }),
+    );
+
+    // Trigger copy to record in history, open drawer, copy from history, then clear
+    fireEvent.click(screen.getByTestId('password-generator-copy-button'));
+    fireEvent.click(screen.getByTestId('generator-history-toggle'));
+    expect(screen.getByTestId('generator-history-panel')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('generator-history-clear-button'));
+    expect(screen.getByText(/Bu oturumda henüz/)).toBeTruthy();
+  });
+
   it('renders each strength bar tone from the generated password score', () => {
     generatePassword
       .mockReturnValueOnce('SecurePassword-123!')
