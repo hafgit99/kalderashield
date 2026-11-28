@@ -34,16 +34,22 @@ export default function LoginDetail({
   const isPasswordRevealed = propIsPasswordRevealed ?? revealCtx.revealed.password;
   const onTogglePasswordReveal = propOnTogglePasswordReveal ?? (() => revealCtx.toggleReveal('password'));
   const [totpCode, setTotpCode] = useState<string>('');
+  const [nextTotpCode, setNextTotpCode] = useState<string>('');
   const [hasTotpValidationError, setHasTotpValidationError] = useState<boolean>(false);
   const totpPeriod = getTotpPeriod(item.totpSecret);
 
   useEffect(() => {
     let active = true;
     if (item.category === 'login' && item.totpSecret) {
-      generateTOTP(item.totpSecret)
-        .then((code) => {
+      const nowMs = Date.now();
+      Promise.all([
+        generateTOTP(item.totpSecret, { timestampMs: nowMs }),
+        generateTOTP(item.totpSecret, { timestampMs: nowMs + totpPeriod * 1000 }),
+      ])
+        .then(([code, nextCode]) => {
           if (active) {
             setTotpCode(code);
+            setNextTotpCode(nextCode);
             setHasTotpValidationError(false);
           }
         })
@@ -53,17 +59,19 @@ export default function LoginDetail({
             setHasTotpValidationError(Boolean(isValidationError));
             if (isValidationError) {
               setTotpCode('000 000');
+              setNextTotpCode('');
             }
           }
         });
     } else {
       setTotpCode('');
+      setNextTotpCode('');
       setHasTotpValidationError(false);
     }
     return () => {
       active = false;
     };
-  }, [item.category, item.totpSecret, totpCountdown]);
+  }, [item.category, item.totpSecret, totpCountdown, totpPeriod]);
 
   if (item.category !== 'login') return null;
 
@@ -143,23 +151,34 @@ export default function LoginDetail({
         <div className="flex items-center justify-between">
           {item.totpSecret ? (
             hasTotpValidationError ? (
-              <div className="text-xs text-amber-300/90 py-1 text-left leading-relaxed">
+              <div className="text-xs text-brand-secondary py-1 text-left leading-relaxed">
                 {t('loginDetail.invalidTotp')}
               </div>
             ) : (
               <>
-                <span className="font-mono text-xl md:text-2xl font-bold text-brand-primary tracking-widest">
-                  {totpCode}
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-mono text-xl md:text-2xl font-bold text-brand-primary tracking-widest tabular-nums">
+                    {totpCode}
+                  </span>
+                  {totpCountdown <= 5 && nextTotpCode && (
+                    <span
+                      data-testid="login-totp-next-preview"
+                      className="text-[11px] font-mono text-on-surface-variant mt-0.5 tabular-nums"
+                    >
+                      → {nextTotpCode}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2.5">
                   <TotpCountdownRing secondsLeft={totpCountdown} totalDuration={totpPeriod} />
                   <button
+                    type="button"
                     data-testid="login-totp-copy-button"
                     onClick={() => onCopyText(totpCode.replace(' ', ''), 'totp')}
-                    className={`p-1.5 rounded-lg cursor-pointer transition-all duration-300 focus:outline-none ${
+                    className={`p-1.5 rounded-lg cursor-pointer transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 ${
                       copiedField === 'totp'
-                        ? 'ring-2 ring-emerald-400/50 bg-emerald-500/15 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105'
-                        : 'text-on-surface-variant hover:text-brand-primary hover:bg-[#1a1c1a]/50'
+                        ? 'ring-2 ring-brand-tertiary/50 bg-brand-tertiary/15 text-brand-tertiary scale-105'
+                        : 'text-on-surface-variant hover:text-brand-primary hover:bg-surface-high/60'
                     }`}
                     title={t('loginDetail.copyTotp')}
                   >

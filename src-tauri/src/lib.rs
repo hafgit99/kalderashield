@@ -223,6 +223,75 @@ fn get_linux_security_status() -> Result<Option<LinuxSecurityStatus>, String> {
 }
 
 #[cfg(target_os = "windows")]
+static LAST_PROTECTED_CLIPBOARD_HASH: std::sync::OnceLock<std::sync::Mutex<Option<[u8; 32]>>> =
+    std::sync::OnceLock::new();
+
+#[cfg(target_os = "windows")]
+fn last_clipboard_hash_cell() -> &'static std::sync::Mutex<Option<[u8; 32]>> {
+    LAST_PROTECTED_CLIPBOARD_HASH.get_or_init(|| std::sync::Mutex::new(None))
+}
+
+#[cfg(target_os = "windows")]
+fn sha256_bytes(input: &str) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(input.as_bytes());
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest[..32]);
+    out
+}
+
+#[cfg(target_os = "windows")]
+fn record_protected_clipboard_hash(text: &str) {
+    if let Ok(mut guard) = last_clipboard_hash_cell().lock() {
+        if text.is_empty() || text == "KalderaShield clipboard cleared" {
+            if let Some(ref mut prev) = *guard {
+                prev.zeroize();
+            }
+            *guard = None;
+        } else {
+            *guard = Some(sha256_bytes(text));
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn read_windows_clipboard_text() -> Option<String> {
+    use windows_sys::Win32::System::DataExchange::{
+        CloseClipboard, GetClipboardData, OpenClipboard,
+    };
+    use windows_sys::Win32::System::Memory::{GlobalLock, GlobalUnlock};
+
+    const CF_UNICODETEXT: u32 = 13;
+
+    unsafe {
+        if OpenClipboard(std::ptr::null_mut()) == 0 {
+            return None;
+        }
+        let handle = GetClipboardData(CF_UNICODETEXT);
+        if handle.is_null() {
+            CloseClipboard();
+            return None;
+        }
+        let ptr = GlobalLock(handle) as *const u16;
+        if ptr.is_null() {
+            CloseClipboard();
+            return None;
+        }
+        let mut len = 0usize;
+        // Cap read at 1 MiB of UTF-16 code units to avoid unbounded scanning on malformed data.
+        const MAX_CHARS: usize = 512 * 1024;
+        while len < MAX_CHARS && *ptr.add(len) != 0 {
+            len += 1;
+        }
+        let slice = std::slice::from_raw_parts(ptr, len);
+        let text = String::from_utf16_lossy(slice);
+        GlobalUnlock(handle);
+        CloseClipboard();
+        Some(text)
+    }
+}
+
+#[cfg(target_os = "windows")]
 #[tauri::command]
 fn write_clipboard_text_protected(text: String) -> Result<bool, String> {
     use windows_sys::Win32::System::DataExchange::{
@@ -321,7 +390,56 @@ fn write_clipboard_text_protected(text: String) -> Result<bool, String> {
         CloseClipboard();
     }
 
+    record_protected_clipboard_hash(&text);
     Ok(true)
+}
+
+#[cfg(target_os = "windows")]
+pub(crate) fn clear_clipboard_if_unchanged_native(expected_text: Option<&str>) -> bool {
+    use subtle::ConstantTimeEq;
+
+    let target_hash = match expected_text {
+        Some(t) if !t.is_empty() => Some(sha256_bytes(t)),
+        _ => last_clipboard_hash_cell().lock().ok().and_then(|g| *g),
+    };
+    let Some(mut expected_hash) = target_hash else {
+        return false;
+    };
+
+    let Some(mut current_text) = read_windows_clipboard_text() else {
+        expected_hash.zeroize();
+        return false;
+    };
+    let mut current_hash = sha256_bytes(&current_text);
+    current_text.zeroize();
+
+    let matches = bool::from(current_hash.ct_eq(&expected_hash));
+    current_hash.zeroize();
+    expected_hash.zeroize();
+
+    if !matches {
+        return false;
+    }
+
+    let _ = write_clipboard_text_protected("KalderaShield clipboard cleared".to_string());
+    let cleared = write_clipboard_text_protected(String::new()).unwrap_or(false);
+    record_protected_clipboard_hash("");
+    cleared
+}
+
+#[cfg(not(target_os = "windows"))]
+pub(crate) fn clear_clipboard_if_unchanged_native(_expected_text: Option<&str>) -> bool {
+    false
+}
+
+#[tauri::command]
+fn clear_clipboard_if_unchanged_protected(expected_text: Option<String>) -> Result<bool, String> {
+    let mut expected = expected_text;
+    let cleared = clear_clipboard_if_unchanged_native(expected.as_deref());
+    if let Some(ref mut text) = expected {
+        text.zeroize();
+    }
+    Ok(cleared)
 }
 
 /// Non-Windows desktop platforms (macOS/Linux): returns Ok(false) so the frontend
@@ -331,6 +449,117 @@ fn write_clipboard_text_protected(text: String) -> Result<bool, String> {
 #[tauri::command]
 fn write_clipboard_text_protected(_text: String) -> Result<bool, String> {
     Ok(false)
+}
+
+#[cfg(target_os = "windows")]
+fn spawn_os_session_lock_monitor(
+    app_handle: tauri::AppHandle,
+    credentials: std::sync::Arc<
+        std::sync::Mutex<Option<native_messaging::ExtensionCredentialCache>>,
+    >,
+    passkey_index: std::sync::Arc<std::sync::Mutex<Vec<native_messaging::ExtensionPasskeySummary>>>,
+    pending_passkeys: native_messaging::PendingPasskeyRequests,
+) {
+    use tauri::Emitter;
+    use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, RegisterClassW,
+        TranslateMessage, HWND_MESSAGE, MSG, WM_POWERBROADCAST, WNDCLASSW,
+    };
+
+    const WM_WTSSESSION_CHANGE: u32 = 0x02B1;
+    const WTS_SESSION_LOCK: usize = 0x7;
+    const PBT_APMSUSPEND: usize = 0x0004;
+    const NOTIFY_FOR_THIS_SESSION: u32 = 0;
+
+    #[link(name = "wtsapi32")]
+    extern "system" {
+        fn WTSRegisterSessionNotification(hwnd: HWND, dw_flags: u32) -> i32;
+    }
+
+    type OsLockCallbackSlot = std::sync::Mutex<Option<Box<dyn Fn() + Send + Sync>>>;
+    static LOCK_CALLBACK: std::sync::OnceLock<OsLockCallbackSlot> = std::sync::OnceLock::new();
+
+    unsafe extern "system" fn wnd_proc(
+        hwnd: HWND,
+        msg: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        let should_lock = (msg == WM_WTSSESSION_CHANGE && wparam == WTS_SESSION_LOCK)
+            || (msg == WM_POWERBROADCAST && wparam == PBT_APMSUSPEND);
+
+        if should_lock {
+            if let Some(cell) = LOCK_CALLBACK.get() {
+                if let Ok(guard) = cell.lock() {
+                    if let Some(ref cb) = *guard {
+                        cb();
+                    }
+                }
+            }
+        }
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
+
+    let callback: Box<dyn Fn() + Send + Sync> = Box::new(move || {
+        let _ = clear_clipboard_if_unchanged_native(None);
+        if let Ok(mut creds) = credentials.lock() {
+            *creds = None;
+        }
+        if let Ok(mut idx) = passkey_index.lock() {
+            idx.clear();
+        }
+        pending_passkeys.cancel_all();
+        let _ = app_handle.emit("os-session-locked", true);
+    });
+
+    if let Ok(mut guard) = LOCK_CALLBACK
+        .get_or_init(|| std::sync::Mutex::new(None))
+        .lock()
+    {
+        *guard = Some(callback);
+    }
+
+    std::thread::spawn(move || unsafe {
+        let class_name: Vec<u16> = "KalderaShieldOsLockMonitor\0".encode_utf16().collect();
+        let wc = WNDCLASSW {
+            style: 0,
+            lpfnWndProc: Some(wnd_proc),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: std::ptr::null_mut(),
+            hIcon: std::ptr::null_mut(),
+            hCursor: std::ptr::null_mut(),
+            hbrBackground: std::ptr::null_mut(),
+            lpszMenuName: std::ptr::null(),
+            lpszClassName: class_name.as_ptr(),
+        };
+        RegisterClassW(&wc);
+        let hwnd = CreateWindowExW(
+            0,
+            class_name.as_ptr(),
+            class_name.as_ptr(),
+            0,
+            0,
+            0,
+            0,
+            0,
+            HWND_MESSAGE,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null(),
+        );
+        if hwnd.is_null() {
+            return;
+        }
+        let _ = WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION);
+
+        let mut msg: MSG = std::mem::zeroed();
+        while GetMessageW(&mut msg, hwnd, 0, 0) > 0 {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    });
 }
 
 fn vault_database_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -602,7 +831,7 @@ fn wide_null(_value: &str) -> Vec<u16> {
 
 #[cfg(target_os = "windows")]
 fn dialog_filter() -> Vec<u16> {
-    "Supported vault files (*.KalderaShield;*.json;*.csv)\0*.KalderaShield;*.json;*.csv\0KalderaShield backups (*.KalderaShield)\0*.KalderaShield\0JSON backups (*.json)\0*.json\0CSV imports (*.csv)\0*.csv\0All files (*.*)\0*.*\0\0"
+    "Supported vault files (*.KalderaShield;*.json;*.csv;*.xml;*.txt)\0*.KalderaShield;*.json;*.csv;*.xml;*.txt\0KalderaShield backups (*.KalderaShield)\0*.KalderaShield\0JSON backups (*.json)\0*.json\0CSV imports (*.csv)\0*.csv\0KeePass XML (*.xml)\0*.xml\0All files (*.*)\0*.*\0\0"
     .encode_utf16()
     .collect()
 }
@@ -1086,8 +1315,17 @@ pub fn run() {
                 pairing_token,
                 credentials.clone(),
                 session_generation,
-                pending_passkeys,
-                passkey_index,
+                pending_passkeys.clone(),
+                passkey_index.clone(),
+            );
+
+            // Monitor OS session lock (Win+L) and sleep/suspend events to lock vault immediately
+            #[cfg(target_os = "windows")]
+            spawn_os_session_lock_monitor(
+                app.handle().clone(),
+                credentials.clone(),
+                passkey_index.clone(),
+                pending_passkeys.clone(),
             );
 
             // Populate in-process desktop secure storage cache
@@ -1109,6 +1347,7 @@ pub fn run() {
             reset_vault_database,
             enable_screen_capture_protection,
             write_clipboard_text_protected,
+            clear_clipboard_if_unchanged_protected,
             save_export_file,
             save_binary_file,
             open_import_file,
@@ -1142,6 +1381,7 @@ pub fn run() {
 
     app.run(|_app_handle, event| {
         if let tauri::RunEvent::ExitRequested { .. } = event {
+            let _ = clear_clipboard_if_unchanged_native(None);
             std::process::exit(0);
         }
     });

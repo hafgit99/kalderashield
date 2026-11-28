@@ -637,4 +637,202 @@ describe('universal importer', () => {
       expect(decoded).toContain('ğ');
     });
   });
+
+  describe('extended importers (KeePass XML, Proton Pass, Apple, Firefox, Google Auth, Bitwarden extras)', () => {
+    it('parses KeePass 2.x XML exports with TOTP, notes, and custom fields', () => {
+      const xml = `<?xml version="1.0" encoding="utf-8"?>
+<KeePassFile>
+  <Root>
+    <Group>
+      <Name>General</Name>
+      <Entry>
+        <String><Key>Title</Key><Value>GitLab Prod</Value></String>
+        <String><Key>UserName</Key><Value>devops@example.com</Value></String>
+        <String><Key>Password</Key><Value>KpSecret#99</Value></String>
+        <String><Key>URL</Key><Value>https://gitlab.example.com</Value></String>
+        <String><Key>Notes</Key><Value>Production CI account</Value></String>
+        <String><Key>otp</Key><Value>otpauth://totp/GitLab:devops?secret=JBSWY3DPEHPK3PXP</Value></String>
+        <String><Key>SSH Key ID</Key><Value>ed25519-prod</Value></String>
+      </Entry>
+    </Group>
+  </Root>
+</KeePassFile>`;
+
+      const result = parseUniversalImport(xml);
+      expect(result.type).toBe('success');
+      if (result.type !== 'success') return;
+      expect(result.formatName).toContain('KeePass');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toMatchObject({
+        title: 'GitLab Prod',
+        username: 'devops@example.com',
+        password: 'KpSecret#99',
+        url: 'https://gitlab.example.com',
+        notes: 'Production CI account',
+        totpSecret: 'otpauth://totp/GitLab:devops?secret=JBSWY3DPEHPK3PXP',
+      });
+      expect(result.items[0]?.customFields).toEqual([
+        expect.objectContaining({ label: 'SSH Key ID', value: 'ed25519-prod' }),
+      ]);
+    });
+
+    it('parses Proton Pass JSON exports with multiple URLs and custom fields', () => {
+      const protonJson = JSON.stringify({
+        vaults: {
+          v1: {
+            name: 'Personal',
+            items: [
+              {
+                data: {
+                  type: 'login',
+                  metadata: { name: 'Proton Mail', note: 'Primary inbox' },
+                  content: {
+                    email: 'ada@proton.me',
+                    password: 'ProtonPassword!42',
+                    urls: ['https://mail.proton.me', 'https://account.proton.me'],
+                    totpUri: 'JBSWY3DPEHPK3PXP',
+                  },
+                  extraFields: [
+                    { fieldName: 'Recovery Email', type: 'text', data: { content: 'backup@example.com' } },
+                    { fieldName: 'Support PIN', type: 'hidden', data: { content: '9876' } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      });
+
+      const result = parseUniversalImport(protonJson);
+      expect(result.type).toBe('success');
+      if (result.type !== 'success') return;
+      expect(result.formatName).toContain('Proton Pass');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toMatchObject({
+        title: 'Proton Mail',
+        username: 'ada@proton.me',
+        password: 'ProtonPassword!42',
+        url: 'https://mail.proton.me',
+        additionalUrls: ['https://account.proton.me'],
+        totpSecret: 'JBSWY3DPEHPK3PXP',
+      });
+      expect(result.items[0]?.customFields).toHaveLength(2);
+    });
+
+    it('parses Apple Passwords / Safari CSV and Firefox CSV exports', () => {
+      const appleCsv =
+        'Title,URL,Username,Password,Notes,OTPAuth\n' +
+        'iCloud,https://icloud.com,ada@icloud.com,ApplePass!1,Personal,JBSWY3DPEHPK3PXP';
+      const appleRes = parseUniversalImport(appleCsv);
+      expect(appleRes.type).toBe('success');
+      if (appleRes.type === 'success') {
+        expect(appleRes.formatName).toContain('Apple');
+        expect(appleRes.items[0]).toMatchObject({
+          title: 'iCloud',
+          username: 'ada@icloud.com',
+          totpSecret: 'JBSWY3DPEHPK3PXP',
+        });
+      }
+
+      const firefoxCsv =
+        '"url","username","password","httpRealm","formActionOrigin","guid","timeCreated","timeLastUsed","timePasswordChanged"\n' +
+        '"https://mozilla.org","fox@example.com","FoxPass!2","","","{guid}","1","2","3"';
+      const ffRes = parseUniversalImport(firefoxCsv);
+      expect(ffRes.type).toBe('success');
+      if (ffRes.type === 'success') {
+        expect(ffRes.formatName).toContain('Firefox');
+        expect(ffRes.items[0]).toMatchObject({
+          username: 'fox@example.com',
+          password: 'FoxPass!2',
+          url: 'https://mozilla.org',
+        });
+      }
+    });
+
+    it('preserves Bitwarden JSON additionalUrls, customFields, and passwordHistory', () => {
+      const bwJson = JSON.stringify({
+        items: [
+          {
+            type: 1,
+            name: 'Enterprise SSO',
+            login: {
+              username: 'corp@example.com',
+              password: 'NewPassword!99',
+              uris: [
+                { uri: 'https://sso.example.com' },
+                { uri: 'https://vpn.example.com' },
+                { uri: 'androidapp://com.example.sso' },
+              ],
+            },
+            fields: [
+              { name: 'Employee ID', value: 'EMP-42', type: 0 },
+              { name: 'Security Answer', value: 'SecretAnswer', type: 1 },
+            ],
+            passwordHistory: [{ password: 'OldPassword!11', lastUsedDate: '2026-01-01T00:00:00Z' }],
+          },
+        ],
+      });
+
+      const result = parseUniversalImport(bwJson);
+      expect(result.type).toBe('success');
+      if (result.type !== 'success') return;
+      expect(result.items[0]).toMatchObject({
+        url: 'https://sso.example.com',
+        additionalUrls: ['https://vpn.example.com', 'androidapp://com.example.sso'],
+        passwordHistory: [{ password: 'OldPassword!11', changedAt: '2026-01-01T00:00:00Z' }],
+      });
+      expect(result.items[0]?.customFields).toEqual([
+        expect.objectContaining({ label: 'Employee ID', value: 'EMP-42', type: 'text' }),
+        expect.objectContaining({ label: 'Security Answer', value: 'SecretAnswer', type: 'hidden' }),
+      ]);
+    });
+
+    it('decodes KeePass XML entities in a single pass without double-unescaping', () => {
+      const xml = `<KeePassFile><Root><Group><Entry>
+        <String><Key>Title</Key><Value>Entity &amp;lt;Test&amp;gt; &quot;A&quot; &apos;B&apos; &#65; &#x42;</Value></String>
+        <String><Key>UserName</Key><Value>u</Value></String>
+        <String><Key>Password</Key><Value>p&amp;q</Value></String>
+      </Entry></Group></Root></KeePassFile>`;
+
+      const result = parseUniversalImport(xml);
+      expect(result.type).toBe('success');
+      if (result.type !== 'success') return;
+      expect(result.items[0]?.title).toBe('Entity &lt;Test&gt; "A" \'B\' A B');
+      expect(result.items[0]?.password).toBe('p&q');
+    });
+
+    it('parses Proton Pass CSV and Google Authenticator otpauth-migration URIs', () => {
+      const protonCsv =
+        'name,url,username,password,note,totp,vault\n' +
+        'Proton Site,https://proton.me,me@proton.me,Secret#1,my note,JBSWY3DPEHPK3PXP,Personal';
+      const csvRes = parseUniversalImport(protonCsv);
+      expect(csvRes.type).toBe('success');
+      if (csvRes.type === 'success') {
+        expect(csvRes.formatName).toContain('Proton Pass');
+        expect(csvRes.items[0]).toMatchObject({
+          title: 'Proton Site',
+          username: 'me@proton.me',
+          password: 'Secret#1',
+          totpSecret: 'JBSWY3DPEHPK3PXP',
+        });
+      }
+
+      // Single-account Google Authenticator migration payload for JBSWY3DPEHPK3PXP
+      const payloadBytes = new Uint8Array([
+        0x0a, 0x26,
+        0x0a, 0x0a, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, 0xde, 0xad, 0xbe, 0xef,
+        0x12, 0x10, ...new TextEncoder().encode('GitHub:alice@dev'),
+        0x1a, 0x06, ...new TextEncoder().encode('GitHub'),
+        0x20, 0x01, 0x28, 0x01, 0x30, 0x02,
+      ]);
+      const b64 = btoa(String.fromCharCode(...payloadBytes));
+      const gauthRes = parseUniversalImport(`otpauth-migration://offline?data=${encodeURIComponent(b64)}`);
+      expect(gauthRes.type).toBe('success');
+      if (gauthRes.type === 'success') {
+        expect(gauthRes.formatName).toContain('Google Authenticator');
+        expect(gauthRes.items).toHaveLength(1);
+        expect(gauthRes.items[0]?.totpSecret).toContain('secret=JBSWY3DPEHPK3PXP');
+      }
+    });
+  });
 });

@@ -9,6 +9,7 @@ import PasswordGenerator from './PasswordGenerator';
 
 const generatePassword = vi.hoisted(() => vi.fn(() => 'CharPassword-123!'));
 const generateDiceware = vi.hoisted(() => vi.fn(() => 'Dice-Ware-123'));
+const historyStore = vi.hoisted(() => ({ entries: [] as { password: string; createdAt: string; mode: 'character' | 'diceware' }[] }));
 
 vi.mock('../lib/security', () => ({
   calculatePasswordScore: vi.fn((password: string) => {
@@ -22,6 +23,14 @@ vi.mock('../lib/security', () => ({
     label: password.length > 12 ? 'Güçlü' : 'Orta',
     colorClass: 'text-brand-tertiary',
   })),
+  recordGeneratedPassword: vi.fn((password: string, mode: 'character' | 'diceware') => {
+    if (historyStore.entries[0]?.password === password) return;
+    historyStore.entries.unshift({ password, mode, createdAt: '2026-11-28T00:00:00.000Z' });
+  }),
+  getGeneratedPasswordHistory: vi.fn(() => [...historyStore.entries]),
+  clearGeneratedPasswordHistory: vi.fn(() => {
+    historyStore.entries = [];
+  }),
 }));
 
 vi.mock('../lib/diceware', () => ({
@@ -50,6 +59,7 @@ describe('PasswordGenerator', () => {
     });
     generatePassword.mockClear();
     generateDiceware.mockClear();
+    historyStore.entries = [];
   });
 
   afterEach(() => {
@@ -117,6 +127,30 @@ describe('PasswordGenerator', () => {
 
     fireEvent.click(checkboxes[3]!);
     expect(generatePassword).toHaveBeenLastCalledWith(expect.objectContaining({ symbols: false }));
+  });
+
+  it('supports excludeAmbiguous, customSymbols, and session password history drawer', () => {
+    render(<PasswordGenerator />);
+
+    const excludeCheckbox = screen.getByTestId('generator-exclude-ambiguous-checkbox');
+    fireEvent.click(excludeCheckbox);
+    expect(generatePassword).toHaveBeenLastCalledWith(
+      expect.objectContaining({ excludeAmbiguous: true }),
+    );
+
+    const customSymbolsInput = screen.getByTestId('generator-custom-symbols-input');
+    fireEvent.change(customSymbolsInput, { target: { value: '!@#' } });
+    expect(generatePassword).toHaveBeenLastCalledWith(
+      expect.objectContaining({ customSymbols: '!@#' }),
+    );
+
+    // Trigger copy to record in history, open drawer, copy from history, then clear
+    fireEvent.click(screen.getByTestId('password-generator-copy-button'));
+    fireEvent.click(screen.getByTestId('generator-history-toggle'));
+    expect(screen.getByTestId('generator-history-panel')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('generator-history-clear-button'));
+    expect(screen.getByText(/Bu oturumda henüz/)).toBeTruthy();
   });
 
   it('renders each strength bar tone from the generated password score', () => {

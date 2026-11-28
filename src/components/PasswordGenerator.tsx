@@ -15,14 +15,26 @@ import {
   Hash, 
   Globe, 
   Minimize2,
-  Lock
+  Lock,
+  History,
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { formatPercent } from '../lib/formatters';
 import { progressWidthClass } from '../lib/progressWidth';
 import { ColoredPassword } from './common/ColoredPassword';
 import type { GeneratorOptions } from '../types';
-import { generatePassword, calculatePasswordScore, getStrengthLabel } from '../lib/security';
+import {
+  generatePassword,
+  calculatePasswordScore,
+  getStrengthLabel,
+  recordGeneratedPassword,
+  getGeneratedPasswordHistory,
+  clearGeneratedPasswordHistory,
+  type GeneratedPasswordHistoryEntry,
+} from '../lib/security';
 import type { DicewareOptions } from '../lib/diceware';
 import { calculateDicewareEntropyBits, generateDiceware } from '../lib/diceware';
 import {
@@ -48,6 +60,8 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
     numbers: true,
     symbols: true,
   });
+  const [excludeAmbiguous, setExcludeAmbiguous] = useState(false);
+  const [customSymbols, setCustomSymbols] = useState('');
 
   // Diceware word-based states
   const [dicewareOptions, setDicewareOptions] = useState<DicewareOptions>({
@@ -61,6 +75,11 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
 
   const [password, setPassword] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<GeneratedPasswordHistoryEntry[]>(() =>
+    getGeneratedPasswordHistory(),
+  );
+  const [copiedHistoryIndex, setCopiedHistoryIndex] = useState<number | null>(null);
   const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clipboardClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCopiedPasswordRef = useRef<string | null>(null);
@@ -89,8 +108,8 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
 
   // Auto generate on mount or options / mode change
   useEffect(() => {
-    handleGenerate();
-  }, [mode, options, dicewareOptions]);
+    handleGenerate(false);
+  }, [mode, options, excludeAmbiguous, customSymbols, dicewareOptions]);
 
   useEffect(
     () => () => {
@@ -114,39 +133,68 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
     }
   }, [copiedField]);
 
-  const handleGenerate = () => {
+  const handleGenerate = (recordToHistory = true) => {
     clearCopiedResetTimer();
     clearClipboardTimer();
     clearLastCopiedPassword();
+    let generated = '';
     if (mode === 'character') {
-      const pw = generatePassword(options);
-      setPassword(pw);
+      const effectiveOptions: GeneratorOptions = {
+        ...options,
+        ...(excludeAmbiguous ? { excludeAmbiguous: true } : {}),
+        ...(customSymbols.trim() ? { customSymbols: customSymbols.trim() } : {}),
+      };
+      generated = generatePassword(effectiveOptions);
+      setPassword(generated);
     } else {
-      const pw = generateDiceware(dicewareOptions);
-      setPassword(pw);
+      generated = generateDiceware(dicewareOptions);
+      setPassword(generated);
+    }
+    if (recordToHistory && generated) {
+      recordGeneratedPassword(generated, mode);
+      setHistoryEntries(getGeneratedPasswordHistory());
     }
     setCopied(false);
   };
 
+  const copySecretWithAutoClear = (secret: string, fieldName: string) => {
+    if (onCopyText) {
+      onCopyText(secret, fieldName);
+    } else {
+      void writeClipboardText(secret);
+    }
+    clearClipboardTimer();
+    lastCopiedPasswordRef.current = secret;
+    clipboardClearTimerRef.current = setTimeout(() => {
+      clearLastCopiedPassword();
+      clipboardClearTimerRef.current = null;
+    }, DEFAULT_CLIPBOARD_CLEAR_DELAY_MS);
+  };
+
   const handleCopy = () => {
     if (!password) return;
-    if (onCopyText) {
-      onCopyText(password, 'generator_password');
-    } else {
-      void writeClipboardText(password);
-    }
+    recordGeneratedPassword(password, mode);
+    setHistoryEntries(getGeneratedPasswordHistory());
+    copySecretWithAutoClear(password, 'generator_password');
     clearCopiedResetTimer();
-    clearClipboardTimer();
-    lastCopiedPasswordRef.current = password;
     setCopied(true);
     copiedResetTimerRef.current = setTimeout(() => {
       setCopied(false);
       copiedResetTimerRef.current = null;
     }, 2000);
-    clipboardClearTimerRef.current = setTimeout(() => {
-      clearLastCopiedPassword();
-      clipboardClearTimerRef.current = null;
-    }, DEFAULT_CLIPBOARD_CLEAR_DELAY_MS);
+  };
+
+  const handleCopyHistoryEntry = (entryPassword: string, index: number) => {
+    copySecretWithAutoClear(entryPassword, `generator_history_${index}`);
+    setCopiedHistoryIndex(index);
+    setTimeout(() => {
+      setCopiedHistoryIndex((current) => (current === index ? null : current));
+    }, 1500);
+  };
+
+  const handleClearHistory = () => {
+    clearGeneratedPasswordHistory();
+    setHistoryEntries([]);
   };
 
   const score = calculatePasswordScore(password);
@@ -160,10 +208,10 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
       addNumber: dicewareOptions.addNumber,
       addSymbol: dicewareOptions.addSymbol,
     });
-    if (entropyBits < 60) return { text: t('passwordGenerator.diceStrength.medium'), color: 'text-amber-400' };
-    if (entropyBits < 75) return { text: t('passwordGenerator.diceStrength.high'), color: 'text-[#10b981]' };
-    if (entropyBits < 90) return { text: t('passwordGenerator.diceStrength.veryHigh'), color: 'text-[#10b981]' };
-    return { text: t('passwordGenerator.diceStrength.military'), color: 'text-brand-tertiary animate-pulse' };
+    if (entropyBits < 60) return { text: t('passwordGenerator.diceStrength.medium'), color: 'text-brand-secondary' };
+    if (entropyBits < 75) return { text: t('passwordGenerator.diceStrength.high'), color: 'text-brand-tertiary' };
+    if (entropyBits < 90) return { text: t('passwordGenerator.diceStrength.veryHigh'), color: 'text-brand-tertiary' };
+    return { text: t('passwordGenerator.diceStrength.military'), color: 'text-brand-tertiary' };
   };
 
   const dicewareStatus = getDicewareStrengthDescription(dicewareOptions.wordCount);
@@ -230,7 +278,7 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate(true)}
               className="p-3.5 rounded-xl bg-surface-container hover:bg-surface-high text-on-surface transition-colors border border-outline-variant/10 flex items-center justify-center cursor-pointer"
               title={t('passwordGenerator.refresh')}
               id="refresh-password-btn"
@@ -382,7 +430,42 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
                 className="w-5 h-5 text-brand-primary bg-surface-low border-outline-variant/30 rounded focus:ring-brand-primary/20 accent-brand-primary cursor-pointer"
               />
             </label>
+
+            {/* Exclude ambiguous characters */}
+            <label className="flex items-center justify-between p-3 sm:p-4 bg-surface-low hover:bg-surface-container rounded-xl border border-outline-variant/10 cursor-pointer transition-colors sm:col-span-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">{t('passwordGenerator.excludeAmbiguous')}</span>
+                <span className="text-xs text-on-surface-variant font-mono">O / 0, I / l / 1 / |</span>
+              </div>
+              <input
+                type="checkbox"
+                data-testid="generator-exclude-ambiguous-checkbox"
+                checked={excludeAmbiguous}
+                onChange={(e) => setExcludeAmbiguous(e.target.checked)}
+                className="w-5 h-5 text-brand-primary bg-surface-low border-outline-variant/30 rounded focus:ring-brand-primary/20 accent-brand-primary cursor-pointer"
+              />
+            </label>
           </div>
+
+          {options.symbols && (
+            <div className="pt-1 space-y-1.5">
+              <label
+                htmlFor="generator-custom-symbols"
+                className="block text-xs font-semibold text-on-surface-variant"
+              >
+                {t('passwordGenerator.customSymbols')}
+              </label>
+              <input
+                id="generator-custom-symbols"
+                data-testid="generator-custom-symbols-input"
+                type="text"
+                value={customSymbols}
+                onChange={(e) => setCustomSymbols(e.target.value)}
+                placeholder={t('passwordGenerator.customSymbolsPlaceholder')}
+                className="w-full bg-surface-lowest border border-outline-variant/20 rounded-xl px-3.5 py-2 text-xs font-mono text-on-surface focus:outline-none focus:ring-1 focus:ring-brand-primary/35"
+              />
+            </div>
+          )}
         </div>
       ) : (
         /* Diceware configurations Card */
@@ -540,6 +623,93 @@ export default function PasswordGenerator({ onCopyText, copiedField }: PasswordG
           </div>
         </div>
       )}
+
+      {/* Session-scoped Generated Password History */}
+      <div className="glass-panel rounded-2xl overflow-hidden" id="generator-history-card">
+        <button
+          type="button"
+          data-testid="generator-history-toggle"
+          onClick={() => setIsHistoryOpen((open) => !open)}
+          className="w-full flex items-center justify-between px-4 sm:px-6 py-3.5 text-left hover:bg-surface-high/40 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <History className="w-4 h-4 text-brand-primary" />
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface">
+              {t('passwordGenerator.history.title')}
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-surface-low border border-outline-variant/20 text-on-surface-variant tabular-nums">
+              {historyEntries.length}
+            </span>
+          </div>
+          {isHistoryOpen ? (
+            <ChevronUp className="w-4 h-4 text-on-surface-variant" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-on-surface-variant" />
+          )}
+        </button>
+
+        {isHistoryOpen && (
+          <div
+            data-testid="generator-history-panel"
+            className="px-4 sm:px-6 pb-4 pt-1 border-t border-outline-variant/10 space-y-2.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-on-surface-variant">
+                {t('passwordGenerator.history.subtitle')}
+              </p>
+              {historyEntries.length > 0 && (
+                <button
+                  type="button"
+                  data-testid="generator-history-clear-button"
+                  onClick={handleClearHistory}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-error hover:underline cursor-pointer shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{t('passwordGenerator.history.clear')}</span>
+                </button>
+              )}
+            </div>
+
+            {historyEntries.length === 0 ? (
+              <p className="text-xs text-on-surface-variant/70 italic py-2">
+                {t('passwordGenerator.history.empty')}
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                {historyEntries.map((entry, idx) => (
+                  <div
+                    key={`${entry.createdAt}-${idx}`}
+                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-surface-lowest border border-outline-variant/15"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-xs text-on-surface truncate">
+                        <ColoredPassword password={entry.password} />
+                      </div>
+                      <span className="text-[10px] text-on-surface-variant font-mono">
+                        {entry.mode === 'diceware'
+                          ? t('passwordGenerator.dicewareMode')
+                          : t('passwordGenerator.characterMode')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyHistoryEntry(entry.password, idx)}
+                      className="p-1.5 rounded-lg bg-surface-low hover:bg-surface-high text-on-surface-variant hover:text-brand-primary border border-outline-variant/15 transition-colors cursor-pointer shrink-0"
+                      title={t('passwordGenerator.copy')}
+                    >
+                      {copiedHistoryIndex === idx ? (
+                        <Check className="w-3.5 h-3.5 text-brand-tertiary" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -21,6 +21,7 @@ interface NativeRequest {
 let pendingCredential: ExtensionDraftCredential | null = null;
 let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingOrigin: string | null = null;
+let clipboardClearTimer: ReturnType<typeof setTimeout> | null = null;
 
 let draftCredentials: { [tabId: number]: ExtensionDraftCredential | null } = {};
 let draftCredentialTimers: { [tabId: number]: ReturnType<typeof setTimeout> } = {};
@@ -291,6 +292,123 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'schedule_clipboard_clear') {
+    if (sender.tab) {
+      sendResponse({ error: 'unauthorized_content_script_call' });
+      return false;
+    }
+    const expectedText = typeof request.text === 'string' ? request.text : '';
+    const delayMs = Math.min(Math.max(Number(request.delayMs) || 30000, 5000), 120000);
+    if (clipboardClearTimer) {
+      clearTimeout(clipboardClearTimer);
+      clipboardClearTimer = null;
+    }
+    if (expectedText) {
+      clipboardClearTimer = setTimeout(() => {
+        clipboardClearTimer = null;
+        chrome.runtime.sendNativeMessage(
+          HOST_NAME,
+          { action: 'clear_clipboard', expectedText },
+          () => {
+            // Ignore host unavailable errors when app is already closed
+            void chrome.runtime.lastError;
+          },
+        );
+      }, delayMs);
+    }
+    sendResponse({ status: 'scheduled' });
+    return false;
+  }
+
+  if (request.action === 'get_totp_code') {
+    if (sender.tab) {
+      sendResponse({ locked: true, error: 'unauthorized_content_script_call' });
+      return false;
+    }
+    const id = typeof request.id === 'string' ? request.id.trim() : '';
+    if (!id) {
+      sendResponse({ error: 'missing_id' });
+      return false;
+    }
+    chrome.runtime.sendNativeMessage(
+      HOST_NAME,
+      { action: 'get_totp_code', id },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ locked: true, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse(response);
+        }
+      },
+    );
+    return true;
+  }
+
+  if (request.action === 'get_card_details') {
+    if (sender.tab) {
+      sendResponse({ locked: true, error: 'unauthorized_content_script_call' });
+      return false;
+    }
+    const id = typeof request.id === 'string' ? request.id.trim() : '';
+    if (!id) {
+      sendResponse({ error: 'missing_id' });
+      return false;
+    }
+    chrome.runtime.sendNativeMessage(
+      HOST_NAME,
+      { action: 'get_card_details', id },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ locked: true, error: chrome.runtime.lastError.message });
+        } else {
+          sendResponse(response);
+        }
+      },
+    );
+    return true;
+  }
+
+  if (request.action === 'autofill_totp') {
+    if (sender.tab) {
+      sendResponse({ status: 'blocked', reason: 'unauthorized' });
+      return false;
+    }
+    const code = typeof request.code === 'string' ? request.code.trim() : '';
+    if (!code) {
+      sendResponse({ status: 'blocked', reason: 'missing_code' });
+      return false;
+    }
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab?.id && isValidTabUrl(activeTab.url)) {
+        chrome.tabs.sendMessage(activeTab.id, { action: 'fill_totp', code });
+      }
+    });
+    sendResponse({ status: 'ok' });
+    return false;
+  }
+
+  if (request.action === 'autofill_card') {
+    if (sender.tab) {
+      sendResponse({ status: 'blocked', reason: 'unauthorized' });
+      return false;
+    }
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      const tabUrl = activeTab?.url || '';
+      if (!activeTab?.id || !tabUrl.startsWith('https://')) {
+        sendResponse({ status: 'blocked', reason: 'https_required' });
+        return;
+      }
+      chrome.tabs.sendMessage(activeTab.id, {
+        action: 'fill_card',
+        card: request.card,
+      });
+      sendResponse({ status: 'ok' });
+    });
+    return true;
+  }
+
   if (request.action === 'passkey_create' || request.action === 'passkey_get') {
     const senderUrl = sender.url || sender.tab?.url;
     const payload = request.payload && typeof request.payload === 'object' ? request.payload : {};
@@ -385,19 +503,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // P1-7a: Domain validation is MANDATORY — if targetDomain is missing/empty,
         // treat it as a domain mismatch (credential has no URL, user must confirm).
         const tabDomain = extractRegistrableDomainFromUrl(tabUrl);
-        const credDomain = request.targetDomain || '';
-        if (!credDomain || (tabDomain && credDomain && tabDomain !== credDomain)) {
+        const allowedDomains = new Set<string>();
+        if (typeof request.targetDomain === 'string' && request.targetDomain) {
+          allowedDomains.add(request.targetDomain);
+        }
+        if (Array.isArray(request.additionalDomains)) {
+          for (const d of request.additionalDomains) {
+            if (typeof d === 'string' && d) allowedDomains.add(d);
+          }
+        }
+        if (allowedDomains.size === 0 || (tabDomain && !allowedDomains.has(tabDomain))) {
             if (!request.userConfirmedMismatch) {
               console.warn(
                 '[KalderaShield Security] Autofill domain mismatch blocked by background service worker:',
-                `tab=${tabDomain}, credential=${credDomain || '(empty)'}`
+                `tab=${tabDomain}, credential=${[...allowedDomains].join(',') || '(empty)'}`
               );
               sendResponse({ status: 'blocked', reason: 'domain_mismatch' });
               return;
             }
             console.warn(
               '[KalderaShield Security] Autofill domain mismatch allowed with explicit user confirmation:',
-              `tab=${tabDomain}, credential=${credDomain || '(empty)'}`
+              `tab=${tabDomain}, credential=${[...allowedDomains].join(',') || '(empty)'}`
             );
         }
 

@@ -44,7 +44,8 @@ export function useRuntimeSecurity({
 
   useEffect(() => {
     let disposed = false;
-    let unlistenFn: (() => void) | null = null;
+    let unlistenScreenCapture: (() => void) | null = null;
+    let unlistenOsLock: (() => void) | null = null;
 
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
       listen<boolean>('screen-capture-status-changed', (event) => {
@@ -58,16 +59,32 @@ export function useRuntimeSecurity({
         // Y-23: the IPC round-trip resolves after cleanup on fast unmounts —
         // unlisten immediately instead of dropping it into a dead ref.
         if (disposed) unlisten();
-        else unlistenFn = unlisten;
+        else unlistenScreenCapture = unlisten;
       }).catch(err => {
         console.error('Failed to listen to screen-capture-status-changed:', err);
+      });
+
+      listen<boolean>('os-session-locked', () => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('KalderaShield_lock_on_os_sleep') === 'false') {
+          return;
+        }
+        onSensitiveStateClearRef.current();
+        onLockRef.current();
+      }).then((unlisten) => {
+        if (disposed) unlisten();
+        else unlistenOsLock = unlisten;
+      }).catch(err => {
+        console.error('Failed to listen to os-session-locked:', err);
       });
     }
 
     return () => {
       disposed = true;
-      if (unlistenFn) {
-        unlistenFn();
+      if (unlistenScreenCapture) {
+        unlistenScreenCapture();
+      }
+      if (unlistenOsLock) {
+        unlistenOsLock();
       }
     };
   }, []);

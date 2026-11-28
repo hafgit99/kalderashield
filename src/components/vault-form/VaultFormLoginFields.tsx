@@ -3,10 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { User, KeyRound, Wand2, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, KeyRound, Wand2, Eye, EyeOff, QrCode, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { parseGoogleAuthenticatorMigrationUri } from '../../lib/otpMigration';
 import { PasswordStrengthMeter } from '../common/PasswordStrengthMeter';
+
+interface DetectedBarcode {
+  rawValue?: string;
+}
+
+interface NativeBarcodeDetector {
+  detect: (source: ImageBitmapSource) => Promise<DetectedBarcode[]>;
+}
+
+interface BarcodeDetectorConstructor {
+  new (options?: { formats?: string[] }): NativeBarcodeDetector;
+}
 
 interface VaultFormLoginFieldsProps {
   username: string;
@@ -18,6 +31,8 @@ interface VaultFormLoginFieldsProps {
   onAutoGeneratePassword: () => void;
   totpSecret: string;
   onTotpSecretChange: (val: string) => void;
+  totpRecoveryCodes?: string[];
+  onTotpRecoveryCodesChange?: (codes: string[]) => void;
 }
 
 export function VaultFormLoginFields({
@@ -30,8 +45,73 @@ export function VaultFormLoginFields({
   onAutoGeneratePassword,
   totpSecret,
   onTotpSecretChange,
+  totpRecoveryCodes = [],
+  onTotpRecoveryCodesChange,
 }: VaultFormLoginFieldsProps) {
   const { t } = useLanguage();
+  const [qrStatusMessage, setQrStatusMessage] = useState<string | null>(null);
+  const [showRecoveryCodes, setShowRecoveryCodes] = useState(totpRecoveryCodes.length > 0);
+
+  const applyScannedOtpValue = (rawValue: string): boolean => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) return false;
+    if (trimmed.toLowerCase().startsWith('otpauth-migration://')) {
+      const migrated = parseGoogleAuthenticatorMigrationUri(trimmed);
+      if (migrated.length > 0 && migrated[0]?.otpauthUri) {
+        onTotpSecretChange(migrated[0].otpauthUri);
+        return true;
+      }
+      return false;
+    }
+    if (trimmed.toLowerCase().startsWith('otpauth://totp/')) {
+      onTotpSecretChange(trimmed);
+      return true;
+    }
+    return false;
+  };
+
+  const handleTotpInputChange = (raw: string) => {
+    setQrStatusMessage(null);
+    if (raw.trim().toLowerCase().startsWith('otpauth-migration://')) {
+      if (applyScannedOtpValue(raw)) return;
+    }
+    onTotpSecretChange(raw);
+  };
+
+  const handleScanQrImage = () => {
+    setQrStatusMessage(null);
+    const DetectorCtor = (
+      globalThis as unknown as { BarcodeDetector?: BarcodeDetectorConstructor }
+    ).BarcodeDetector;
+    if (!DetectorCtor) {
+      setQrStatusMessage(t('vaultForm.login.totpQrUnsupported'));
+      return;
+    }
+
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = 'image/*';
+    picker.onchange = async () => {
+      const file = picker.files?.[0];
+      if (!file) return;
+      try {
+        const bitmap = await createImageBitmap(file);
+        try {
+          const detector = new DetectorCtor({ formats: ['qr_code'] });
+          const results = await detector.detect(bitmap);
+          const match = results.find((entry) => entry.rawValue && applyScannedOtpValue(entry.rawValue));
+          if (!match) {
+            setQrStatusMessage(t('vaultForm.login.totpQrNotFound'));
+          }
+        } finally {
+          bitmap.close?.();
+        }
+      } catch {
+        setQrStatusMessage(t('vaultForm.login.totpQrNotFound'));
+      }
+    };
+    picker.click();
+  };
 
   return (
     <div className="space-y-4 animate-fade-in text-left">
@@ -115,20 +195,66 @@ export function VaultFormLoginFields({
       </div>
 
       <div>
-        <label className="block text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-widest mb-1.5">
-          {t('vaultForm.login.totp')}
+        <label className="block text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-widest mb-1.5 flex justify-between items-center gap-2">
+          <span>{t('vaultForm.login.totp')}</span>
+          <button
+            type="button"
+            data-testid="totp-qr-scan-button"
+            onClick={handleScanQrImage}
+            className="text-[10px] font-semibold text-brand-primary hover:underline flex items-center gap-1 cursor-pointer normal-case tracking-normal shrink-0"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>{t('vaultForm.login.totpScanQr')}</span>
+          </button>
         </label>
         <div className="relative">
           <KeyRound className="w-4 h-4 absolute left-3 top-3.5 text-on-surface-variant/40" />
           <input
             type="text"
             value={totpSecret}
-            onChange={(e) => onTotpSecretChange(e.target.value)}
-            className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/20 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-brand-primary/30 focus:outline-none text-on-surface uppercase font-mono"
+            onChange={(e) => handleTotpInputChange(e.target.value)}
+            className="w-full bg-surface-lowest hover:bg-surface-lowest/80 focus:bg-surface-lowest border border-outline-variant/20 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-brand-primary/30 focus:outline-none text-on-surface font-mono"
             placeholder={t('vaultForm.login.totpPlaceholder')}
           />
         </div>
+        {qrStatusMessage && (
+          <p className="mt-1.5 text-[11px] text-brand-secondary">{qrStatusMessage}</p>
+        )}
       </div>
+
+      {onTotpRecoveryCodesChange && (
+        <div className="pt-0.5">
+          {!showRecoveryCodes && totpRecoveryCodes.length === 0 ? (
+            <button
+              type="button"
+              data-testid="totp-recovery-codes-toggle"
+              onClick={() => setShowRecoveryCodes(true)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-on-surface-variant hover:text-brand-primary cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{t('vaultForm.login.addRecoveryCodes')}</span>
+            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-on-surface-variant/80 uppercase tracking-widest">
+                {t('vaultForm.login.recoveryCodesLabel')}
+              </label>
+              <textarea
+                data-testid="totp-recovery-codes-textarea"
+                rows={3}
+                value={totpRecoveryCodes.join('\n')}
+                onChange={(e) =>
+                  onTotpRecoveryCodesChange(
+                    e.target.value.split(/\r?\n/),
+                  )
+                }
+                placeholder={t('vaultForm.login.recoveryCodesPlaceholder')}
+                className="w-full bg-surface-lowest border border-outline-variant/20 rounded-xl px-3.5 py-2 text-xs font-mono text-on-surface focus:ring-1 focus:ring-brand-primary/30 focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

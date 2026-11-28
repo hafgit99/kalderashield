@@ -961,6 +961,55 @@ chrome.runtime.onMessage.addListener((message) => {
     if (target) {
       fillPageCredentials(target, message.username, message.password);
     }
+  } else if (message.action === 'fill_totp' && typeof message.code === 'string') {
+    if (activePhishingThreat) {
+      showSecurityToast(translate('phishing.autofill.blocked', activeLanguage));
+      return;
+    }
+    const activeEl = document.activeElement as HTMLInputElement | null;
+    const otpInput =
+      (activeEl && activeEl.tagName === 'INPUT' ? activeEl : null) ||
+      (document.querySelector(
+        'input[autocomplete="one-time-code"], input[name*="otp" i], input[name*="totp" i], input[name*="2fa" i], input[id*="otp" i], input[id*="totp" i], input[placeholder*="code" i]',
+      ) as HTMLInputElement | null);
+    if (otpInput) {
+      otpInput.focus();
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (setter) setter.call(otpInput, message.code);
+      else otpInput.value = message.code;
+      otpInput.dispatchEvent(new Event('input', { bubbles: true }));
+      otpInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  } else if (message.action === 'fill_card' && message.card && typeof message.card === 'object') {
+    if (activePhishingThreat) {
+      showSecurityToast(translate('phishing.autofill.blocked', activeLanguage));
+      return;
+    }
+    const setFieldValue = (el: HTMLInputElement | null, val: string) => {
+      if (!el || !val) return;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (setter) setter.call(el, val);
+      else el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const card = message.card as Record<string, string>;
+    setFieldValue(
+      document.querySelector('input[autocomplete="cc-name"], input[name*="cardholder" i], input[name*="ccname" i]'),
+      card.cardholderName || '',
+    );
+    setFieldValue(
+      document.querySelector('input[autocomplete="cc-number"], input[name*="cardnumber" i], input[name*="cc-num" i], input[id*="cardnumber" i]'),
+      card.cardNumber || '',
+    );
+    setFieldValue(
+      document.querySelector('input[autocomplete="cc-exp"], input[name*="exp" i], input[id*="exp" i]'),
+      card.cardExpiry || '',
+    );
+    setFieldValue(
+      document.querySelector('input[autocomplete="cc-csc"], input[name*="cvv" i], input[name*="cvc" i], input[id*="cvv" i]'),
+      card.cardCvv || '',
+    );
   } else if (message.action === 'KalderaShield_phishing_alert') {
     activePhishingThreat = {
       isSuspicious: true,

@@ -490,39 +490,86 @@ export function runVaultAudit(items: VaultItem[], auditOptions: RunVaultAuditOpt
   };
 }
 
+const AMBIGUOUS_CHARS_RE = /[O0Il1|]/g;
+
+export interface GeneratedPasswordHistoryEntry {
+  id: string;
+  password: string;
+  createdAt: string;
+  mode: 'character' | 'diceware';
+}
+
+const MAX_GENERATOR_HISTORY = 20;
+let generatedPasswordHistory: GeneratedPasswordHistoryEntry[] = [];
+
+registerOnCloseSession(() => {
+  generatedPasswordHistory = [];
+});
+
+export function recordGeneratedPassword(password: string, mode: 'character' | 'diceware'): GeneratedPasswordHistoryEntry[] {
+  if (!password) return [...generatedPasswordHistory];
+  const filtered = generatedPasswordHistory.filter((entry) => entry.password !== password);
+  generatedPasswordHistory = [
+    {
+      id: `gen-${Date.now()}-${secureRandomIndex(1_000_000)}`,
+      password,
+      createdAt: new Date().toISOString(),
+      mode,
+    },
+    ...filtered,
+  ].slice(0, MAX_GENERATOR_HISTORY);
+  return [...generatedPasswordHistory];
+}
+
+export function getGeneratedPasswordHistory(): GeneratedPasswordHistoryEntry[] {
+  return [...generatedPasswordHistory];
+}
+
+export function clearGeneratedPasswordHistory(): void {
+  generatedPasswordHistory = [];
+}
+
 /**
  * Generates a randomized password using cryptographically secure randomness when available.
  */
 export function generatePassword(options: GeneratorOptions): string {
-  const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
-  const numberChars = '0123456789';
-  const symbolChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const filterAmbiguous = (chars: string) =>
+    options.excludeAmbiguous ? chars.replace(AMBIGUOUS_CHARS_RE, '') : chars;
+
+  const uppercaseChars = filterAmbiguous('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+  const lowercaseChars = filterAmbiguous('abcdefghijklmnopqrstuvwxyz');
+  const numberChars = filterAmbiguous('0123456789');
+  const defaultSymbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const rawSymbols =
+    typeof options.customSymbols === 'string' && options.customSymbols.trim().length > 0
+      ? [...new Set(options.customSymbols.trim().split(''))].join('')
+      : defaultSymbols;
+  const symbolChars = filterAmbiguous(rawSymbols) || filterAmbiguous(defaultSymbols);
 
   let pool = '';
   let requiredChars = '';
 
-  if (options.uppercase) {
+  if (options.uppercase && uppercaseChars.length > 0) {
     pool += uppercaseChars;
     requiredChars += uppercaseChars[secureRandomIndex(uppercaseChars.length)] ?? '';
   }
-  if (options.lowercase) {
+  if (options.lowercase && lowercaseChars.length > 0) {
     pool += lowercaseChars;
     requiredChars += lowercaseChars[secureRandomIndex(lowercaseChars.length)] ?? '';
   }
-  if (options.numbers) {
+  if (options.numbers && numberChars.length > 0) {
     pool += numberChars;
     requiredChars += numberChars[secureRandomIndex(numberChars.length)] ?? '';
   }
-  if (options.symbols) {
+  if (options.symbols && symbolChars.length > 0) {
     pool += symbolChars;
     requiredChars += symbolChars[secureRandomIndex(symbolChars.length)] ?? '';
   }
 
   // Fallback to lowercase if no options chosen
   if (!pool) {
-    pool = lowercaseChars;
-    requiredChars += lowercaseChars[secureRandomIndex(lowercaseChars.length)] ?? '';
+    pool = lowercaseChars || 'abcdefghijklmnopqrstuvwxyz';
+    requiredChars += pool[secureRandomIndex(pool.length)] ?? '';
   }
 
   const passwordArray: string[] = requiredChars.split('');

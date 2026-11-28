@@ -50,4 +50,26 @@ describe('clipboard helpers - desktop protected clipboard', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('secret');
     warn.mockRestore();
   });
+
+  it('uses native protected clipboard clear when desktop runtime succeeds', async () => {
+    tauriMock.invoke.mockResolvedValueOnce(true);
+    const { clearClipboardIfUnchanged } = await import('./clipboard');
+
+    await expect(clearClipboardIfUnchanged('secret')).resolves.toBe(true);
+
+    expect(tauriMock.invoke).toHaveBeenCalledWith('clear_clipboard_if_unchanged_protected', {
+      expectedText: 'secret',
+    });
+    expect(navigator.clipboard.readText).not.toHaveBeenCalled();
+  });
+
+  it('falls back to navigator clipboard clear when native protected clear rejects', async () => {
+    tauriMock.invoke.mockRejectedValueOnce(new Error('native clear denied'));
+    const { clearClipboardIfUnchanged } = await import('./clipboard');
+
+    await expect(clearClipboardIfUnchanged('secret')).resolves.toBe(true);
+
+    expect(navigator.clipboard.readText).toHaveBeenCalled();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('');
+  });
 });

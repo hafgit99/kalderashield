@@ -8,8 +8,11 @@ interface CredentialItem {
   username: string;
   password?: string;
   url: string;
+  additionalUrls?: string[];
   category: string;
   favorite?: boolean;
+  hasTotp?: boolean;
+  cardExpiry?: string;
 }
 
 let activeLanguage = getPreferredLanguage();
@@ -117,9 +120,16 @@ let extensionClipboardTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function copyToClipboardSecurely(text: string, isSensitive = true) {
   navigator.clipboard.writeText(text).then(() => {
-    showToast('copied.feedback');
+    showToast(translate('copied.feedback', activeLanguage));
 
     if (isSensitive && text) {
+      // Delegate 30s clipboard clear to background service worker + native host
+      // so closing the popup immediately after copying still clears the OS clipboard.
+      try {
+        chrome.runtime.sendMessage({ action: 'schedule_clipboard_clear', text, delayMs: 30000 });
+      } catch {
+        // Fallback to in-popup timer below
+      }
       if (extensionClipboardTimer) {
         clearTimeout(extensionClipboardTimer);
       }
@@ -635,6 +645,31 @@ function renderItemsToList(items: CredentialItem[]) {
       actions.appendChild(copyPassBtn);
     }
 
+    // On-demand 2FA / TOTP code copy + fill (raw TOTP secret stays in desktop app)
+    if (item.hasTotp) {
+      const copyTotpBtn = document.createElement('button');
+      copyTotpBtn.className = 'btn-icon';
+      copyTotpBtn.textContent = '2FA';
+      copyTotpBtn.style.fontSize = '9px';
+      copyTotpBtn.style.fontWeight = '700';
+      copyTotpBtn.title = translate('item.totp', activeLanguage);
+      copyTotpBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chrome.runtime.sendMessage(
+          { action: 'get_totp_code', id: item.id },
+          (res: { code?: string; locked?: boolean; error?: string } | undefined) => {
+            if (res?.code) {
+              copyToClipboardSecurely(res.code, true);
+              chrome.runtime.sendMessage({ action: 'autofill_totp', code: res.code });
+            } else {
+              showToast(translate('no.matching', activeLanguage));
+            }
+          },
+        );
+      });
+      actions.appendChild(copyTotpBtn);
+    }
+
     card.appendChild(actions);
     
     // Clicking card fills automatically — with domain validation gate (security fix Y1)
@@ -651,6 +686,19 @@ function renderItemsToList(items: CredentialItem[]) {
  * domain before allowing autofill. Prevents phishing attacks where a user manually
  * selects a credential and fills it into a malicious page. (Security fix Y1)
  */
+function collectCredentialDomains(item: CredentialItem): string[] {
+  const domains: string[] = [];
+  const rawUrls = [item.url, ...(Array.isArray(item.additionalUrls) ? item.additionalUrls : [])];
+  for (const raw of rawUrls) {
+    if (!raw || !raw.trim()) continue;
+    const domain = extractRegistrableDomainFromUrl(raw.startsWith('http') ? raw : `https://${raw}`);
+    if (domain && !domains.includes(domain)) {
+      domains.push(domain);
+    }
+  }
+  return domains;
+}
+
 function validateAndAutofill(item: CredentialItem): void {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTab = tabs[0];
@@ -658,7 +706,33 @@ function validateAndAutofill(item: CredentialItem): void {
 
     // Only http(s) pages can ever be autofilled
     if (!tabUrl || (!tabUrl.startsWith('http://') && !tabUrl.startsWith('https://'))) {
-      showToast('⚠️ Autofill not available on this page.');
+      showToast(translate('no.matching', activeLanguage));
+      return;
+    }
+
+    // Payment cards require HTTPS and explicit on-demand card fetch
+    if (item.category === 'card') {
+      if (!tabUrl.startsWith('https://')) {
+        showToast(translate('phishing.autofill.blocked', activeLanguage));
+        return;
+      }
+      chrome.runtime.sendMessage(
+        { action: 'get_card_details', id: item.id },
+        (res: { card?: Record<string, string>; locked?: boolean } | undefined) => {
+          if (!res?.card) {
+            showToast(translate('no.matching', activeLanguage));
+            return;
+          }
+          chrome.runtime.sendMessage(
+            { action: 'autofill_card', card: res.card },
+            (fillRes: { status?: string } | undefined) => {
+              if (fillRes?.status === 'ok') {
+                showToast(translate('copied.feedback', activeLanguage));
+              }
+            },
+          );
+        },
+      );
       return;
     }
 
@@ -670,18 +744,16 @@ function validateAndAutofill(item: CredentialItem): void {
     }
 
     const tabDomain = extractRegistrableDomainFromUrl(tabUrl);
-    const credDomain = item.url ? extractRegistrableDomainFromUrl(
-      item.url.startsWith('http') ? item.url : `https://${item.url}`
-    ) : '';
+    const credDomains = collectCredentialDomains(item);
 
-    // If credential has a matching domain → proceed directly
-    if (credDomain && tabDomain === credDomain) {
+    // If credential has a matching primary or additional domain → proceed directly
+    if (tabDomain && credDomains.includes(tabDomain)) {
       sendAutofillMessage(item);
       return;
     }
 
     // Domain mismatch or URL-less credential detected — show confirmation warning (R-3)
-    showDomainMismatchWarning(item, tabDomain, credDomain);
+    showDomainMismatchWarning(item, tabDomain, credDomains[0] || '');
   });
 }
 
@@ -898,9 +970,8 @@ function showDomainMismatchWarning(item: CredentialItem, tabDomain: string, cred
  * only answers for a URL it can match.
  */
 function sendAutofillMessage(item: CredentialItem, userConfirmedMismatch = false): void {
-  const credDomain = item.url ? extractRegistrableDomainFromUrl(
-    item.url.startsWith('http') ? item.url : `https://${item.url}`
-  ) : '';
+  const credDomains = collectCredentialDomains(item);
+  const credDomain = credDomains[0] || '';
 
   const dispatch = (username: string, password: string) => {
     chrome.runtime.sendMessage(
@@ -909,11 +980,12 @@ function sendAutofillMessage(item: CredentialItem, userConfirmedMismatch = false
         username,
         password: password || '',
         targetDomain: credDomain,
+        additionalDomains: credDomains.slice(1),
         userConfirmedMismatch,
       },
       (response: { status?: string; reason?: string } | undefined) => {
         if (response && response.status === 'blocked') {
-          showToast('⚠️ Autofill blocked: domain mismatch confirmation required.');
+          showToast(translate('phishing.autofill.blocked', activeLanguage));
         }
       }
     );
@@ -935,7 +1007,7 @@ function sendAutofillMessage(item: CredentialItem, userConfirmedMismatch = false
       { action: 'query_credentials', url: pageUrl },
       (response: { locked?: boolean; credentials?: CredentialItem[]; error?: string } | undefined) => {
         if (!response || response.locked || !response.credentials?.length) {
-          showToast('⚠️ Could not retrieve the password for this entry.');
+          showToast(translate('no.matching', activeLanguage));
           return;
         }
         const match =

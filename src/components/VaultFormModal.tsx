@@ -10,7 +10,7 @@ import {
   CheckCircle2, 
   Layers 
 } from 'lucide-react';
-import type { AppNotification, TagDefinition, VaultFolder, VaultItem } from '../types';
+import type { AppNotification, TagDefinition, VaultCustomField, VaultFolder, VaultItem } from '../types';
 import { generatePassword } from '../lib/security';
 import { recordPasswordHistory } from '../lib/passwordHistory';
 import { saveAttachment, getAttachmentBlob } from '../lib/attachments';
@@ -25,6 +25,7 @@ import { VaultFormCardFields } from './vault-form/VaultFormCardFields';
 import { VaultFormIdentityFields } from './vault-form/VaultFormIdentityFields';
 import { VaultFormPasskeyFields } from './vault-form/VaultFormPasskeyFields';
 import { VaultFormNoteFields } from './vault-form/VaultFormNoteFields';
+import { VaultFormCustomFieldsSection } from './vault-form/VaultFormCustomFieldsSection';
 import { VaultFormAttachmentSection } from './vault-form/VaultFormAttachmentSection';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
@@ -84,6 +85,9 @@ export default function VaultFormModal({
   // 5.3 Tags & Organisation States
   const [folderId, setFolderId] = useState('');
   const [itemTags, setItemTags] = useState<string[]>([]);
+  const [additionalUrls, setAdditionalUrls] = useState<string[]>([]);
+  const [customFields, setCustomFields] = useState<VaultCustomField[]>([]);
+  const [totpRecoveryCodes, setTotpRecoveryCodes] = useState<string[]>([]);
 
   // File Attachment States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -159,6 +163,9 @@ export default function VaultFormModal({
 
         setFolderId(editingItem.folderId || '');
         setItemTags(editingItem.tags || []);
+        setAdditionalUrls(editingItem.additionalUrls || []);
+        setCustomFields(editingItem.customFields || []);
+        setTotpRecoveryCodes(editingItem.totpRecoveryCodes || []);
       } else {
         // Clean start for new items
         setCategory('login');
@@ -188,6 +195,9 @@ export default function VaultFormModal({
         setExistingAttachment(null);
         setFolderId('');
         setItemTags([]);
+        setAdditionalUrls([]);
+        setCustomFields([]);
+        setTotpRecoveryCodes([]);
       }
 
       // Clear selected temporary files and error messages on reopen
@@ -345,6 +355,18 @@ export default function VaultFormModal({
     const normalizedCardNumber = cardNumber.replace(/\s+/g, '');
     const normalizedPasskeyPublicId = passkeyPublicId.trim();
     const normalizedIdNumber = idNumber.trim();
+    const cleanedAdditionalUrls = additionalUrls.map((u) => u.trim()).filter((u) => u.length > 0);
+    const cleanedCustomFields = customFields
+      .map((field) => ({
+        ...field,
+        label: field.label.trim(),
+        value: field.value.trim(),
+      }))
+      .filter((field) => field.label.length > 0 || field.value.length > 0);
+    const cleanedRecoveryCodes = totpRecoveryCodes.map((c) => c.trim()).filter((c) => c.length > 0);
+    const preservedAttachments = editingItem?.attachments?.filter(
+      (att) => att.id && att.id !== editingItem.attachmentId,
+    );
 
     // Prepare unified safe schema payload
     const itemData: VaultItem = {
@@ -359,8 +381,11 @@ export default function VaultFormModal({
             : normalizedIdNumber,
       password,
       url: url.trim(),
+      ...(cleanedAdditionalUrls.length > 0 ? { additionalUrls: cleanedAdditionalUrls } : {}),
       totpSecret: totpSecret.trim(),
+      ...(cleanedRecoveryCodes.length > 0 ? { totpRecoveryCodes: cleanedRecoveryCodes } : {}),
       notes: notes.trim(),
+      ...(cleanedCustomFields.length > 0 ? { customFields: cleanedCustomFields } : {}),
       createdAt: editingItem?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       category,
@@ -411,6 +436,9 @@ export default function VaultFormModal({
       attachmentName: attachmentNameToSave,
       attachmentSize: attachmentSizeToSave,
       attachmentType: attachmentTypeToSave,
+      ...(preservedAttachments && preservedAttachments.length > 0
+        ? { attachments: preservedAttachments }
+        : {}),
 
       // 5.3 Tags & Organisation
       folderId: folderId || undefined,
@@ -480,6 +508,8 @@ export default function VaultFormModal({
             url={url}
             onTitleChange={setTitle}
             onUrlChange={setUrl}
+            additionalUrls={additionalUrls}
+            onAdditionalUrlsChange={setAdditionalUrls}
           />
 
           {/* Folder & Tags Section */}
@@ -504,6 +534,8 @@ export default function VaultFormModal({
               onAutoGeneratePassword={handleAutoGenerate}
               totpSecret={totpSecret}
               onTotpSecretChange={setTotpSecret}
+              totpRecoveryCodes={totpRecoveryCodes}
+              onTotpRecoveryCodesChange={setTotpRecoveryCodes}
             />
           )}
 
@@ -554,6 +586,12 @@ export default function VaultFormModal({
             category={category}
             notes={notes}
             onNotesChange={setNotes}
+          />
+
+          {/* Custom Fields Section */}
+          <VaultFormCustomFieldsSection
+            fields={customFields}
+            onChange={setCustomFields}
           />
 
           {/* 250MB Embedded File Encryption Section */}

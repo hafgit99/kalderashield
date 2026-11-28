@@ -91,7 +91,7 @@ export default function ShareModal({ isOpen, onClose, item }: ShareModalProps) {
         <div className="absolute top-0 left-0 w-full h-1 bg-brand-primary" />
 
         {/* Header */}
-        <div className="flex justify-between items-center px-5 py-4 border-b border-outline-variant/10 bg-[#0c0d0c]/95">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-outline-variant/15 bg-surface-low">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
               <QrCode className="w-4.5 h-4.5" />
@@ -144,11 +144,11 @@ export default function ShareModal({ isOpen, onClose, item }: ShareModalProps) {
                   }
                 }}
                 placeholder={t('share.passwordPlaceholder', 'Enter a password for this share link...')}
-                className="w-full bg-[#161816] border border-outline-variant/20 rounded-xl pl-9 pr-3 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:ring-1 focus:ring-brand-primary/30"
+                className="w-full bg-surface-low border border-outline-variant/20 rounded-xl pl-9 pr-3 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
               />
             </div>
             {passwordError && (
-              <p className="text-[10px] text-red-400 font-medium">{passwordError}</p>
+              <p className="text-[11px] text-brand-error font-medium">{passwordError}</p>
             )}
             <p className="text-[9px] text-on-surface-variant/60 leading-relaxed">
               {t('share.passwordHelp', 'The recipient will need this password to decrypt the shared item. Share it through a separate secure channel.')}

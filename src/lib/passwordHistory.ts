@@ -9,7 +9,7 @@
 
 import type { PasswordHistoryEntry, VaultItem } from '../types';
 
-export const MAX_FREE_PASSWORD_HISTORY = 3;
+export const MAX_FREE_PASSWORD_HISTORY = 20;
 
 /**
  * Appends the previous password to history when a password is changed.

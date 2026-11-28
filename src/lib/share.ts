@@ -20,6 +20,36 @@ export interface DecryptedSharePayload {
   expiresAt: number;
 }
 
+/** Public HTTPS fallback base URL when sharing from desktop/mobile Tauri local origins. */
+export const PUBLIC_SHARE_BASE_URL = 'https://kalderashield.com/share/';
+
+function resolveShareBaseUrl(): string {
+  if (typeof window === 'undefined' || !window.location) {
+    return PUBLIC_SHARE_BASE_URL;
+  }
+  const { protocol, hostname, origin, pathname } = window.location;
+  const hostLower = (hostname || '').toLowerCase();
+  const isNativeLocalOrigin =
+    protocol === 'tauri:' ||
+    protocol === 'file:' ||
+    protocol === 'capacitor:' ||
+    hostLower === 'tauri.localhost' ||
+    hostLower.endsWith('.tauri.localhost');
+  if (isNativeLocalOrigin || !origin || origin === 'null') {
+    return PUBLIC_SHARE_BASE_URL;
+  }
+  return origin + pathname;
+}
+
+function extractShareHashFragment(rawInput: string): string {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return '';
+  const hashIdx = trimmed.indexOf('#');
+  if (hashIdx !== -1) {
+    return trimmed.slice(hashIdx + 1);
+  }
+  return trimmed.replace(/^#/, '');
+}
 /** Maximum share link duration in hours. */
 export const MAX_SHARE_DURATION_HOURS = 24;
 
@@ -132,15 +162,15 @@ export async function generateShareUrl(
   const d = base64urlEncode(bundleBytes);
   const s = base64urlEncode(salt);
 
-  const baseUrl = window.location.origin + window.location.pathname;
+  const baseUrl = resolveShareBaseUrl();
   return `${baseUrl}#share=${d}&s=${s}`;
 }
 
 /**
- * Decrypts a secure local share hash fragment into the original vault item.
+ * Decrypts a secure local share hash fragment or full share URL into the original vault item.
  * Requires the same share password that was used during encryption.
  *
- * @param hash - The URL hash fragment (e.g., "#share=...&s=...").
+ * @param hash - The URL hash fragment or full share URL (e.g., "#share=...&s=...").
  * @param sharePassword - The password used when generating the share URL.
  */
 export async function decryptShareUrl(
@@ -150,7 +180,7 @@ export async function decryptShareUrl(
   try {
     if (!sharePassword) return null;
 
-    const hashClean = hash.replace(/^#/, '');
+    const hashClean = extractShareHashFragment(hash);
     const params = new URLSearchParams(hashClean);
     const d = params.get('share');
     const s = params.get('s');

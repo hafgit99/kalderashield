@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import MobileSidebarBackdrop from './components/MobileSidebarBackdrop';
 import SidebarNavigation from './components/SidebarNavigation';
 import TopBar from './components/TopBar';
 import MainContent from './components/MainContent';
 import FloatingVaultAction from './components/FloatingVaultAction';
+import CommandPalette from './components/CommandPalette';
 import { PrivacyShieldBackdrop } from './components/PrivacyShieldBackdrop';
 import { CopiedToastNotification } from './components/CopiedToastNotification';
 import AppModals from './components/AppModals';
@@ -482,9 +483,22 @@ export default function UnlockedApp({
     }
   };
 
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  const handleToggleCommandPalette = useCallback(() => {
+    setIsCommandPaletteOpen((open) => !open);
+  }, []);
+
+  const handleFocusVaultSearchFromPalette = useCallback(() => {
+    setActiveTab('vault');
+    setTimeout(() => {
+      dispatchFocusSearchShortcut();
+    }, 0);
+  }, [setActiveTab]);
+
   useKeyboardShortcuts({
     enabled: unlocked,
-    onFocusSearch: dispatchFocusSearchShortcut,
+    onFocusSearch: handleToggleCommandPalette,
     onNewItem: handleTriggerNew,
     onLock: handleLock,
   });
@@ -667,6 +681,20 @@ export default function UnlockedApp({
           onApproveGet={approvePasskeyGet}
           onFallbackToDevice={fallbackPasskeyToDevice}
           onCancel={cancelPasskeyRequest}
+        />
+
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          items={activeItems}
+          copiedField={copiedField}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onSelectItem={handleSelectItem}
+          onCopyText={handleCopyText}
+          onNewItem={handleTriggerNew}
+          onOpenAudit={handleOpenAuditTab}
+          onOpenGenerator={handleOpenGeneratorTab}
+          onFocusVaultSearch={handleFocusVaultSearchFromPalette}
+          onLock={handleLock}
         />
 
         <CopiedToastNotification copiedField={copiedField} />

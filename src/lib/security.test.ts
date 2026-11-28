@@ -2,13 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   calculatePasswordScore,
   clearAuditScoreHistory,
+  clearGeneratedPasswordHistory,
   generatePassword,
   getAuditScoreHistory,
+  getGeneratedPasswordHistory,
   getItemPasswordAgeInDays,
   getPasswordAgeInDays,
   getStrengthLabel,
   isUnsecureHttpUrl,
   itemNeedsTwoFactor,
+  recordGeneratedPassword,
   runVaultAudit,
   saveAuditScoreToHistory,
   supportsTwoFactor,
@@ -130,6 +133,42 @@ describe('security helpers', () => {
 
     calculatePasswordScore(pw);
     expect(checkSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('supports excludeAmbiguous and customSymbols options in generatePassword', () => {
+    for (let i = 0; i < 30; i++) {
+      const pw = generatePassword({
+        length: 32,
+        uppercase: true,
+        lowercase: true,
+        numbers: true,
+        symbols: true,
+        excludeAmbiguous: true,
+        customSymbols: '!@#',
+      });
+      expect(pw).toHaveLength(32);
+      expect(pw).not.toMatch(/[O0Il1|]/);
+      expect(pw).toMatch(/[!@#]/);
+      expect(pw).not.toMatch(/[$%^&*()_+\-=[\]{};:,.<>?]/);
+    }
+  });
+
+  it('tracks session-scoped generated password history and wipes it on closeVaultSession', () => {
+    clearGeneratedPasswordHistory();
+    expect(getGeneratedPasswordHistory()).toEqual([]);
+
+    recordGeneratedPassword('FirstGen#123', 'character');
+    recordGeneratedPassword('FirstGen#123', 'character'); // dedup consecutive
+    recordGeneratedPassword('brave-falcon-42', 'diceware');
+
+    const history = getGeneratedPasswordHistory();
+    expect(history).toHaveLength(2);
+    expect(history[0]?.password).toBe('brave-falcon-42');
+    expect(history[0]?.mode).toBe('diceware');
+    expect(history[1]?.password).toBe('FirstGen#123');
+
+    closeVaultSession();
+    expect(getGeneratedPasswordHistory()).toEqual([]);
   });
 });
 

@@ -336,7 +336,7 @@ export function SettingsBackupSection({
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 onClick={(e) => e.stopPropagation()}
-                accept=".json,.csv,.KalderaShield,.tsv,.txt,application/json,text/csv,text/comma-separated-values,text/tab-separated-values,text/plain"
+                accept=".json,.csv,.xml,.KalderaShield,.tsv,.txt,application/json,application/xml,text/xml,text/csv,text/comma-separated-values,text/tab-separated-values,text/plain"
                 className="hidden"
               />
               <Upload className="w-8 h-8 mx-auto text-on-surface-variant/50 mb-2" />

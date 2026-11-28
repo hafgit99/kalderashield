@@ -213,16 +213,251 @@ impl ConnectionRateLimiter {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Zeroize, ZeroizeOnDrop)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, Zeroize, ZeroizeOnDrop)]
 pub struct ExtensionCredential {
     pub id: String,
     pub title: String,
     pub username: String,
     pub password: String,
     pub url: String,
+    #[serde(default, rename = "additionalUrls")]
+    pub additional_urls: Vec<String>,
     pub category: String,
     #[serde(default)]
     pub favorite: bool,
+    /// Raw TOTP secret kept strictly inside desktop Rust memory (`skip_serializing`)
+    /// so browser extensions can request time-bound 6-digit codes on demand via
+    /// `get_totp_code` without ever holding the static TOTP secret.
+    #[serde(default, skip_serializing, rename = "totpSecret")]
+    pub totp_secret: String,
+    #[serde(default, rename = "hasTotp")]
+    pub has_totp: bool,
+    #[serde(
+        default,
+        rename = "cardExpiry",
+        skip_serializing_if = "String::is_empty"
+    )]
+    pub card_expiry: String,
+    #[serde(default, rename = "cardCvv", skip_serializing_if = "String::is_empty")]
+    pub card_cvv: String,
+}
+
+fn match_credential_urls(active: &ParsedUrl, item: &ExtensionCredential) -> Option<u32> {
+    let mut best = match_credentials(active, &parse_url(&item.url));
+    for extra in &item.additional_urls {
+        let trimmed = extra.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(score) = match_credentials(active, &parse_url(trimmed)) {
+            best = Some(best.map_or(score, |prev| prev.max(score)));
+        }
+    }
+    best
+}
+
+fn decode_base32_totp_secret(secret: &str) -> Option<Vec<u8>> {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let mut normalized = String::with_capacity(secret.len());
+    for ch in secret.chars() {
+        if ch.is_ascii_whitespace() || ch == '-' || ch == '=' {
+            continue;
+        }
+        normalized.push(ch.to_ascii_uppercase());
+    }
+    if normalized.is_empty() {
+        return None;
+    }
+    let mut bits: u32 = 0;
+    let mut value: u32 = 0;
+    let mut out = Vec::with_capacity((normalized.len() * 5) / 8);
+    for byte in normalized.bytes() {
+        let idx = ALPHABET.iter().position(|&b| b == byte)? as u32;
+        value = (value << 5) | idx;
+        bits += 5;
+        if bits >= 8 {
+            out.push(((value >> (bits - 8)) & 0xff) as u8);
+            bits -= 8;
+        }
+    }
+    if out.is_empty() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
+/// Pure-Rust FIPS 180-4 SHA-1 used exclusively for RFC 6238 TOTP HMAC-SHA1.
+fn sha1_digest(data: &[u8]) -> [u8; 20] {
+    let mut h0: u32 = 0x67452301;
+    let mut h1: u32 = 0xEFCDAB89;
+    let mut h2: u32 = 0x98BADCFE;
+    let mut h3: u32 = 0x10325476;
+    let mut h4: u32 = 0xC3D2E1F0;
+
+    let bit_len = (data.len() as u64).wrapping_mul(8);
+    let mut padded = Vec::with_capacity(data.len() + 72);
+    padded.extend_from_slice(data);
+    padded.push(0x80);
+    while (padded.len() % 64) != 56 {
+        padded.push(0);
+    }
+    padded.extend_from_slice(&bit_len.to_be_bytes());
+
+    let mut w = [0u32; 80];
+    for chunk in padded.chunks_exact(64) {
+        for (i, word) in chunk.chunks_exact(4).enumerate() {
+            w[i] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
+        }
+        for i in 16..80 {
+            w[i] = (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]).rotate_left(1);
+        }
+        let (mut a, mut b, mut c, mut d, mut e) = (h0, h1, h2, h3, h4);
+        for (i, &wi) in w.iter().enumerate() {
+            let (f, k) = match i {
+                0..=19 => ((b & c) | ((!b) & d), 0x5A827999u32),
+                20..=39 => (b ^ c ^ d, 0x6ED9EBA1u32),
+                40..=59 => ((b & c) | (b & d) | (c & d), 0x8F1BBCDCu32),
+                _ => (b ^ c ^ d, 0xCA62C1D6u32),
+            };
+            let temp = a
+                .rotate_left(5)
+                .wrapping_add(f)
+                .wrapping_add(e)
+                .wrapping_add(k)
+                .wrapping_add(wi);
+            e = d;
+            d = c;
+            c = b.rotate_left(30);
+            b = a;
+            a = temp;
+        }
+        h0 = h0.wrapping_add(a);
+        h1 = h1.wrapping_add(b);
+        h2 = h2.wrapping_add(c);
+        h3 = h3.wrapping_add(d);
+        h4 = h4.wrapping_add(e);
+    }
+    let mut out = [0u8; 20];
+    out[0..4].copy_from_slice(&h0.to_be_bytes());
+    out[4..8].copy_from_slice(&h1.to_be_bytes());
+    out[8..12].copy_from_slice(&h2.to_be_bytes());
+    out[12..16].copy_from_slice(&h3.to_be_bytes());
+    out[16..20].copy_from_slice(&h4.to_be_bytes());
+    out
+}
+
+fn hmac_sha1(key: &[u8], msg: &[u8]) -> [u8; 20] {
+    let mut block_key = [0u8; 64];
+    if key.len() > 64 {
+        let hashed = sha1_digest(key);
+        block_key[..20].copy_from_slice(&hashed);
+    } else {
+        block_key[..key.len()].copy_from_slice(key);
+    }
+    let mut ipad = [0x36u8; 64];
+    let mut opad = [0x5cu8; 64];
+    for i in 0..64 {
+        ipad[i] ^= block_key[i];
+        opad[i] ^= block_key[i];
+    }
+    let mut inner = Vec::with_capacity(64 + msg.len());
+    inner.extend_from_slice(&ipad);
+    inner.extend_from_slice(msg);
+    let inner_hash = sha1_digest(&inner);
+    inner.zeroize();
+
+    let mut outer = [0u8; 84];
+    outer[..64].copy_from_slice(&opad);
+    outer[64..84].copy_from_slice(&inner_hash);
+    let result = sha1_digest(&outer);
+    block_key.zeroize();
+    ipad.zeroize();
+    opad.zeroize();
+    outer.zeroize();
+    result
+}
+
+/// Generates an RFC 6238 TOTP code (SHA1 / SHA256 / SHA512, 6–8 digits, 15–300s period)
+/// from either a raw Base32 secret or an `otpauth://totp/...` URI.
+pub fn generate_totp_code_at(raw_secret: &str, unix_secs: u64) -> Option<(String, u64, u64)> {
+    let trimmed = raw_secret.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let mut secret_str = trimmed.to_string();
+    let mut algorithm = "SHA1".to_string();
+    let mut digits: u32 = 6;
+    let mut period: u64 = 30;
+
+    if trimmed.to_ascii_lowercase().starts_with("otpauth://") {
+        let query_start = trimmed.find('?')?;
+        let host_part = &trimmed[10..query_start];
+        if !host_part.to_ascii_lowercase().starts_with("totp") {
+            return None;
+        }
+        secret_str.clear();
+        for pair in trimmed[query_start + 1..].split('&') {
+            if let Some((k, v)) = pair.split_once('=') {
+                match k.to_ascii_lowercase().as_str() {
+                    "secret" => secret_str = v.to_string(),
+                    "algorithm" => algorithm = v.to_ascii_uppercase(),
+                    "digits" => {
+                        let parsed: u32 = v.parse().ok()?;
+                        if !(6..=8).contains(&parsed) {
+                            return None;
+                        }
+                        digits = parsed;
+                    }
+                    "period" => {
+                        let parsed: u64 = v.parse().ok()?;
+                        if !(15..=300).contains(&parsed) {
+                            return None;
+                        }
+                        period = parsed;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    let mut key = decode_base32_totp_secret(&secret_str)?;
+    let counter_bytes = (unix_secs / period).to_be_bytes();
+
+    let digest: Vec<u8> = match algorithm.as_str() {
+        "SHA1" | "SHA-1" => hmac_sha1(&key, &counter_bytes).to_vec(),
+        "SHA256" | "SHA-256" => {
+            let mut mac = <HmacSha256 as KeyInit>::new_from_slice(&key).ok()?;
+            mac.update(&counter_bytes);
+            mac.finalize().into_bytes().to_vec()
+        }
+        "SHA512" | "SHA-512" => {
+            type HmacSha512 = Hmac<sha2::Sha512>;
+            let mut mac = <HmacSha512 as KeyInit>::new_from_slice(&key).ok()?;
+            mac.update(&counter_bytes);
+            mac.finalize().into_bytes().to_vec()
+        }
+        _ => {
+            key.zeroize();
+            return None;
+        }
+    };
+    key.zeroize();
+
+    let offset = (*digest.last()? & 0x0f) as usize;
+    if offset + 4 > digest.len() {
+        return None;
+    }
+    let binary = (((digest[offset] & 0x7f) as u32) << 24)
+        | ((digest[offset + 1] as u32) << 16)
+        | ((digest[offset + 2] as u32) << 8)
+        | (digest[offset + 3] as u32);
+    let modulo = 10u32.pow(digits);
+    let code = format!("{:0width$}", binary % modulo, width = digits as usize);
+    let remaining = period - (unix_secs % period);
+    Some((code, period, remaining))
 }
 
 pub const EXTENSION_CREDENTIAL_LEASE_MS: u64 = 5 * 60 * 1000;
@@ -1249,8 +1484,7 @@ fn handle_client(
 
                     if !active_parsed.host.is_empty() {
                         for item in &cache.credentials {
-                            let item_parsed = parse_url(&item.url);
-                            if let Some(score) = match_credentials(&active_parsed, &item_parsed) {
+                            if let Some(score) = match_credential_urls(&active_parsed, item) {
                                 scored_credentials.push((score, item.clone()));
                             }
                         }
@@ -1286,8 +1520,7 @@ fn handle_client(
                     if !active_parsed.host.is_empty() {
                         let mut scored_credentials: Vec<(u32, ExtensionCredential)> = Vec::new();
                         for item in &cache.credentials {
-                            let item_parsed = parse_url(&item.url);
-                            if let Some(score) = match_credentials(&active_parsed, &item_parsed) {
+                            if let Some(score) = match_credential_urls(&active_parsed, item) {
                                 scored_credentials.push((score, item.clone()));
                             }
                         }
@@ -1298,8 +1531,8 @@ fn handle_client(
                             .collect();
                         serde_json::json!({ "locked": false, "credentials": matching })
                     } else {
-                        // Return metadata-only list of cached credentials (with empty passwords)
-                        // for popup search, favorites & domain extraction to prevent single-message bulk password dumping.
+                        // Return metadata-only list of cached credentials (with empty passwords/CVV)
+                        // for popup search, favorites & domain extraction to prevent single-message bulk secret dumping.
                         let sanitized: Vec<ExtensionCredential> = cache
                             .credentials
                             .iter()
@@ -1309,8 +1542,13 @@ fn handle_client(
                                 username: item.username.clone(),
                                 password: String::new(),
                                 url: item.url.clone(),
+                                additional_urls: item.additional_urls.clone(),
                                 category: item.category.clone(),
                                 favorite: item.favorite,
+                                totp_secret: String::new(),
+                                has_totp: item.has_totp || !item.totp_secret.trim().is_empty(),
+                                card_expiry: item.card_expiry.clone(),
+                                card_cvv: String::new(),
                             })
                             .collect();
                         serde_json::json!({ "locked": false, "credentials": sanitized })
@@ -1426,6 +1664,84 @@ fn handle_client(
                         serde_json::json!({ "error": "invalid_origin_or_rp_id", "fallback": true })
                     }
                 }
+            }
+            "get_totp_code" => {
+                let target_id = req["id"].as_str().unwrap_or("").trim();
+                let mut creds_guard = credentials.lock().unwrap();
+                let now_ms = credential_lease_expires_at(0);
+                if creds_guard
+                    .as_ref()
+                    .is_some_and(|cache| cache.expires_at_epoch_ms <= now_ms)
+                {
+                    *creds_guard = None;
+                }
+                if let Some(ref cache) = *creds_guard {
+                    if let Some(item) = cache
+                        .credentials
+                        .iter()
+                        .find(|c| c.id == target_id && !c.totp_secret.trim().is_empty())
+                    {
+                        let unix_secs = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .map(|d| d.as_secs())
+                            .unwrap_or(0);
+                        if let Some((code, period, remaining)) =
+                            generate_totp_code_at(&item.totp_secret, unix_secs)
+                        {
+                            serde_json::json!({
+                                "locked": false,
+                                "code": code,
+                                "period": period,
+                                "remainingSeconds": remaining
+                            })
+                        } else {
+                            serde_json::json!({ "locked": false, "error": "invalid_totp_secret" })
+                        }
+                    } else {
+                        serde_json::json!({ "locked": false, "error": "totp_not_found" })
+                    }
+                } else {
+                    serde_json::json!({ "locked": true, "error": "vault_locked" })
+                }
+            }
+            "get_card_details" => {
+                let target_id = req["id"].as_str().unwrap_or("").trim();
+                let mut creds_guard = credentials.lock().unwrap();
+                let now_ms = credential_lease_expires_at(0);
+                if creds_guard
+                    .as_ref()
+                    .is_some_and(|cache| cache.expires_at_epoch_ms <= now_ms)
+                {
+                    *creds_guard = None;
+                }
+                if let Some(ref cache) = *creds_guard {
+                    if let Some(item) = cache
+                        .credentials
+                        .iter()
+                        .find(|c| c.id == target_id && c.category == "card")
+                    {
+                        serde_json::json!({
+                            "locked": false,
+                            "card": {
+                                "id": item.id,
+                                "title": item.title,
+                                "cardholderName": item.username,
+                                "cardNumber": item.password,
+                                "cardExpiry": item.card_expiry,
+                                "cardCvv": item.card_cvv,
+                            }
+                        })
+                    } else {
+                        serde_json::json!({ "locked": false, "error": "card_not_found" })
+                    }
+                } else {
+                    serde_json::json!({ "locked": true, "error": "vault_locked" })
+                }
+            }
+            "clear_clipboard" => {
+                let expected = req["expectedText"].as_str();
+                let cleared = crate::clear_clipboard_if_unchanged_native(expected);
+                serde_json::json!({ "status": "ok", "cleared": cleared })
             }
             "revoke" => {
                 // RUST-Y1/#43: session revocation — retire every live session, wipe the
@@ -1976,8 +2292,13 @@ mod tests {
             username: "alice".to_string(),
             password: "supersecretpassword123".to_string(),
             url: "https://example.com".to_string(),
+            additional_urls: Vec::new(),
             category: "login".to_string(),
             favorite: true,
+            totp_secret: String::new(),
+            has_totp: false,
+            card_expiry: String::new(),
+            card_cvv: String::new(),
         };
 
         let cache = ExtensionCredentialCache {
@@ -1994,8 +2315,13 @@ mod tests {
                 username: item.username.clone(),
                 password: String::new(),
                 url: item.url.clone(),
+                additional_urls: item.additional_urls.clone(),
                 category: item.category.clone(),
                 favorite: item.favorite,
+                totp_secret: String::new(),
+                has_totp: item.has_totp,
+                card_expiry: item.card_expiry.clone(),
+                card_cvv: String::new(),
             })
             .collect();
 
@@ -2277,8 +2603,13 @@ mod tests {
                 username: "alice".to_string(),
                 password: "supersecretpassword123".to_string(),
                 url: "https://example.com".to_string(),
+                additional_urls: Vec::new(),
                 category: "login".to_string(),
                 favorite: false,
+                totp_secret: String::new(),
+                has_totp: false,
+                card_expiry: String::new(),
+                card_cvv: String::new(),
             }],
             expires_at_epoch_ms: u64::MAX,
         })));
@@ -2476,8 +2807,13 @@ mod tests {
                     username: "alice@example.com".to_string(),
                     password: initial_secret.clone(),
                     url: "https://example.com/login".to_string(),
+                    additional_urls: Vec::new(),
                     category: "login".to_string(),
                     favorite: false,
+                    totp_secret: String::new(),
+                    has_totp: false,
+                    card_expiry: String::new(),
+                    card_cvv: String::new(),
                 },
                 super::ExtensionCredential {
                     id: "cred-2".to_string(),
@@ -2485,8 +2821,13 @@ mod tests {
                     username: "bob@example.com".to_string(),
                     password: other_secret.clone(),
                     url: "https://other.example.com".to_string(),
+                    additional_urls: Vec::new(),
                     category: "login".to_string(),
                     favorite: true,
+                    totp_secret: String::new(),
+                    has_totp: false,
+                    card_expiry: String::new(),
+                    card_cvv: String::new(),
                 },
             ],
             expires_at_epoch_ms: super::credential_lease_expires_at(60_000),
@@ -2619,5 +2960,48 @@ mod tests {
             "github.com",
             Some(&["cred-other".to_string()])
         ));
+    }
+
+    #[test]
+    fn test_totp_generation_matches_rfc6238_and_skips_secret_serialization() {
+        // RFC 6238 Appendix B test seed "12345678901234567890" in Base32:
+        let seed_b32 = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+        let (code, period, remaining) =
+            super::generate_totp_code_at(seed_b32, 59).expect("RFC 6238 SHA1 vector must compute");
+        assert_eq!(code, "287082");
+        assert_eq!(period, 30);
+        assert_eq!(remaining, 1);
+
+        let uri = format!(
+            "otpauth://totp/Example:alice@example.com?secret={}&digits=8&period=30&algorithm=SHA1",
+            seed_b32
+        );
+        let (code8, _, _) =
+            super::generate_totp_code_at(&uri, 59).expect("8-digit otpauth URI must compute");
+        assert_eq!(code8, "94287082");
+
+        // Ensure raw totp_secret is NEVER serialized over IPC to browser extensions.
+        let cred = super::ExtensionCredential {
+            id: "totp-item".to_string(),
+            title: "GitHub".to_string(),
+            username: "alice".to_string(),
+            password: "pw".to_string(),
+            url: "https://github.com".to_string(),
+            additional_urls: vec!["https://gist.github.com".to_string()],
+            category: "login".to_string(),
+            favorite: false,
+            totp_secret: seed_b32.to_string(),
+            has_totp: true,
+            card_expiry: String::new(),
+            card_cvv: String::new(),
+        };
+        let serialized = serde_json::to_string(&cred).expect("serialize");
+        assert!(!serialized.contains(seed_b32));
+        assert!(serialized.contains("\"hasTotp\":true"));
+        assert!(serialized.contains("gist.github.com"));
+
+        // Verify multi-URL matching hits additional_urls cleanly.
+        let active = super::parse_url("https://gist.github.com/login");
+        assert!(super::match_credential_urls(&active, &cred).is_some());
     }
 }

@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { VaultItem } from '../types';
+import type { VaultCustomField, VaultItem } from '../types';
 
 import { parseCSV } from './csvParser';
 import { defaultImportLabels } from './importerLabels';
+import { parseGoogleAuthenticatorMigrationUri } from './otpMigration';
 
 export { parseCSV } from './csvParser';
 
@@ -90,6 +91,99 @@ function buildImportedTitle(
 }
 
 
+function decodeXmlEntities(text: string): string {
+  return text.replace(/&(lt|gt|quot|apos|amp|#x[0-9a-fA-F]+|#\d+);/g, (match, entity: string) => {
+    switch (entity) {
+      case 'lt':
+        return '<';
+      case 'gt':
+        return '>';
+      case 'quot':
+        return '"';
+      case 'apos':
+        return "'";
+      case 'amp':
+        return '&';
+      default: {
+        if (entity.startsWith('#x') || entity.startsWith('#X')) {
+          const code = Number.parseInt(entity.slice(2), 16);
+          return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+            ? String.fromCodePoint(code)
+            : match;
+        }
+        if (entity.startsWith('#')) {
+          const code = Number.parseInt(entity.slice(1), 10);
+          return Number.isFinite(code) && code >= 0 && code <= 0x10ffff
+            ? String.fromCodePoint(code)
+            : match;
+        }
+        return match;
+      }
+    }
+  });
+}
+
+function parseKeePassXml(xml: string, untitledFallback: string): Partial<VaultItem>[] {
+  const items: Partial<VaultItem>[] = [];
+  // Strip <History> blocks so historical versions are not imported as duplicate entries.
+  const withoutHistory = xml.replace(/<History>[\s\S]*?<\/History>/gi, '');
+  const entryRegex = /<Entry\b[^>]*>([\s\S]*?)<\/Entry>/gi;
+  const stringPairRegex = /<String\b[^>]*>\s*<Key>([\s\S]*?)<\/Key>\s*<Value(?:\s+[^>]*)?>([\s\S]*?)<\/Value>\s*<\/String>/gi;
+
+  let entryMatch: RegExpExecArray | null;
+  while ((entryMatch = entryRegex.exec(withoutHistory)) !== null) {
+    const body = entryMatch[1] || '';
+    const fields = new Map<string, string>();
+    const protectedKeys = new Set<string>();
+
+    let pairMatch: RegExpExecArray | null;
+    stringPairRegex.lastIndex = 0;
+    while ((pairMatch = stringPairRegex.exec(body)) !== null) {
+      const fullTag = pairMatch[0];
+      const key = decodeXmlEntities((pairMatch[1] || '').trim());
+      const value = decodeXmlEntities((pairMatch[2] || '').trim());
+      if (!key) continue;
+      fields.set(key, value);
+      if (/ProtectInMemory\s*=\s*"True"/i.test(fullTag)) {
+        protectedKeys.add(key);
+      }
+    }
+
+    const rawTitle = fields.get('Title') || '';
+    const username = fields.get('UserName') || '';
+    const password = fields.get('Password') || '';
+    const url = fields.get('URL') || '';
+    const notes = fields.get('Notes') || '';
+    const totpSecret = fields.get('otp') || fields.get('TOTP Seed') || fields.get('TimeOtp-Secret-Base32') || '';
+
+    const standardKeys = new Set(['Title', 'UserName', 'Password', 'URL', 'Notes', 'otp', 'TOTP Seed', 'TimeOtp-Secret-Base32']);
+    const customFields: VaultCustomField[] = [];
+    for (const [k, v] of fields.entries()) {
+      if (standardKeys.has(k) || !v) continue;
+      customFields.push({
+        id: `kp-${customFields.length + 1}`,
+        label: k,
+        value: v,
+        type: protectedKeys.has(k) ? 'hidden' : 'text',
+      });
+    }
+
+    if (!rawTitle && !username && !password && !url && !notes && !totpSecret) continue;
+
+    items.push({
+      title: buildImportedTitle(rawTitle, username, url, notes, untitledFallback),
+      username,
+      password,
+      url,
+      notes,
+      totpSecret,
+      category: 'login',
+      ...(customFields.length > 0 ? { customFields } : {}),
+    });
+  }
+  return items;
+}
+
 /**
  * Parses any password manager export/backup and returns a normalized unified list.
  */
@@ -98,6 +192,36 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
   const trimmed = fileContent.trim();
   if (!trimmed) {
     return { type: 'error', message: copy.errorEmpty };
+  }
+
+  // Scenario 0: Google Authenticator otpauth-migration:// URI (single or multi-line export)
+  if (/^otpauth-migration:\/\//i.test(trimmed)) {
+    const migrated: Partial<VaultItem>[] = [];
+    for (const line of trimmed.split(/\r?\n/)) {
+      const candidate = line.trim();
+      if (!candidate.toLowerCase().startsWith('otpauth-migration://')) continue;
+      for (const acc of parseGoogleAuthenticatorMigrationUri(candidate)) {
+        migrated.push({
+          title: acc.issuer ? `${acc.issuer} (${acc.name})` : acc.name,
+          username: acc.name,
+          password: '',
+          url: acc.issuer && acc.issuer.includes('.') ? `https://${acc.issuer}` : '',
+          totpSecret: acc.otpauthUri,
+          category: 'login',
+        });
+      }
+    }
+    if (migrated.length > 0) {
+      return { type: 'success', items: migrated, formatName: 'Google Authenticator (otpauth-migration)' };
+    }
+  }
+
+  // Scenario 0b: KeePass 2.x XML Export
+  if (/^<\?xml|^<KeePassFile/i.test(trimmed) && /<KeePassFile/i.test(trimmed)) {
+    const items = parseKeePassXml(trimmed, copy.untitledUniversal);
+    if (items.length > 0) {
+      return { type: 'success', items, formatName: 'KeePass 2.x (XML)' };
+    }
   }
 
   // Scenario A: JSON Format
@@ -122,6 +246,9 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
             username,
             password: normalizeImportString(x.password),
             url,
+            ...(Array.isArray(x.additionalUrls) ? { additionalUrls: x.additionalUrls.filter((u: unknown): u is string => typeof u === 'string' && u.trim().length > 0) } : {}),
+            ...(Array.isArray(x.customFields) ? { customFields: x.customFields } : {}),
+            ...(Array.isArray(x.totpRecoveryCodes) ? { totpRecoveryCodes: x.totpRecoveryCodes.filter((c: unknown): c is string => typeof c === 'string') } : {}),
             notes,
             totpSecret: normalizeImportString(x.totpSecret),
             category: normalizeImportString(x.category, 'login') as Partial<VaultItem>['category'],
@@ -153,14 +280,20 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
             type?: number;
             notes?: string;
             favorite?: boolean;
+            fields?: { name?: string; value?: string; type?: number }[];
+            passwordHistory?: { password?: string; lastUsedDate?: string }[];
             login?: { username?: string; password?: string; uris?: { uri?: string }[]; totp?: string };
             card?: { cardholderName?: string; number?: string; code?: string; expMonth?: string; expYear?: string };
             identity?: { firstName?: string; lastName?: string; ssn?: string; passportNumber?: string };
           };
           // First pass: discover the row's identifying fields so we can
           // synthesise a non-empty title if `bw.name` is missing.
+          const allUris = (bw.type === 1 && Array.isArray(bw.login?.uris))
+            ? bw.login.uris.map((u) => (typeof u?.uri === 'string' ? u.uri.trim() : '')).filter(Boolean)
+            : [];
           const username = (bw.type === 1 && bw.login?.username) || '';
-          const url = (bw.type === 1 && bw.login?.uris && bw.login.uris[0]?.uri) || '';
+          const url = allUris[0] || '';
+          const additionalUrls = allUris.slice(1);
           const cardholderName = (bw.type === 3 && bw.card?.cardholderName) || '';
           const idFullName = (bw.type === 4 && bw.identity)
             ? `${bw.identity.firstName || ''} ${bw.identity.lastName || ''}`.trim()
@@ -171,10 +304,33 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
           // cardholder name → identity name → username → url host.
           const titleCandidate = bw.name || cardholderName || idFullName || username || url;
 
+          const customFields: VaultCustomField[] = Array.isArray(bw.fields)
+            ? bw.fields
+              .filter((f) => typeof f?.name === 'string' && f.name.trim().length > 0)
+              .map((f, idx) => ({
+                id: `bw-field-${idx + 1}`,
+                label: f.name!.trim(),
+                value: typeof f.value === 'string' ? f.value : '',
+                type: f.type === 1 ? 'hidden' : 'text',
+              }))
+            : [];
+
+          const passwordHistory = Array.isArray(bw.passwordHistory)
+            ? bw.passwordHistory
+              .filter((h) => typeof h?.password === 'string' && h.password.length > 0)
+              .map((h) => ({
+                password: h.password!,
+                changedAt: typeof h.lastUsedDate === 'string' && h.lastUsedDate ? h.lastUsedDate : new Date().toISOString(),
+              }))
+            : [];
+
           const item: Partial<VaultItem> = {
             title: buildImportedTitle(titleCandidate, username, url, notes, copy.untitledUniversal),
             notes,
             favorite: !!bw.favorite,
+            ...(additionalUrls.length > 0 ? { additionalUrls } : {}),
+            ...(customFields.length > 0 ? { customFields } : {}),
+            ...(passwordHistory.length > 0 ? { passwordHistory } : {}),
           };
 
           // Bitwarden Types: 1=Login, 2=SecureNote, 3=Card, 4=Identity
@@ -216,7 +372,88 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
         return { type: 'success', items, formatName: copy.formatBitwardenJson };
       }
 
-      // Fallback fallback general JSON structure
+      // 4. Proton Pass JSON structure ({ vaults: { [id]: { items: [...] } } })
+      if (parsed.vaults && typeof parsed.vaults === 'object' && !Array.isArray(parsed.vaults)) {
+        const items: Partial<VaultItem>[] = [];
+        for (const vaultObj of Object.values(parsed.vaults as Record<string, unknown>)) {
+          const vault = vaultObj as { items?: unknown[] };
+          if (!Array.isArray(vault?.items)) continue;
+          for (const rawEntry of vault.items) {
+            const entry = rawEntry as {
+              data?: {
+                type?: string;
+                metadata?: { name?: string; note?: string };
+                content?: {
+                  itemEmail?: string;
+                  itemUsername?: string;
+                  email?: string;
+                  username?: string;
+                  password?: string;
+                  urls?: string[];
+                  totpUri?: string;
+                  cardholderName?: string;
+                  number?: string;
+                  expirationDate?: string;
+                  verificationNumber?: string;
+                };
+                extraFields?: { fieldName?: string; type?: string; data?: { content?: string } }[];
+              };
+            };
+            const data = entry?.data;
+            if (!data) continue;
+            const content = data.content || {};
+            const urls = Array.isArray(content.urls) ? content.urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0) : [];
+            const username = content.itemUsername || content.itemEmail || content.username || content.email || '';
+            const notes = data.metadata?.note || '';
+            const rawTitle = data.metadata?.name || '';
+            const customFields: VaultCustomField[] = Array.isArray(data.extraFields)
+              ? data.extraFields
+                .filter((f) => typeof f?.fieldName === 'string' && f.fieldName.trim().length > 0)
+                .map((f, idx) => ({
+                  id: `pp-${idx + 1}`,
+                  label: f.fieldName!.trim(),
+                  value: f.data?.content || '',
+                  type: f.type === 'hidden' ? 'hidden' : 'text',
+                }))
+              : [];
+
+            if (data.type === 'creditCard') {
+              items.push({
+                title: buildImportedTitle(rawTitle, content.cardholderName, '', notes, copy.untitledUniversal),
+                category: 'card',
+                cardholderName: content.cardholderName || '',
+                cardNumber: content.number || '',
+                cardExpiry: content.expirationDate || '',
+                cardCvv: content.verificationNumber || '',
+                notes,
+              });
+            } else if (data.type === 'note') {
+              items.push({
+                title: buildImportedTitle(rawTitle, '', '', notes, copy.untitledUniversal),
+                category: 'secure_note',
+                notes,
+              });
+            } else {
+              items.push({
+                title: buildImportedTitle(rawTitle, username, urls[0], notes, copy.untitledUniversal),
+                category: 'login',
+                username,
+                password: content.password || '',
+                url: urls[0] || '',
+                ...(urls.length > 1 ? { additionalUrls: urls.slice(1) } : {}),
+                totpSecret: content.totpUri || '',
+                notes,
+                ...(customFields.length > 0 ? { customFields } : {}),
+              });
+            }
+          }
+        }
+        if (items.length > 0) {
+          return { type: 'success', items, formatName: 'Proton Pass (JSON)' };
+        }
+      }
+
+      // Fallback general JSON structure
       return { type: 'error', message: copy.errorUnsupportedJson };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err || '');
@@ -343,6 +580,83 @@ export function parseUniversalImport(fileContent: string, labels: Partial<Import
     });
 
     return { type: 'success', items, formatName: copy.formatLastPassCsv };
+  }
+
+  // 2b. Firefox CSV detection: "url,username,password,httpRealm,formActionOrigin,guid,..."
+  if (headers.includes('httprealm') || headers.includes('formactionorigin')) {
+    const urlIdx = findColumnIndex(['url']);
+    const userIdx = findColumnIndex(['username']);
+    const passIdx = findColumnIndex(['password']);
+    const items: Partial<VaultItem>[] = dataRows.map((row) => {
+      const url = (urlIdx !== -1 ? row[urlIdx] : '') || '';
+      const username = (userIdx !== -1 ? row[userIdx] : '') || '';
+      return {
+        title: buildImportedTitle('', username, url, '', copy.untitledUniversal),
+        username,
+        password: (passIdx !== -1 ? row[passIdx] : '') || '',
+        url,
+        category: 'login',
+      };
+    });
+    return { type: 'success', items, formatName: 'Mozilla Firefox (CSV)' };
+  }
+
+  // 2c. Apple Passwords / Safari CSV detection: "title,url,username,password,notes,otpauth"
+  if (headers.includes('otpauth') && headers.includes('title') && headers.includes('password')) {
+    const titleIdx = findColumnIndex(['title']);
+    const urlIdx = findColumnIndex(['url']);
+    const userIdx = findColumnIndex(['username']);
+    const passIdx = findColumnIndex(['password']);
+    const notesIdx = findColumnIndex(['notes']);
+    const otpIdx = findColumnIndex(['otpauth']);
+    const items: Partial<VaultItem>[] = dataRows.map((row) => {
+      const rawTitle = titleIdx !== -1 ? row[titleIdx] : '';
+      const username = (userIdx !== -1 ? row[userIdx] : '') || '';
+      const url = (urlIdx !== -1 ? row[urlIdx] : '') || '';
+      const notes = (notesIdx !== -1 ? row[notesIdx] : '') || '';
+      return {
+        title: buildImportedTitle(rawTitle, username, url, notes, copy.untitledUniversal),
+        username,
+        password: (passIdx !== -1 ? row[passIdx] : '') || '',
+        url,
+        notes,
+        totpSecret: (otpIdx !== -1 ? row[otpIdx] : '') || '',
+        category: 'login',
+      };
+    });
+    return { type: 'success', items, formatName: 'Apple Passwords / Safari (CSV)' };
+  }
+
+  // 2d. Proton Pass CSV detection: "name,url,email,username,password,note,totp,vault"
+  if (
+    headers.includes('totp')
+    && headers.includes('name')
+    && headers.includes('password')
+    && (headers.includes('email') || headers.includes('vault'))
+  ) {
+    const nameIdx = findColumnIndex(['name']);
+    const urlIdx = findColumnIndex(['url']);
+    const emailIdx = findColumnIndex(['email']);
+    const userIdx = findColumnIndex(['username']);
+    const passIdx = findColumnIndex(['password']);
+    const noteIdx = findColumnIndex(['note', 'notes']);
+    const totpIdx = findColumnIndex(['totp']);
+    const items: Partial<VaultItem>[] = dataRows.map((row) => {
+      const rawTitle = nameIdx !== -1 ? row[nameIdx] : '';
+      const username = (userIdx !== -1 ? row[userIdx] : '') || (emailIdx !== -1 ? row[emailIdx] : '') || '';
+      const url = (urlIdx !== -1 ? row[urlIdx] : '') || '';
+      const notes = (noteIdx !== -1 ? row[noteIdx] : '') || '';
+      return {
+        title: buildImportedTitle(rawTitle, username, url, notes, copy.untitledUniversal),
+        username,
+        password: (passIdx !== -1 ? row[passIdx] : '') || '',
+        url,
+        notes,
+        totpSecret: (totpIdx !== -1 ? row[totpIdx] : '') || '',
+        category: 'login',
+      };
+    });
+    return { type: 'success', items, formatName: 'Proton Pass (CSV)' };
   }
 
   // 3. Google Password Manager CSV detection: "name,url,username,password,note"
