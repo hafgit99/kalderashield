@@ -2,6 +2,20 @@
 
 All notable KalderaShield changes are tracked here. The project follows a security-first release style: release notes summarize user-facing changes, while this changelog also records release-gate and validation work.
 
+## 7.1.7.0 - Core Password Manager Hardening, Browser Extension 2FA/Card Autofill, Expanded Importers & Global Command Palette
+
+### Added
+
+- **Browser extension on-demand 2FA, HTTPS-gated card autofill & multi-URL matching.** Extended `src-tauri/src/native_messaging.rs` with pure-Rust RFC 6238 TOTP generation (`totp_secret` marked `#[serde(skip_serializing)]` so raw TOTP secrets never leave desktop Rust memory), on-demand `get_totp_code` and `get_card_details` IPC actions, multi-URL matching (`additionalUrls`), and background-managed 30s `clear_clipboard` wiping across Chrome/Edge, Firefox, and Safari WebExtension builds.
+- **Expanded vault schema & item details.** Added multiple matching URLs (`additionalUrls` including `androidapp://` package URIs for Android Autofill), user-defined custom fields (`text`, masked `hidden`, `url`), copyable 2FA recovery codes (`totpRecoveryCodes`), multi-attachment display (`VaultItemAttachmentCard`), next-TOTP code preview (`→ ...`) during the final 5 seconds in `LoginDetail`, and native `BarcodeDetector` QR image scanning + `otpauth-migration://` pasting in `VaultFormLoginFields`.
+- **Universal importer upgrades & Google Authenticator protobuf migration.** Added a zero-dependency TypeScript Google Authenticator `otpauth-migration://` protobuf decoder (`src/lib/otpMigration.ts`), KeePass 2.x XML (single-pass XML entity decoding), Proton Pass JSON & CSV, Apple Passwords/Safari CSV, Firefox CSV, and Bitwarden JSON `additionalUrls`/`customFields`/`passwordHistory` preservation, with `.xml` enabled in both WebView and native Windows import file pickers.
+- **Advanced Password Generator & Global `Ctrl+K` Command Palette.** Added ambiguous character exclusion (`O/0/I/l/1/|`), custom symbol set input, RAM-only session-scoped Generated Password History (wiped on vault lock, cap 20), raised per-item password history from 3 to 20 entries, and introduced the global keyboard-driven `Ctrl+K` / `Cmd+K` `CommandPalette` with inline Username/Password/live-2FA copy actions and quick navigation commands across all 12 locales.
+
+### Fixed & Hardened
+
+- **Native Windows protected clipboard clear & OS session lock/sleep protection.** Added SHA-256-hashed `clear_clipboard_if_unchanged_protected` (wiping unchanged secrets even when the WebView is unfocused, minimized, or locked), automatic clipboard clearing on `RunEvent::ExitRequested`, and a zero-dependency Windows `WTSRegisterSessionNotification` (`WTS_SESSION_LOCK`) + `WM_POWERBROADCAST` (`PBT_APMSUSPEND`) monitor that immediately wipes clipboard + extension caches and locks the vault.
+- **Desktop share links & extension localization fix.** Fixed `generateShareUrl` on `tauri.localhost` / `file:` origins to use `https://kalderashield.com/share/`, allowed `decryptShareUrl` to accept full share URLs alongside `#share=...` hashes, replaced hardcoded dark classes in share/attachment modals with Light/Dark semantic tokens, and fixed the raw `copied.feedback` toast key in `src-extension/popup.ts` (2,596 unit tests across 275 files + 103 Rust tests).
+
 ## 7.1.6.0 - Streamlined Dashboard UX, Faster Tab Navigation & Incremental HIBP Session Cache
 
 ### Added
